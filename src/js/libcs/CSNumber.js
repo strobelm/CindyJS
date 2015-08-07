@@ -554,6 +554,9 @@ CSNumber._helper.isNaN = function(a) {
     return (isNaN(a.value.real)) || (isNaN(a.value.imag));
 };
 
+CSNumber._helper.isFinite = function(a) {
+    return (isFinite(a.value.real)) && (isFinite(a.value.imag));
+};
 
 CSNumber._helper.isAlmostImag = function(a) {
     var r = a.value.real;
