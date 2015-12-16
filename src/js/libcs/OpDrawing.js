@@ -221,10 +221,10 @@ evaluator.drawconic$1 = function(args, modifs) {
         }
 
     }
-    return eval_helper.drawconic(Conic, modifs);
+    return eval_helper.drawconic(Conic.matrix, modifs);
 };
 
-eval_helper.drawconic = function(aConic, modifs) {
+eval_helper.drawconic = function(conicMat, modifs) {
 
     Render2D.handleModifs(modifs, Render2D.conicModifs);
     var size = 4 / 2.5;
@@ -235,8 +235,8 @@ eval_helper.drawconic = function(aConic, modifs) {
     csctx.lineWidth = size; // * 0.4;
 
     var eps = 1e-14; //JRG Hab ih von 1e-16 runtergesetzt
-    var mat = aConic.matrix;
-    var origmat = aConic.matrix;
+    var mat = conicMat;
+    var origmat = conicMat;
 
     // check for complex values
     for (var i = 0; i < 2; i++)
