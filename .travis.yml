@@ -1,8 +1,15 @@
 language: node_js
 node_js: node
-script: make alltests
+script: node make alltests
 sudo: false
 addons:
   apt:
     packages:
      - default-jdk
+deploy:
+  - provider: script
+    script: tools/travis-deploy.sh
+    on:
+      repo: CindyJS/CindyJS
+      branch: master
+    skip_cleanup: true
