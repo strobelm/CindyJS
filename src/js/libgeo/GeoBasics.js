@@ -148,8 +148,17 @@ function addElement(el) {
         return null;
     }
     if (op.signature.length !== (el.args ? el.args.length : 0)) {
-        window.alert("Wrong number of arguments for " + el.name);
-        return null;
+        console.log("start default parameter handling");
+        var ok = true;
+        var nEl = op.signature.length - el.args.length;
+        var defaults = op.signature.slice(el.args.length);
+        for (var ii = 0; ii < nEl; ii++) {
+            if (defaults[ii].split("=").length !== 2) ok = false;
+        }
+        if (!ok) {
+            window.alert("Wrong number of arguments for " + el.name);
+            return null;
+        }
     }
     if (el.args) {
         for (i = 0; i < el.args.length; ++i) {

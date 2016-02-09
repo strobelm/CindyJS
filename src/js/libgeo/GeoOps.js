@@ -16,6 +16,25 @@ geoOps._helper = {};
 ////The RandomLine RandomPoint operators are used by Cinderellas
 ////Original Mirror Operations
 
+geoOps._helper.handleDefaultArgs = function(op) {
+    var el = {};
+    el.homog = JSON.parse(op.signature[1].split("=")[1]);
+    el.homog = List.realVector(el.homog);
+    return el;
+};
+
+geoOps.defaultArgChecker = {};
+geoOps.defaultArgChecker.kind = "L";
+geoOps.defaultArgChecker.signature = ["P", "P=[0,0,1]"];
+geoOps.defaultArgChecker.updatePosition = function(el) {
+    var defel2 = {};
+    var el1 = csgeo.csnames[(el.args[0])];
+    var el2 = csgeo.csnames[(el.args[1])] || geoOps._helper.handleDefaultArgs(geoOps.defaultArgChecker);
+    el.homog = List.cross(el1.homog, el2.homog);
+    el.homog = List.normalizeMax(el.homog);
+    el.homog = General.withUsage(el.homog, "Line");
+};
+
 geoOps.RandomLine = {};
 geoOps.RandomLine.kind = "L";
 geoOps.RandomLine.signature = [];
