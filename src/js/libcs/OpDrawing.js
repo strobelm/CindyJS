@@ -436,8 +436,84 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     var c01 = mat.value[1].value[2].value.real * 2;
     var c00 = mat.value[2].value[2].value.real;
 
-    function refine(pt1, pt2) {
-        csctx.lineTo(pt2.px, pt2.py);
+    // Find the control points of a cubic Bézier which at the
+    // endpoints agrees with the conic in first and second derivative.
+    // See http://math.stackexchange.com/a/257198/35416 by joriki
+    // licensed under cc by-sa 3.0 license.
+    // Using u:=(1-t) we parametrize the curve as
+    // p(t) = u³p₁ + 3u²t(p₁+d₁t₁) + 3ut²(p₂-d₂t₂) + t³p₂
+    // where p₁, p₂ are the endpoints and t₁, t₂ the tangent directions.
+    // We need to solve the following quadratic system of equations:
+    // a1*d₁² + a2*d₁ + a3*d₂ + a4 = 0
+    // a5*d₂² + a6*d₂ + a7*d₁ + a8 = 0
+    function refine(pt1, pt2, depth) {
+        if (depth++ > 10)
+            return csctx.lineTo(pt2.px, pt2.py);
+        // dp/dt at the endpoints, need to be scaled by d₁ resp d₂:
+        var dx1 = 3 * pt1.tx;
+        var dy1 = 3 * pt1.ty;
+        var dx2 = 3 * pt2.tx;
+        var dy2 = 3 * pt2.ty;
+        // first derivatives of the polynomial at the endpoints:
+        var px1 = 2 * c20 * pt1.px + c11 * pt1.py + c10;
+        var py1 = 2 * c02 * pt1.py + c11 * pt1.px + c01;
+        var px2 = 2 * c20 * pt2.px + c11 * pt2.py + c10;
+        var py2 = 2 * c02 * pt2.py + c11 * pt2.px + c01;
+        // Now the coerfficients of the quadratic system, see above:
+        var a1 = dx1 * (dx1 * c20 + dy1 * c11) + dy1 * dy1 * c02;
+        var a2 = -6 * (pt1.tx * px1 + pt1.ty * py1);
+        var a3 = -3 * (pt2.tx * px1 + pt2.ty * py1);
+        var a4 = 3 * ((pt2.px - pt1.px) * px1 + (pt2.py - pt1.py) * py1);
+        var a5 = dx2 * (dx2 * c20 + dy2 * c11) + dy2 * dy2 * c02;
+        var a6 = 6 * (pt2.tx * px2 + pt2.ty * py2);
+        var a7 = 3 * (pt1.tx * px2 + pt1.ty * py2);
+        var a8 = 3 * ((pt1.px - pt2.px) * px2 + (pt1.py - pt2.py) * py2);
+        // Solve the first for d₂ = (a1*d₁² + a2*d₁ + a4)/(-a3)
+        // Plug into (a3)² times second to obtain quartic equation
+        // b₀ + b₁d₁ + b₂d₁² + b₃d₁³ + b₄d₁⁴ = 0
+        var b0 = a4 * a4 * a5 - a3 * a4 * a6 + a3 * a3 * a8;
+        var b1 = 2 * a2 * a4 * a5 - a2 * a3 * a6 + a3 * a3 * a7;
+        var b2 = a2 * a2 * a5 + 2 * a1 * a4 * a5 - a1 * a3 * a6;
+        var b3 = 2 * a1 * a2 * a5;
+        var b4 = a1 * a1 * a5;
+        // Now compute the solutions to these
+        var d1s = eval_helper.roots(List.realVector([b0, b1, b2, b3, b4]));
+        // These help us to check the signs to ensure correct directions
+        var x12 = pt2.px - pt1.px;
+        var y12 = pt2.py - pt1.py;
+        var s1 = x12 * dx1 + y12 * dy1;
+        var s2 = x12 * dx2 + y12 * dy2;
+        var drawn = false;
+        for (var i = 0; i < d1s.value.length; ++i) {
+            var d1i = d1s.value[i];
+            if (!CSNumber._helper.isAlmostReal(d1i)) continue;
+            var d1 = d1i.value.real;
+            if (d1 * s1 < 0) continue; // wrong direction
+            var d2 = ((a1 * d1 + a2) * d1 + a4) / (-a3);
+            if (d2 * s2 < 0) continue; // wrong direction
+            if (!(isFinite(d1) && isFinite(d2))) continue;
+            if (drawn) {
+                console.log(
+                    "drawconic: don't know which segment to draw, " +
+                    "so I'm drawing more than one.");
+                csctx.moveTo(pt1.px, pt1.py);
+            }
+            drawn = true;
+            csctx.bezierCurveTo(
+                pt1.px + d1 * pt1.tx,
+                pt1.py + d1 * pt1.ty,
+                pt2.px - d2 * pt2.tx,
+                pt2.py - d2 * pt2.ty,
+                pt2.px,
+                pt2.py);
+        }
+        if (!drawn) {
+            console.log(
+                "drawconic: didn't find a matching segment, " +
+                    "so I'm drawing a line instead");
+            csctx.lineTo(pt2.px, pt2.py);
+        }
+        // To do: refine recursively
     }
 
     // Assuming [x, y] is a point on the conic, return the second
@@ -615,7 +691,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 } else {
                     if (move)
                         csctx.moveTo(pt.px, pt.py);
-                    refine(pt, pt.next);
+                    refine(pt, pt.next, 0);
                 }
                 pt = pt.next;
                 if (pt === pt0) {
