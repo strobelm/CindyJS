@@ -647,17 +647,18 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             return a.py - b.py;
         }
         specialPoints.sort(sortByX);
+        // TODO: detect and handle situations where x values lie
+        // REALLY close together, leading to inconsistent ordering.
 
         // Drop out-of-canvas portions
-        while (specialPoints.length && specialPoints[0].px < 0)
+        while (specialPoints.length && specialPoints[0][0].px < 0)
             specialPoints.shift();
         while (specialPoints.length &&
-               specialPoints[specialPoints.length - 1].px > csw)
+               specialPoints[specialPoints.length - 1][0].px > csw)
             specialPoints.pop();
 
         if (specialPoints.length === 0) return; // nothing to draw
         specialPoints[0].sort(sortByY);
-        var starts = [specialPoints[0][0]];
         for (i = 1; i < specialPoints.length; ++i) {
             specialPoints[i].sort(sortByY);
             var p11 = specialPoints[i - 1][0];
@@ -673,8 +674,12 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             p22.next = p12;
             p12.prev = p22;
         }
-        pt = specialPoints[specialPoints.length - 1];
+        var starts = [];
+        pt = specialPoints[0];
         if (pt[0] !== pt[1])
+            starts.push(pt[0]);
+        pt = specialPoints[specialPoints.length - 1];
+        if (pt[0] != pt[1] || starts.length === 0)
             starts.push(pt[1]);
         var csh2 = csh * 2;
         if (debug) {
@@ -693,6 +698,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 } else {
                     if (move)
                         csctx.moveTo(pt.px, pt.py);
+                    move = false;
                     refine(pt, pt.next, 0);
                 }
                 pt = pt.next;
