@@ -477,28 +477,44 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
         var b3 = 2 * a1 * a2 * a5;
         var b4 = a1 * a1 * a5;
         // Now compute the solutions to these
-        var d1s = eval_helper.roots(List.realVector([b0, b1, b2, b3, b4]));
+        var bs = [b0, b1, b2, b3, b4];
+        //console.log("b = [" + bs.join(", ") + "]");
+        var d1s = eval_helper.roots(List.realVector(bs));
         // These help us to check the signs to ensure correct directions
         var x12 = pt2.px - pt1.px;
         var y12 = pt2.py - pt1.py;
         var s1 = x12 * dx1 + y12 * dy1;
         var s2 = x12 * dx2 + y12 * dy2;
-        var drawn = false;
+        var candidates = [];
+        var d1, d2;
         for (var i = 0; i < d1s.value.length; ++i) {
             var d1i = d1s.value[i];
             if (!CSNumber._helper.isAlmostReal(d1i)) continue;
-            var d1 = d1i.value.real;
+            d1 = d1i.value.real;
             if (d1 * s1 < 0) continue; // wrong direction
-            var d2 = ((a1 * d1 + a2) * d1 + a4) / (-a3);
+            d2 = ((a1 * d1 + a2) * d1 + a4) / (-a3);
             if (d2 * s2 < 0) continue; // wrong direction
             if (!(isFinite(d1) && isFinite(d2))) continue;
-            if (drawn) {
-                console.log(
-                    "drawconic: don't know which segment to draw, " +
-                    "so I'm drawing more than one.");
+            candidates.push([d1, d2]);
+        }
+        if (candidates.length === 0) {
+            console.log(
+                "drawconic: didn't find a matching segment, " +
+                    "so I'm drawing a line instead");
+            csctx.lineTo(pt2.px, pt2.py);
+            return;
+        }
+        if (candidates.length > 1) {
+            console.log(
+                "drawconic: don't know which segment to draw, " +
+                "so I'm drawing more than one: " +
+                JSON.stringify(candidates));
+        }
+        for (i = 0; i < candidates.length; ++i) {
+            if (i)
                 csctx.moveTo(pt1.px, pt1.py);
-            }
-            drawn = true;
+            d1 = candidates[i][0];
+            d2 = candidates[i][1];
             csctx.bezierCurveTo(
                 pt1.px + d1 * pt1.tx,
                 pt1.py + d1 * pt1.ty,
@@ -506,12 +522,6 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 pt2.py - d2 * pt2.ty,
                 pt2.px,
                 pt2.py);
-        }
-        if (!drawn) {
-            console.log(
-                "drawconic: didn't find a matching segment, " +
-                    "so I'm drawing a line instead");
-            csctx.lineTo(pt2.px, pt2.py);
         }
         // To do: refine recursively
     }
