@@ -437,7 +437,6 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     var c00 = mat.value[2].value[2].value.real;
 
     var closeCycle = true;
-    var svgPath = [];
 
     // Find the control points of a cubic Bézier which at the
     // endpoints agrees with the conic in first and second derivative.
@@ -450,10 +449,8 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     // a1*d₁² + a2*d₁ + a3*d₂ + a4 = 0
     // a5*d₂² + a6*d₂ + a7*d₁ + a8 = 0
     function refine(pt1, pt2, depth) {
-        if (depth++ > 10) {
-            svgPath.push("L", pt2.px, pt2.py);
+        if (depth++ > 10)
             return csctx.lineTo(pt2.px, pt2.py);
-        }
         // dp/dt at the endpoints, need to be scaled by d₁ resp d₂:
         var dx1 = 3 * pt1.tx;
         var dy1 = 3 * pt1.ty;
@@ -506,7 +503,6 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             console.log(
                 "drawconic: didn't find a matching segment, " +
                     "so I'm drawing a line instead");
-            svgPath.push("L", pt2.px, pt2.py);
             csctx.lineTo(pt2.px, pt2.py);
             return;
         }
@@ -518,19 +514,10 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             closeCycle = false;
         }
         for (i = 0; i < candidates.length; ++i) {
-            if (i) {
-                svgPath.push("M", pt1.px, pt1.py);
+            if (i)
                 csctx.moveTo(pt1.px, pt1.py);
-            }
             d1 = candidates[i][0];
             d2 = candidates[i][1];
-            svgPath.push("C",
-                pt1.px + d1 * pt1.tx,
-                pt1.py + d1 * pt1.ty,
-                pt2.px - d2 * pt2.tx,
-                pt2.py - d2 * pt2.ty,
-                pt2.px,
-                pt2.py);
             csctx.bezierCurveTo(
                 pt1.px + d1 * pt1.tx,
                 pt1.py + d1 * pt1.ty,
@@ -715,25 +702,20 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                     // segment is not visible.
                     move = true;
                 } else {
-                    if (move) {
-                        svgPath.push("M", pt.px, pt.py);
+                    if (move)
                         csctx.moveTo(pt.px, pt.py);
-                    }
                     refine(pt, pt.next, 0);
                 }
                 pt = pt.next;
                 if (pt === pt0) {
                     // completed the cycle
-                    if (closeCycle) {
-                        svgPath.push("Z");
+                    if (closeCycle)
                         csctx.closePath();
-                    }
                     break;
                 }
             }
         }
         csctx.stroke();
-        window.svgd = svgPath.join(" ");
     } // end of general case, neither (1,0,0) nor (0,1,0) on conic
 };
 
