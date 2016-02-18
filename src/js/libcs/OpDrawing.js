@@ -447,8 +447,6 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     // a1*d₁² + a2*d₁ + a3*d₂ + a4 = 0
     // a5*d₂² + a6*d₂ + a7*d₁ + a8 = 0
     function refine(pt1, pt2, depth) {
-        if (depth++ > 10)
-            return csctx.lineTo(pt2.px, pt2.py);
         // dp/dt at the endpoints, need to be scaled by d₁ resp d₂:
         var dx1 = 3 * pt1.tx;
         var dy1 = 3 * pt1.ty;
@@ -508,6 +506,39 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             csctx.lineTo(pt2.px, pt2.py);
             return;
         }
+        if (depth < 10) {
+            // Find the point on the curve for t = 0.5 and the gradient there
+            var mx = 0.5 * (pt1.px + pt2.px) +
+                0.375 * (d1b * pt1.tx - d2b * pt2.tx);
+            var my = 0.5 * (pt1.py + pt2.py) +
+                0.375 * (d1b * pt1.ty - d2b * pt2.ty);
+            var gx = 2 * c20 * mx + c11 * my + c10;
+            var gy = 2 * c02 * my + c11 * mx + c01;
+            // Now solve polynomial p(m + t*g) = 0 for t
+            // (m + tg)M(m + tg) = mMm + 2tmMg + t²gMg
+            var sol = solveRealQuadratic(
+                (c02 * gy + (c11 * gx + c01)) * gy +
+                (c20 * gx + c10) * gx + c00,
+                (c02 * gy + 0.5 * (c11 * gx + c01)) * my +
+                0.5 * (c11 * mx + c01) * gy +
+                (c20 * gx + 0.5 * c10) * mx +
+                0.5 * c10 * gx + c00,
+                (c02 * my + (c11 * mx + c01)) * my +
+                (c20 * mx + c10) * mx + c00)
+            if (sol) {
+                if (Math.abs(sol[0]) > Math.abs(sol[1]))
+                    sol = sol[1];
+                else
+                    sol = sol[0];
+                console.log(sol * Math.hypot(gx, gy));
+                if (sol * Math.hypot(gx, gy) > 1e-8) {
+                    var pt3 = mkp(mx + sol * gx, my + sol * gy);
+                    refine(pt1, pt3, depth + 1);
+                    refine(pt3, pt2, depth + 1);
+                    return;
+                }
+            }
+        }
         csctx.bezierCurveTo(
             pt1.px + d1b * pt1.tx,
             pt1.py + d1b * pt1.ty,
@@ -515,7 +546,6 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             pt2.py - d2b * pt2.ty,
             pt2.px,
             pt2.py);
-        // To do: refine recursively
     }
 
     // Assuming [x, y] is a point on the conic, return the second
