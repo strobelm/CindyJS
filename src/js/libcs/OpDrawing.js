@@ -436,6 +436,8 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     var c01 = mat.value[1].value[2].value.real * 2;
     var c00 = mat.value[2].value[2].value.real;
 
+    var closeCycle = true;
+
     // Find the control points of a cubic Bézier which at the
     // endpoints agrees with the conic in first and second derivative.
     // See http://math.stackexchange.com/a/257198/35416 by joriki
@@ -509,6 +511,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 "drawconic: don't know which segment to draw, " +
                 "so I'm drawing more than one: " +
                 JSON.stringify(candidates));
+            closeCycle = false;
         }
         for (i = 0; i < candidates.length; ++i) {
             if (i)
@@ -706,7 +709,8 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 pt = pt.next;
                 if (pt === pt0) {
                     // completed the cycle
-                    csctx.closePath();
+                    if (closeCycle)
+                        csctx.closePath();
                     break;
                 }
             }
