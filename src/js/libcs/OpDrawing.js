@@ -436,8 +436,6 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     var c01 = mat.value[1].value[2].value.real * 2;
     var c00 = mat.value[2].value[2].value.real;
 
-    var closeCycle = true;
-
     // Find the control points of a cubic Bézier which at the
     // endpoints agrees with the conic in first and second derivative.
     // See http://math.stackexchange.com/a/257198/35416 by joriki
@@ -487,45 +485,36 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
         var y12 = pt2.py - pt1.py;
         var s1 = x12 * dx1 + y12 * dy1;
         var s2 = x12 * dx2 + y12 * dy2;
-        var candidates = [];
-        var d1, d2;
+        var bestScore = Infinity;
+        var d1b, d2b;
         for (var i = 0; i < d1s.value.length; ++i) {
             var d1i = d1s.value[i];
             if (!CSNumber._helper.isAlmostReal(d1i)) continue;
-            d1 = d1i.value.real;
+            var d1 = d1i.value.real;
             if (d1 * s1 < 0) continue; // wrong direction
-            d2 = ((a1 * d1 + a2) * d1 + a4) / (-a3);
+            var d2 = ((a1 * d1 + a2) * d1 + a4) / (-a3);
             if (d2 * s2 < 0) continue; // wrong direction
             if (!(isFinite(d1) && isFinite(d2))) continue;
-            candidates.push([d1, d2]);
+            var score = d1 * d1 + d2 * d2;
+            if (score >= bestScore) continue;
+            bestScore = score;
+            d1b = d1;
+            d2b = d2;
         }
-        if (candidates.length === 0) {
+        if (bestScore === Infinity) {
             console.log(
                 "drawconic: didn't find a matching segment, " +
                     "so I'm drawing a line instead");
             csctx.lineTo(pt2.px, pt2.py);
             return;
         }
-        if (candidates.length > 1) {
-            console.log(
-                "drawconic: don't know which segment to draw, " +
-                "so I'm drawing more than one: " +
-                JSON.stringify(candidates));
-            closeCycle = false;
-        }
-        for (i = 0; i < candidates.length; ++i) {
-            if (i)
-                csctx.moveTo(pt1.px, pt1.py);
-            d1 = candidates[i][0];
-            d2 = candidates[i][1];
-            csctx.bezierCurveTo(
-                pt1.px + d1 * pt1.tx,
-                pt1.py + d1 * pt1.ty,
-                pt2.px - d2 * pt2.tx,
-                pt2.py - d2 * pt2.ty,
-                pt2.px,
-                pt2.py);
-        }
+        csctx.bezierCurveTo(
+            pt1.px + d1b * pt1.tx,
+            pt1.py + d1b * pt1.ty,
+            pt2.px - d2b * pt2.tx,
+            pt2.py - d2b * pt2.ty,
+            pt2.px,
+            pt2.py);
         // To do: refine recursively
     }
 
@@ -709,8 +698,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 pt = pt.next;
                 if (pt === pt0) {
                     // completed the cycle
-                    if (closeCycle)
-                        csctx.closePath();
+                    csctx.closePath();
                     break;
                 }
             }
