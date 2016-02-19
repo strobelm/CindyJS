@@ -446,6 +446,8 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
         // x * pt2.gx + y * pt2.gy = pt2.dot
         // Solve using Cramer's rule
         var denom = 1 / (pt1.gx * pt2.gy - pt2.gx * pt1.gy);
+        if (Math.abs(denom) > 1e12)
+            return csctx.lineTo(pt2.px, pt2.py);
         var cx = (pt1.dot * pt2.gy - pt2.dot * pt1.gy) * denom;
         var cy = (pt1.gx * pt2.dot - pt2.gx * pt1.dot) * denom;
         if (!(isFinite(cx) && isFinite(cy))) // Probably already linear
