@@ -436,116 +436,60 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     var c01 = mat.value[1].value[2].value.real * 2;
     var c00 = mat.value[2].value[2].value.real;
 
-    // Find the control points of a cubic Bézier which at the
-    // endpoints agrees with the conic in first and second derivative.
-    // See http://math.stackexchange.com/a/257198/35416 by joriki
-    // licensed under cc by-sa 3.0 license.
-    // Using u:=(1-t) we parametrize the curve as
-    // p(t) = u³p₁ + 3u²t(p₁+d₁t₁) + 3ut²(p₂-d₂t₂) + t³p₂
-    // where p₁, p₂ are the endpoints and t₁, t₂ the tangent directions.
-    // We need to solve the following quadratic system of equations:
-    // a1*d₁² + a2*d₁ + a3*d₂ + a4 = 0
-    // a5*d₂² + a6*d₂ + a7*d₁ + a8 = 0
-    function refine(pt1, pt2, depth) {
-        // dp/dt at the endpoints, need to be scaled by d₁ resp d₂:
-        var dx1 = 3 * pt1.tx;
-        var dy1 = 3 * pt1.ty;
-        var dx2 = 3 * pt2.tx;
-        var dy2 = 3 * pt2.ty;
-        // first derivatives of the polynomial at the endpoints:
-        var px1 = 2 * c20 * pt1.px + c11 * pt1.py + c10;
-        var py1 = 2 * c02 * pt1.py + c11 * pt1.px + c01;
-        var px2 = 2 * c20 * pt2.px + c11 * pt2.py + c10;
-        var py2 = 2 * c02 * pt2.py + c11 * pt2.px + c01;
-        // Now the coerfficients of the quadratic system, see above:
-        var a1 = dx1 * (dx1 * c20 + dy1 * c11) + dy1 * dy1 * c02;
-        var a2 = -6 * (pt1.tx * px1 + pt1.ty * py1);
-        var a3 = -3 * (pt2.tx * px1 + pt2.ty * py1);
-        var a4 = 3 * ((pt2.px - pt1.px) * px1 + (pt2.py - pt1.py) * py1);
-        var a5 = dx2 * (dx2 * c20 + dy2 * c11) + dy2 * dy2 * c02;
-        var a6 = 6 * (pt2.tx * px2 + pt2.ty * py2);
-        var a7 = 3 * (pt1.tx * px2 + pt1.ty * py2);
-        var a8 = 3 * ((pt1.px - pt2.px) * px2 + (pt1.py - pt2.py) * py2);
-        // Solve the first for d₂ = (a1*d₁² + a2*d₁ + a4)/(-a3)
-        // Plug into (a3)² times second to obtain quartic equation
-        // b₀ + b₁d₁ + b₂d₁² + b₃d₁³ + b₄d₁⁴ = 0
-        var b0 = a4 * a4 * a5 - a3 * a4 * a6 + a3 * a3 * a8;
-        var b1 = 2 * a2 * a4 * a5 - a2 * a3 * a6 + a3 * a3 * a7;
-        var b2 = a2 * a2 * a5 + 2 * a1 * a4 * a5 - a1 * a3 * a6;
-        var b3 = 2 * a1 * a2 * a5;
-        var b4 = a1 * a1 * a5;
-        // Now compute the solutions to these
-        var bs = [b0, b1, b2, b3, b4];
-        //console.log("b = [" + bs.join(", ") + "]");
-        var d1s = eval_helper.roots(List.realVector(bs));
-        // These help us to check the signs to ensure correct directions
-        var x12 = pt2.px - pt1.px;
-        var y12 = pt2.py - pt1.py;
-        var s1 = x12 * dx1 + y12 * dy1;
-        var s2 = x12 * dx2 + y12 * dy2;
-        var bestScore = Infinity;
-        var d1b, d2b;
-        for (var i = 0; i < d1s.value.length; ++i) {
-            var d1i = d1s.value[i];
-            if (!CSNumber._helper.isAlmostReal(d1i)) continue;
-            var d1 = d1i.value.real;
-            if (d1 * s1 < 0) continue; // wrong direction
-            var d2 = ((a1 * d1 + a2) * d1 + a4) / (-a3);
-            if (d2 * s2 < 0) continue; // wrong direction
-            if (!(isFinite(d1) && isFinite(d2))) continue;
-            var score = d1 * d1 + d2 * d2;
-            if (score >= bestScore) continue;
-            bestScore = score;
-            d1b = d1;
-            d2b = d2;
-        }
-        if (bestScore === Infinity) {
-            console.log(
-                "drawconic: didn't find a matching segment, " +
-                    "so I'm drawing a line instead");
-            csctx.lineTo(pt2.px, pt2.py);
-            return;
-        }
-        if (depth < 10) {
-            // Find the point on the curve for t = 0.5 and the gradient there
-            var mx = 0.5 * (pt1.px + pt2.px) +
-                0.375 * (d1b * pt1.tx - d2b * pt2.tx);
-            var my = 0.5 * (pt1.py + pt2.py) +
-                0.375 * (d1b * pt1.ty - d2b * pt2.ty);
+    var dbgpts = [];
+    // Find the control points of a quadratic Bézier which at the
+    // endpoints agrees with the conic in position and tangent direction.
+    // sign is -1 for the lower branch and +1 for the upper.
+    function refine(pt1, pt2, sign, depth) {
+        // (x - pt1.px) * pt1.gx + (y - pt1.py) * pt1.gy = 0
+        // x * pt1.gx + y * pt1.gy = pt1.dot
+        // x * pt2.gx + y * pt2.gy = pt2.dot
+        // Solve using Cramer's rule
+        var denom = 1 / (pt1.gx * pt2.gy - pt2.gx * pt1.gy);
+        var cx = (pt1.dot * pt2.gy - pt2.dot * pt1.gy) * denom;
+        var cy = (pt1.gx * pt2.dot - pt2.gx * pt1.dot) * denom;
+        if (!(isFinite(cx) && isFinite(cy))) // Probably already linear
+            return csctx.lineTo(pt2.px, pt2.py);
+        var area = Math.abs(
+            pt1.px * cy + cx * pt2.py + pt2.px * pt1.py
+            - pt2.px * cy - cx * pt1.py - pt1.px * pt2.py);
+        if (area > 1 && depth < 10) {
+            var mx = 0.5 * cx + 0.25 * (pt1.px + pt2.px);
+            var my = 0.5 * cy + 0.25 * (pt1.py + pt2.py);
             var gx = 2 * c20 * mx + c11 * my + c10;
             var gy = 2 * c02 * my + c11 * mx + c01;
             // Now solve polynomial p(m + t*g) = 0 for t
             // (m + tg)M(m + tg) = mMm + 2tmMg + t²gMg
             var sol = solveRealQuadratic(
-                (c02 * gy + (c11 * gx + c01)) * gy +
-                (c20 * gx + c10) * gx + c00,
-                (c02 * gy + 0.5 * (c11 * gx + c01)) * my +
-                0.5 * (c11 * mx + c01) * gy +
-                (c20 * gx + 0.5 * c10) * mx +
-                0.5 * c10 * gx + c00,
+                (c02 * gy + c11 * gx) * gy +
+                c20 * gx * gx,
+                (2 * c02 * gy + c11 * gx) * my +
+                (c11 * mx + c01) * gy +
+                2 * c20 * gx * mx + c10 * gx,
                 (c02 * my + (c11 * mx + c01)) * my +
                 (c20 * mx + c10) * mx + c00)
             if (sol) {
-                if (Math.abs(sol[0]) > Math.abs(sol[1]))
-                    sol = sol[1];
-                else
-                    sol = sol[0];
-                console.log(sol * Math.hypot(gx, gy));
-                if (sol * Math.hypot(gx, gy) > 1e-8) {
-                    var pt3 = mkp(mx + sol * gx, my + sol * gy);
-                    refine(pt1, pt3, depth + 1);
-                    refine(pt3, pt2, depth + 1);
+                var x1 = mx + sol[0] * gx;
+                var y1 = my + sol[0] * gy;
+                var s1 = y1 - secondPoint(x1, y1);
+                var x2 = mx + sol[1] * gx;
+                var y2 = my + sol[1] * gy;
+                var s2 = y2 - secondPoint(x2, y2);
+                //dbgpts.push([mx, my], [x1, y1], [x2, y2]);
+                var pt3;
+                if (s1 * s2 < 0) { // different order, so we choose by that
+                    if (sign * s1 > 0) {
+                        pt3 = mkp(x1, y1);
+                    } else {
+                        pt3 = mkp(x2, y2);
+                    }
+                    refine(pt1, pt3, sign, depth + 1);
+                    refine(pt3, pt2, sign, depth + 1);
                     return;
                 }
-            }
+            }       
         }
-        csctx.bezierCurveTo(
-            pt1.px + d1b * pt1.tx,
-            pt1.py + d1b * pt1.ty,
-            pt2.px - d2b * pt2.tx,
-            pt2.py - d2b * pt2.ty,
-            pt2.px,
-            pt2.py);
+        csctx.quadraticCurveTo(cx, cy, pt2.px, pt2.py);
     }
 
     // Assuming [x, y] is a point on the conic, return the second
@@ -559,13 +503,14 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
         return -((x * c11 + c01) / c02 + y);
     }
 
-    // Construct a point with given coordinates and tangent directions.
-    function mkpt(px, py, tx, ty) {
+    // Construct a point with given coordinates and gradient directions.
+    function mkpg(px, py, gx, gy) {
         return {
             px: px,
             py: py,
-            tx: tx,
-            ty: ty,
+            gx: gx,
+            gy: gy,
+            dot: px * gx + py * gy,
         };
     }
 
@@ -573,13 +518,12 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     function mkp(x, y) {
         var dx = 2 * c20 * x + c11 * y + c10; // dQ/dx
         var dy = 2 * c02 * y + c11 * x + c01; // dQ/dy
-        var f = 1 / Math.hypot(dx, dy); // Do we need unit length here?
-        return mkpt(x, y, dy * f, -dx * f);
+        return mkpg(x, y, dx, dy);
     }
 
     // Special points is a list of points on the conic which we want to match
     // in order to correctly connect them. Each entry is a list of points
-    // sharing the same x coordinate, formatted by mkpt.
+    // sharing the same x coordinate, formatted by mkpg.
     var specialPoints = [];
     var i, j, x, y, y2, pt, sol;
 
@@ -602,7 +546,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             for (i = 0; i < 2; ++i) {
                 x = sol[i];
                 y = -0.5 * (c11 * x + c01) / c02;
-                pt = mkpt(x, y, 0, 1);
+                pt = mkpg(x, y, 1, 0);
                 specialPoints.push([pt, pt]); // This is a double point
             }
 
@@ -618,7 +562,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 x = -0.5 * (c11 * y + c10) / c20;
                 y2 = secondPoint(x, y);
                 specialPoints.push([
-                    mkpt(x, y, 1, 0),
+                    mkpg(x, y, 0, 1),
                     mkp(x, y2)
                 ]);
             }
@@ -657,14 +601,15 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             for (j = 0; j < 2; ++j) {
                 pt = specialPoints[i][j];
                 if (!(isFinite(pt.px) && isFinite(pt.py) &&
-                      isFinite(pt.tx) && isFinite(pt.py)))
+                      isFinite(pt.gx) && isFinite(pt.gy)))
                     return; // Can't draw if numerics failed us
                 if (debug) {
                     csctx.strokeStyle = "rgb(255,0,0)";
                     csctx.lineWidth = 3;
                     csctx.beginPath();
-                    csctx.moveTo(pt.px - 10 * pt.tx, pt.py - 10 * pt.ty);
-                    csctx.lineTo(pt.px + 10 * pt.tx, pt.py + 10 * pt.ty);
+                    var f = 10 / Math.hypot(pt.gx, pt.gy);
+                    csctx.moveTo(pt.px - f * pt.gy, pt.py + f * pt.gx);
+                    csctx.lineTo(pt.px + f * pt.gy, pt.py - f * pt.gx);
                     csctx.stroke();
                 }
             }
@@ -701,8 +646,10 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             }
             p11.next = p21;
             p21.prev = p11;
+            p11.sign = -1;
             p22.next = p12;
             p12.prev = p22;
+            p22.sign = 1;
         }
         var starts = [];
         pt = specialPoints[0];
@@ -729,7 +676,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                     if (move)
                         csctx.moveTo(pt.px, pt.py);
                     move = false;
-                    refine(pt, pt.next, 0);
+                    refine(pt, pt.next, pt.sign, 0);
                 }
                 pt = pt.next;
                 if (pt === pt0) {
@@ -740,6 +687,15 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             }
         }
         csctx.stroke();
+        dbgpts.forEach(function(p, idx) {
+            if (idx % 3 === 0)
+                csctx.fillStyle = "rgb(0,0,255)";
+            else
+                csctx.fillStyle = "rgb(255,0,255)";
+            csctx.beginPath();
+            csctx.arc(p[0], p[1], 3, 0, 2 * Math.PI);
+            csctx.fill();
+        });
     } // end of general case, neither (1,0,0) nor (0,1,0) on conic
 };
 
