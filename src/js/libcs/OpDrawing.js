@@ -580,9 +580,12 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     // Find points with horizontal or vertical tangents
 
     if (containsYFP) {
+        // The vertical asymptote is a double double point at infinity
         x = -c01 / c11;
         pt = mkpg(x, Infinity, 1, 0);
-        specialPoints.push([pt, pt]); // This is a double point
+        specialPoints.push([pt, pt]);
+        pt = mkpg(x, Infinity, 1, 0);
+        specialPoints.push([pt, pt]); // This is a double double point
     } else {
         // Compute the roots of the y discriminant
         // for points with vertical tangents
@@ -686,8 +689,10 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
            !(specialPoints[specialPoints.length - 1][0].px <= csw))
         specialPoints.pop();
 
-    if (specialPoints.length === 0) return; // nothing to draw
+    if (specialPoints.length < 2) return; // nothing to draw
     specialPoints[0].sort(sortByY);
+    var csh2 = csh * 2;
+    var starts = [];
     for (i = 1; i < specialPoints.length; ++i) {
         specialPoints[i].sort(sortByY);
         var p11 = specialPoints[i - 1][0];
@@ -698,27 +703,36 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             // gap region in hyperbola
             continue;
         }
-        p11.next = p21;
-        p21.prev = p11;
-        p11.sign = -1;
-        p22.next = p12;
-        p12.prev = p22;
-        p22.sign = 1;
+        var ysum;
+        ysum = p11.py + p21.py;
+        if (ysum >= 0 && ysum <= csh2 && p11.finite && p21.finite) {
+            p11.next = p21;
+            p21.prev = p11;
+            p11.sign = -1;
+        } else {
+            starts.push(p21);
+        }
+        ysum = p22.py + p12.py;
+        if (ysum >= 0 && ysum <= csh2 && p22.finite && p12.finite) {
+            p22.next = p12;
+            p12.prev = p22;
+            p22.sign = 1;
+        } else {
+            starts.push(p12);
+        }
     }
+    pt = specialPoints[specialPoints.length - 1];
+    if (pt[0] != pt[1])
+        starts.push(pt[1]);
+    pt = specialPoints[0];
+    if (pt[0] !== pt[1] || (starts.length === 0 && pt[0].next))
+        starts.push(pt[0]);
     if (false && debug) {
         specialPoints.forEach(function(pair) {
             console.log("x = " + pair[0].px + ": y in " +
                         pair.map(function(pt) { return pt.py; }).join(", "));
         });
     }
-    var starts = [];
-    pt = specialPoints[0];
-    if (pt[0] !== pt[1])
-        starts.push(pt[0]);
-    pt = specialPoints[specialPoints.length - 1];
-    if (pt[0] != pt[1] || starts.length === 0)
-        starts.push(pt[1]);
-    var csh2 = csh * 2;
     if (debug) {
         Render2D.handleModifs(modifs, Render2D.conicModifs);
         Render2D.preDrawCurve();
@@ -726,18 +740,9 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     csctx.beginPath();
     for (i = 0; i < starts.length; ++i) {
         var pt0 = pt = starts[i];
-        var move = true;
+        csctx.moveTo(pt.px, pt.py);
         while (pt.next) {
-            var ysum = pt.py + pt.next.py;
-            if (ysum < 0 || ysum > csh2 || !pt.finite || !pt.next.finite) {
-                // segment is not visible.
-                move = true;
-            } else {
-                if (move)
-                    csctx.moveTo(pt.px, pt.py);
-                move = false;
-                refine(pt, pt.next, pt.sign, 0);
-            }
+            refine(pt, pt.next, pt.sign, 0);
             pt = pt.next;
             if (pt === pt0) {
                 // completed the cycle
