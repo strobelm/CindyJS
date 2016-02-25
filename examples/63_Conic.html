@@ -4,8 +4,6 @@
 		<meta charset="utf-8">
             <title>Cindy JS</title>
             <script type="text/javascript" src="../build/js/Cindy.js"></script>
-            <link rel="stylesheet" href="../css/cindy.css">
-
 
             </head>
 
@@ -24,6 +22,9 @@
 
         <canvas  id="CSCanvas" width=600 height=600 style="border:2px solid #000000"></canvas>
 
+        <div>
+          <button id="save">Write to console</button>
+        </div>
 
         <script type="text/javascript">
 
@@ -36,12 +37,40 @@
 		              {name:"Co", type:"ConicBy5", args:["A","B","C","D","E"],color:[0,0,1],alpha:1,size:1},
 //		     {name:"l", type:"Join", args:["A", "D"]}
                       ];
-            createCindy({canvasname:"CSCanvas",
+            var cdy=createCindy({canvasname:"CSCanvas",
                         movescript:"csmove",
                         grid:1,
                         snap:true,
                         geometry:gslp});
 
+            var cases = [
+                ["parabola", [0,0,1], [1,1,1], [2,4,1], [-2,4,1], [-1,1,1]],
+                ["hyperbola", [2,2,1], [1,4,1], [4,1,1], [-4,-1,1], [-1,-4,1]],
+                ["degen1", [0,4,1], [0,3,1], [0,-2,1], [5,0,1], [-6,0,1]],
+                ["degen2", [0,1,0.25], [0,1,0.3333333333333333], [0,1,-0.5], [1,0.23931623931623938,0.21367521367521372], [1,0,-0.16666666666666666]],
+                ["degen3", [0,1,0.25], [0.9999999999999999,-0.7826086956521738,-0.3623188405797101], [0,1,-0.5], [1,0,0.2], [1,0,-0.16666666666666666]],
+                ["degen?", [0,1,0.25], [0.9999999999999999,0.16666666666666666,0.09689922480620154], [0,1,-0.5], [1,0.23931623931623938,0.21367521367521372], [1,0,-0.16666666666666666]],
+            ];
+            var save = document.getElementById("save");
+            save.onclick = function() {
+                var s = cdy.saveState();
+                res = ['"?"'];
+                for (var i = 0; i < 5; ++i)
+                    res.push("[" + s.geometry[i].pos.join(",") + "]");
+                console.log("[" + res.join(", ") + "]");
+            };
+            cases.forEach(function(c) {
+                var btn = document.createElement("button");
+                btn.innerHTML = c[0];
+                save.parentNode.insertBefore(btn, save);
+                btn.onclick = function() {
+                    var cmd = "";
+                    for (var i = 0; i < 5; ++i)
+                        cmd += gslp[i].name + ".homog = [" +
+                            c[i + 1].join(", ") + "];";
+                    cdy.evokeCS(cmd);
+                };
+            });
         </script>
 
 
