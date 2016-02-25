@@ -740,6 +740,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     csctx.beginPath();
     for (i = 0; i < starts.length; ++i) {
         var pt0 = pt = starts[i];
+        if (!pt.next) continue;
         csctx.moveTo(pt.px, pt.py);
         while (pt.next) {
             refine(pt, pt.next, pt.sign, 0);
