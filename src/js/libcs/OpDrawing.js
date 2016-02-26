@@ -696,7 +696,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     while (specialPoints.length && !(specialPoints[0][0].px >= 0))
         specialPoints.shift();
     while (specialPoints.length &&
-           !(specialPoints[specialPoints.length - 1][0].px <= csw))
+        !(specialPoints[specialPoints.length - 1][0].px <= csw))
         specialPoints.pop();
     /*jshint +W018 */
 
@@ -741,7 +741,9 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     if (false && debug) {
         specialPoints.forEach(function(pair) {
             console.log("x = " + pair[0].px + ": y in " +
-                        pair.map(function(pt) { return pt.py; }).join(", "));
+                pair.map(function(pt) {
+                    return pt.py;
+                }).join(", "));
         });
     }
     if (debug) {
