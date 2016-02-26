@@ -396,7 +396,9 @@ evaluator.drawconic$1 = function(args, modifs) {
 // or two pairs [x, y] satisfying ax^2 + bxy + cy^2 = 0
 function solveRealQuadraticHomog(a, b, c) {
     var d = b * b - 4 * a * c;
+    /*jshint -W018 */
     if (!(d >= 0)) return null; // also return null if d is NaN
+    /*jshint +W018 */
     var r = Math.sqrt(d);
     if (b > 0) r = -r;
     return [[r - b, 2 * a], [2 * c, r - b]];
@@ -499,7 +501,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                 (c11 * mx + c01) * gy +
                 2 * c20 * gx * mx + c10 * gx,
                 (c02 * my + (c11 * mx + c01)) * my +
-                (c20 * mx + c10) * mx + c00)
+                (c20 * mx + c10) * mx + c00);
             if (sol) {
                 var x1 = mx + sol[0] * gx;
                 var y1 = my + sol[0] * gy;
@@ -575,7 +577,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     // Special case: if (0, 1, 0), i.e. the far-point (FP) in the Y direction,
     // lies on the conic, then we only have a single finite y coordinate for
     // every x coordinate. We need to deal with this in several places.
-    var containsYFP = (Math.abs(c02) < eps)
+    var containsYFP = (Math.abs(c02) < eps);
 
     var i, j, x, y, y2, pt, sol;
 
@@ -686,11 +688,13 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     // REALLY close together, leading to inconsistent ordering.
 
     // Drop out-of-canvas portions, including x = NaN
+    /*jshint -W018 */
     while (specialPoints.length && !(specialPoints[0][0].px >= 0))
         specialPoints.shift();
     while (specialPoints.length &&
            !(specialPoints[specialPoints.length - 1][0].px <= csw))
         specialPoints.pop();
+    /*jshint +W018 */
 
     if (specialPoints.length < 2) return; // nothing to draw
     specialPoints[0].sort(sortByY);
@@ -725,7 +729,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
         }
     }
     pt = specialPoints[specialPoints.length - 1];
-    if (pt[0] != pt[1])
+    if (pt[0] !== pt[1])
         starts.push(pt[1]);
     pt = specialPoints[0];
     if (pt[0] !== pt[1] || (starts.length === 0 && pt[0].next))
@@ -742,7 +746,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     }
     csctx.beginPath();
     for (i = 0; i < starts.length; ++i) {
-        var pt0 = pt = starts[i];
+        var pt0 = (pt = starts[i]);
         if (!pt.next) continue;
         csctx.moveTo(pt.px, pt.py);
         while (pt.next) {
