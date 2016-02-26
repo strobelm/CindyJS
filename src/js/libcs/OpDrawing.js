@@ -683,7 +683,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     // REALLY close together, leading to inconsistent ordering.
 
     // Drop out-of-canvas portions, including x = NaN
-    while (!(specialPoints.length && specialPoints[0][0].px >= 0))
+    while (specialPoints.length && !(specialPoints[0][0].px >= 0))
         specialPoints.shift();
     while (specialPoints.length &&
            !(specialPoints[specialPoints.length - 1][0].px <= csw))
