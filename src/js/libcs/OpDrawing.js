@@ -488,8 +488,8 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
         if (!(isFinite(cx) && isFinite(cy))) // Probably already linear
             return csctx.lineTo(pt2.px, pt2.py);
         var area = Math.abs(
-            pt1.px * cy + cx * pt2.py + pt2.px * pt1.py
-            - pt2.px * cy - cx * pt1.py - pt1.px * pt2.py);
+            pt1.px * cy + cx * pt2.py + pt2.px * pt1.py -
+            pt2.px * cy - cx * pt1.py - pt1.px * pt2.py);
         if (area > 1 && depth < 10) {
             var mx = 0.5 * cx + 0.25 * (pt1.px + pt2.px);
             var my = 0.5 * cy + 0.25 * (pt1.py + pt2.py);
@@ -535,7 +535,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
                     refine(pt3, pt2, sign, depth + 1);
                     return;
                 }
-            }       
+            }
         }
         csctx.quadraticCurveTo(cx, cy, pt2.px, pt2.py);
     }
