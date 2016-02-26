@@ -657,10 +657,11 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
             specialPoints.push([mkp(x, csh), mkp(x, y2)]);
         }
 
-    for (i = 0; i < specialPoints.length; ++i) {
-        for (j = 0; j < 2; ++j) {
-            pt = specialPoints[i][j];
-            if (debug && pt.finite) {
+    if (debug) {
+        for (i = 0; i < specialPoints.length; ++i) {
+            for (j = 0; j < 2; ++j) {
+                pt = specialPoints[i][j];
+                if (!pt.finite) continue;
                 csctx.strokeStyle = "rgb(255,0,0)";
                 csctx.lineWidth = 3;
                 csctx.beginPath();
