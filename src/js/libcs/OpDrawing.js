@@ -401,7 +401,10 @@ function solveRealQuadraticHomog(a, b, c) {
     /*jshint +W018 */
     var r = Math.sqrt(d);
     if (b > 0) r = -r;
-    return [[r - b, 2 * a], [2 * c, r - b]];
+    return [
+        [r - b, 2 * a],
+        [2 * c, r - b]
+    ];
 }
 
 // Returns either null (if solutions would be complex or NaN)
@@ -680,6 +683,7 @@ eval_helper.drawconic = function(conicMatrix, modifs) {
     function sortByX(a, b) {
         return a[0].px - b[0].px;
     }
+
     function sortByY(a, b) {
         return a.py - b.py;
     }
