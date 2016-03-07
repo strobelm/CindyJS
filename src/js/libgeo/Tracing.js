@@ -140,7 +140,7 @@ function movepointscr(mover, pos, type) {
 /*
  * traceMover moves mover from current param to param for pos along a complex detour.
  */
-function traceMover(mover, pos, type) {
+function traceMover(mover, pos, type, knownTargetParam) {
     if (traceLog && traceLog.currentMouseAndScripts) {
         traceLog.currentMover = [];
     }
@@ -155,7 +155,7 @@ function traceMover(mover, pos, type) {
     stateInIdx = mover.stateIdx;
     var originParam = opMover.getParamFromState(mover);
     stateInIdx = stateOutIdx = mover.stateIdx;
-    var targetParam = opMover.getParamForInput(mover, pos, type);
+    var targetParam = knownTargetParam || opMover.getParamForInput(mover, pos, type);
     //console.log("Tracing from " + niceprint(originParam) + " to " + niceprint(targetParam));
     var t = last + step;
     while (last !== t) {
