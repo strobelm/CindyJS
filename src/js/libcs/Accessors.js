@@ -231,12 +231,8 @@ Accessor.setField = function(geo, field, value) {
         movepointscr(geo, dir, "dir");
     }
     if (geo.kind === "C") {
-        if (field === "radius" && geo.matrix.usage === "Circle" && value.ctype === "number") {
-
-            stateContinueFromHere();
-            tracingFailed = false;
-            traceMover(geo, null, "script", value);
-            stateContinueFromHere();
+        if (field === "radius" && geo.type === "CircleMr" && value.ctype === "number") {
+            movepointscr(geo, value, "radius");
         }
     }
     if (geo.behavior) {
