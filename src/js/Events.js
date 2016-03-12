@@ -213,8 +213,9 @@ function setuplisteners(canvas, data) {
             images[fname] = img;
 
         }
+        updateCindy();
 
-    }, true);
+    });
 
 
     function touchMove(e) {
