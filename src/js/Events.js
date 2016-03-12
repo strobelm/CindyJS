@@ -214,7 +214,7 @@ function setuplisteners(canvas, data) {
 
         }
 
-    });
+    }, true);
 
 
     function touchMove(e) {
