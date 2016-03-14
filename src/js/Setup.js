@@ -128,7 +128,7 @@ function createCindyNow() {
     var scripts = ["move", "keydown",
         "mousedown", "mouseup", "mousedrag",
         "init", "tick", "draw",
-        "simulationstep", "simulationstart", "simulationstop"
+        "simulationstep", "simulationstart", "simulationstop", "ondrop"
     ];
     var scriptconf = data.scripts,
         scriptpat = null;
