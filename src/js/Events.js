@@ -382,9 +382,8 @@ function cs_simulationstop(e) {
 
 
 function cs_onDrop(e) {
-    debugger;
     evaluate(cscompiled.ondrop);
-    updateCindy();
+    startit();
 }
 
 
