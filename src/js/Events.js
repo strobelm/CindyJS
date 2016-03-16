@@ -213,7 +213,10 @@ function setuplisteners(canvas, data) {
             // add file to image array
             images[fname] = img;
 
+
         }
+
+        lastDropped = {"value": img, "ctype": "image", "fileName" : fname};
 
         // run ondrop scripts 
         cs_onDrop();
@@ -383,7 +386,6 @@ function cs_simulationstop(e) {
 
 function cs_onDrop(e) {
     evaluate(cscompiled.ondrop);
-    startit();
 }
 
 

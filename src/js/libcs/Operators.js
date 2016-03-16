@@ -4339,3 +4339,7 @@ evaluator.setsimulationquality$1 = function(args, modifs) {
     }
     return nada;
 };
+
+evaluator.lastdropped$0 = function(){
+    return lastDropped;
+};
