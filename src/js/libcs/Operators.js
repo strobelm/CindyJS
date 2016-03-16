@@ -4340,6 +4340,30 @@ evaluator.setsimulationquality$1 = function(args, modifs) {
     return nada;
 };
 
-evaluator.lastdropped$0 = function(){
-    return lastDropped;
+evaluator.lastdropped$0 = function() {
+    if (lastDropped) {
+        return lastDropped;
+    }
+    return nada;
+};
+
+evaluator.lastdroppedname$0 = function() {
+    if (lastDropped && typeof(lastDropped.filename) === "string") {
+        return {
+            "ctype": "string",
+            value: lastDropped.filename
+        };
+    }
+    return nada;
+};
+
+
+evaluator.lastdroppedtype$0 = function() {
+    if (lastDropped && typeof(lastDropped.ctype) === "string") {
+        return {
+            "ctype": "string",
+            value: lastDropped.ctype
+        };
+    }
+    return nada;
 };
