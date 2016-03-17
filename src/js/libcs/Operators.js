@@ -4342,7 +4342,7 @@ evaluator.setsimulationquality$1 = function(args, modifs) {
 
 evaluator.lastdropped$0 = function() {
     if (lastDropped) {
-        return lastDropped;
+        return List.turnIntoCSList(lastDropped);
     }
     return nada;
 };
