@@ -4390,7 +4390,6 @@ evaluator.parseCSV$1 = function(args, modifs){
         return NaN;
     }
 
-    debugger;
     var str = evaluateAndVal(args[0]).value;
     var parsed = window.Papa.parse(str);
     var data = parsed.data;
