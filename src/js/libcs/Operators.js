@@ -4341,6 +4341,7 @@ evaluator.setsimulationquality$1 = function(args, modifs) {
 };
 
 evaluator.lastdropped$0 = function() {
+    console.log("ldropped", lastDropped);
     if (lastDropped) {
         return List.turnIntoCSList(lastDropped);
     }
