@@ -618,6 +618,94 @@ geoOps.PointOnSegment.updatePosition = function(el) {
 };
 geoOps.PointOnSegment.stateSize = 2;
 
+geoOps._helper.PointOnArcCr = function(A,B,C,D,O){
+    var cr = List.crossratio3harm(A,B,C,D,O);
+    var m = cr.value[0];
+    var n = cr.value[1];
+    if (!CSNumber._helper.isAlmostZero(m)) {
+        n = CSNumber.div(n, m);
+        m = CSNumber.real(1);
+    } else {
+        m = CSNumber.div(m, n);
+        n = CSNumber.real(1);
+    }
+    return [m,n];
+};
+
+geoOps.PointOnArc = {};
+geoOps.PointOnArc.kind = "P";
+geoOps.PointOnArc.signature = ["C"];
+geoOps.PointOnArc.isMovable = true;
+geoOps.PointOnArc.initialize = function(el) {
+    var pos = geoOps._helper.initializePoint(el);
+    var param = geoOps.PointOnArc.getParamForInput(el, pos);
+    putStateComplexVector(param);
+};
+geoOps.PointOnArc.getParamForInput = function(el, pos) {
+    var arc = csgeo.csnames[el.args[0]];
+    var conic = arc.matrix;
+
+    var cen = geoOps._helper.CenterOfConic(conic);
+    cen = List.normalizeMax(cen);
+    var diam = List.cross(cen, pos);
+    var isec = geoOps._helper.IntersectLC(diam, arc.matrix);
+
+    var crA = geoOps._helper.PointOnArcCr(arc.startPoint, arc.endPoint,
+        arc.viaPoint, isec[0], List.ii);
+    var prodA = CSNumber.mult(crA[0], crA[1]);
+    if (crA[0].value.real < 0) prodA = CSNumber.neg(prodA);
+
+    var crB = geoOps._helper.PointOnArcCr(arc.startPoint, arc.endPoint,
+        arc.viaPoint, isec[1], List.ii);
+    var prodB = CSNumber.mult(crB[0], crB[1]);
+    if (crB[0].value.real < 0) prodB = CSNumber.neg(prodB);
+
+    
+    var erg;
+    if(prodA.value.real > 0 && prodB.value.real > 0){
+        if(el.pos){
+            erg = isec[0];
+        }
+        else{
+        var d1 = List.projectiveDistMinScal(el.homog, isec[0]);
+        var d2 = List.projectiveDistMinScal(el.homog, isec[1]);
+
+        erg = d1 < d2 ? isec[0] : isec[1];
+        }
+    }
+    else if (prodA.value.real < 0 && prodB.value.real < 0){
+    var d1 = List.projectiveDistMinScal(pos, arc.startPoint);
+    var d2 = List.projectiveDistMinScal(pos, arc.endPoint);
+
+    erg = d1 < d2 ? arc.startPoint : arc.endPoint;
+    }
+
+    else if(prodA.value.real < 0){ 
+        erg = isec[1];
+    }
+    else //(prodB.value.real < 0)
+    {
+        erg = isec[0];
+    }
+
+
+    return erg;
+};
+geoOps.PointOnArc.getParamFromState = function(el) {
+    return getStateComplexVector(3);
+};
+geoOps.PointOnArc.putParamToState = function(el, param) {
+    putStateComplexVector(param);
+};
+geoOps.PointOnArc.updatePosition = function(el) {
+    var param = getStateComplexVector(3);
+    putStateComplexVector(param); // copy param
+    var homog = param;
+    homog = List.normalizeMax(homog);
+    console.log(niceprint(homog));
+    el.homog = General.withUsage(homog, "Point");
+};
+geoOps.PointOnArc.stateSize = 6;
 
 geoOps._helper.CenterOfConic = function(c) {
     // The center is the pole of the dual conic of the line at infinity
