@@ -110,6 +110,13 @@ General.add = function(v0, v1) {
     if (v0.ctype === 'list' && v1.ctype === 'list') {
         return List.add(v0, v1);
     }
+    if (v0.ctype === 'geo' && v1.ctype === 'geo') {
+        var va = v0.value;
+        var vb = v1.value;
+        if (va.kind === 'P' && vb.kind === 'P') {
+            return List.add(List.dehom(va.homog), List.dehom(vb.homog));
+        }
+    }
     return nada;
 };
 
