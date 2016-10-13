@@ -586,28 +586,18 @@ geoOps.OtherPointOnCircle.updatePosition = function(el) {
 
 
 // start and end assumed to be normalized at once!
-geoOps._helper.projectPointToSegmentCR = function(seg, pos, infseg) {
+geoOps._helper.projectPointToSegmentCR = function(seg, pos, midpoint) {
     var line = seg.homog;
     var tt = List.turnIntoCSList([line.value[0], line.value[1], CSNumber.zero]);
-    var farpoint = List.sub(seg.startpos, seg.endpos);
-    var cr = List.crossratio3(
-        farpoint, seg.startpos, seg.endpos, pos, tt);
+    var mid = midpoint || List.add(seg.startpos, seg.endpos);
+    var cr = List.crossratio3harm(
+        seg.startpos, seg.endpos, mid, pos, tt);
+    cr = List.normalizeMax(cr);
 
-    //handle case if segment passes through infinity
-    if (infseg) {
-        // probably needs tracing 
-        if ((cr.value.real > 0) && (cr.value.real <= 0.5))
-            cr = CSNumber.complex(0, cr.value.imag);
-        if ((cr.value.real < 1) && (cr.value.real > 0.5))
-            cr = CSNumber.complex(1, cr.value.imag);
-    }
-    // normal case
-    else {
-        if (cr.value.real < 0)
-            cr = CSNumber.complex(0, cr.value.imag);
-        if (cr.value.real > 1)
-            cr = CSNumber.complex(1, cr.value.imag);
-    }
+    var cr0 = cr.value[0];
+    if(cr0.value.real < 0) cr0.value.real = 0;
+    var cr1 = cr.value[1];
+    if(cr1.value.real < 0) cr1.value.real = 0;
 
     return cr;
 };
@@ -615,8 +605,8 @@ geoOps._helper.projectPointToSegmentCR = function(seg, pos, infseg) {
 geoOps._helper.projectPointToSegment = function(seg, param) {
     var start = seg.startpos;
     var end = seg.endpos;
-    var far = List.sub(end, start);
-    var homog = List.add(start, List.scalmult(param, far));
+    var mid = List.add(end, start);
+    var homog = List.add(List.scalmult(param.value[0],start), List.scalmult(param.value[1], end));
     return List.normalizeMax(homog);
 };
 
@@ -627,27 +617,29 @@ geoOps.PointOnSegment.isMovable = true;
 geoOps.PointOnSegment.initialize = function(el) {
     var pos = geoOps._helper.initializePoint(el);
     var cr = geoOps.PointOnSegment.getParamForInput(el, pos);
-    putStateComplexNumber(cr);
+
+    putStateComplexVector(cr);
 };
 geoOps.PointOnSegment.getParamForInput = function(el, pos) {
     var seg = csgeo.csnames[el.args[0]];
     return geoOps._helper.projectPointToSegmentCR(seg, pos);
 };
 geoOps.PointOnSegment.getParamFromState = function(el) {
-    return getStateComplexNumber();
+    return getStateComplexVector(2);
 };
 geoOps.PointOnSegment.putParamToState = function(el, param) {
-    putStateComplexNumber(param);
+
+    putStateComplexVector(param);
 };
 geoOps.PointOnSegment.updatePosition = function(el) {
-    var param = getStateComplexNumber();
-    putStateComplexNumber(param); // copy parameter
+    var param = getStateComplexVector(2);
+    putStateComplexVector(param);
     var seg = csgeo.csnames[el.args[0]];
 
     var homog = geoOps._helper.projectPointToSegment(seg, param);
     el.homog = General.withUsage(homog, "Point");
 };
-geoOps.PointOnSegment.stateSize = 2;
+geoOps.PointOnSegment.stateSize = 4;
 
 geoOps._helper.PointOnArcCr = function(arc, P) {
     var A = arc.startPoint;
