@@ -421,6 +421,16 @@ evaluator.genList = function(args, modifs) { //VARIADIC!
     return List.turnIntoCSList(args.map(evaluate));
 };
 
+evaluator.genJSON= function(args, modifs) {
+    var result = {};
+    var mapped = args.map(evaluate);
+    // convert array to object
+    mapped.forEach(function(obj){
+        for(var key in obj) result[key] = obj[key];
+        });
+    return result;
+};
+
 
 eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher obs das so tut
     var lhs = data.args[0];
@@ -4897,3 +4907,13 @@ evaluator.load$3 = function(args, modifs) {
     }
 
 };
+
+
+function infix_json(args, modifs) {
+    var erg = {};
+    var a0 = args[0];
+    var a1 = args[1];
+ 
+    erg[a0.value] = evaluate(a1);
+    return erg;
+}

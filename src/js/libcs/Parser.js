@@ -545,7 +545,13 @@ function parseRec(tokens, closing) {
                                 ' arguments', tok.start);
                         }
                     } else if (pair === '{}') {
-                        throw ParseError('{…} reserved for future use', tok.start);
+                        seq.push({
+                            ctype: 'function',
+                            oper: 'genJSON',
+                            args: lst,
+                            modifs: {},
+                        });
+                        //throw ParseError('{…} reserved for future use', tok.start);
                     } else if (pair !== '[]' && lst.length === 1) {
                         seq.push({
                             ctype: 'paren',

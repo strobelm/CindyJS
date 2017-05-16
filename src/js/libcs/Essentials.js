@@ -3,7 +3,7 @@
 var myfunctions = {};
 
 var infixmap = {};
-infixmap[':'] = operator_not_implemented(':');
+infixmap[':'] = infix_json;
 // infixmap['.'] not needed thanks to definitionDot special handling
 infixmap['°'] = postfix_numb_degree;
 infixmap['_'] = infix_take;
