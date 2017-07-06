@@ -2,11 +2,11 @@
 uniform float sphereMode;
 
 // Surface position in view space
-varying vec3 vViewSpacePos;
+in vec3 vViewSpacePos;
 
-varying vec3 vViewSpaceCenter;
+in vec3 vViewSpaceCenter;
 
-varying float vRadius;
+in float vRadius;
 
 // ----------------------------------------------------------------------------
 // Fragment shader for sphere rendering

@@ -1,7 +1,7 @@
 precision highp float;
 
-attribute vec4 aPos;
-varying vec2 vPos;
+in vec4 aPos;
+out vec2 vPos;
 
 void main() {
   vPos = aPos.zw;

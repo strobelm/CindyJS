@@ -2,19 +2,19 @@ uniform mat4 uProjectionMatrix;
 
 uniform mat4 uModelViewMatrix;
 
-attribute vec4 aCenter;
+in vec4 aCenter;
 
-attribute vec4 aColor;
+in vec4 aColor;
 
-attribute vec4 aRelativeShininessRadius;
+in vec4 aRelativeShininessRadius;
 
-varying vec3 vViewSpacePos;
+out vec3 vViewSpacePos;
 
-varying vec3 vViewSpaceCenter;
+out vec3 vViewSpaceCenter;
 
-varying vec4 vColor;
+out vec4 vColor;
 
-varying float vRadius;
+out float vRadius;
 
 // ----------------------------------------------------------------------------
 // Vertex shader for sphere rendering
@@ -27,7 +27,7 @@ void main() {
   vec3 right = normalize(cross(dir, vec3(0, 1, 0)));
   vec3 up = normalize(cross(right, dir));
 
-  // Copy attributes to varyings for use in the fragment shader
+  // Copy ins to outs for use in the fragment shader
   vColor = aColor;
   vShininess = aRelativeShininessRadius.z;
   vRadius = aRelativeShininessRadius.w;

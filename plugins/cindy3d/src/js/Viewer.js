@@ -24,6 +24,10 @@ function Viewer(name, ccOpts, opts, addEventListener) {
     onContextCreationError, false);
   /** @type {WebGLRenderingContext} */
   let gl = /** @type {WebGLRenderingContext} */(
+    canvas.getContext("webgl2", ccOpts));
+  if (gl) console.log("Loaded Webgl 2.0!");
+  if (!gl)
+  gl = /** @type {WebGLRenderingContext} */(
     canvas.getContext("webgl", ccOpts));
   if (!gl)
     gl = /** @type {WebGLRenderingContext} */(
@@ -40,15 +44,16 @@ function Viewer(name, ccOpts, opts, addEventListener) {
   this.width = canvas.width;
   this.height = canvas.height;
   this.gl = gl;
-  if (/[?&]frag_depth=0/.test(window.location.search)) {
-    this.glExtFragDepth = null;
-  }
-  else {
+//  if (/[?&]frag_depth=0/.test(window.location.search)) {
+//    this.glExtFragDepth = null;
+//  }
+//  else {
     this.glExtFragDepth = gl.getExtension("EXT_frag_depth");
+//    this.glExtFragDepth =  gl.gl_FragDepth;
     if (!this.glExtFragDepth)
       console.log("EXT_frag_depth extension not supported, " +
                   "will render with reduced quality.");
-  }
+ // }
 
   this.ssFactor = 1;
   if (opts && opts.superSample) {

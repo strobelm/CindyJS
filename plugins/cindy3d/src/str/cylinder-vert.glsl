@@ -2,25 +2,25 @@ uniform mat4 uProjectionMatrix;
 
 uniform mat4 uModelViewMatrix;
 
-attribute vec4 aPoint1;
+in vec4 aPoint1;
 
-attribute vec4 aPoint2;
+in vec4 aPoint2;
 
-attribute vec4 aColor;
+in vec4 aColor;
 
-attribute vec4 aRelativeRadius;
+in vec4 aRelativeRadius;
 
-attribute vec4 aShininess;
+in vec4 aShininess;
 
-varying vec3 vPoint1;
+out vec3 vPoint1;
 
-varying vec3 vPoint2;
+out vec3 vPoint2;
 
-varying vec3 vPos;
+out vec3 vPos;
 
-varying vec4 vColor;
+out vec4 vColor;
 
-varying float vRadius;
+out float vRadius;
 
 // ----------------------------------------------------------------------------
 // Vertex shader for cylinder rendering
@@ -46,7 +46,7 @@ void main() {
   vPos = aRelativeRadius.w*(mat3(dir, d2, d3)*aRelativeRadius.xyz)
     + 0.5*((vPoint2 + vPoint1) + aRelativeRadius.x*(vPoint2 - vPoint1));
 
-  // Copy attributes to varyings for use in the fragment shader
+  // Copy ins to outs for use in the fragment shader
   vColor = aColor;
   vShininess = aShininess.x;
   vRadius = aRelativeRadius.w;

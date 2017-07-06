@@ -205,17 +205,19 @@ PrimitiveRenderer.prototype.recompileShader = function(viewer) {
   if (this.shaderProgram !== null)
     this.shaderProgram.dispose(gl);
   let vs = [
+    "#version 300 es",
     "precision highp float;",
-    "varying float vShininess;",
+    "out float vShininess;",
     this.vertexShaderCode
   ].join("\n");
   let fs = [
+    "#version 300 es",
     "precision highp float;",
     viewer.lightingCode,
     this.fragmentShaderCode
   ].join("\n");
-  if (this.useFragDepth && viewer.glExtFragDepth)
-    fs = "#extension GL_EXT_frag_depth : enable\n" + fs;
+//  if (this.useFragDepth && viewer.glExtFragDepth)
+//    fs = "#extension GL_EXT_frag_depth : enable\n" + fs;
   this.shaderProgram = new ShaderProgram(gl, vs, fs);
   let sp = this.shaderProgram.handle;
   this.attribLocations = this.attributes.map(a => gl.getAttribLocation(sp, a));

@@ -1,13 +1,13 @@
 uniform mat4 uProjectionMatrix;
 uniform mat4 uModelViewMatrix;
 
-attribute vec4 aPos;
-attribute vec4 aNormalAndShininess;
-attribute vec4 aColor;
+in vec4 aPos;
+in vec4 aNormalAndShininess;
+in vec4 aColor;
 
-varying vec4 vPos;
-varying vec4 vNormal;
-varying vec4 vColor;
+out vec4 vPos;
+out vec4 vNormal;
+out vec4 vColor;
 
 void main() {
   vPos = uModelViewMatrix * aPos;

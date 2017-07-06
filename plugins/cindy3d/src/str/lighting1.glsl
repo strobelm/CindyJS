@@ -1,8 +1,8 @@
 uniform vec3 uAmbient;
 uniform mat4 uModelViewMatrix;
 
-varying vec4 vColor;
-varying float vShininess;
+in vec4 vColor;
+in float vShininess;
 
 vec4 gColor;
 vec3 gPos;

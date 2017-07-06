@@ -4,6 +4,7 @@
 // position     position vector to be shaded
 // normal       normal vector at the given position
 // ----------------------------------------------------------------------------
+out vec4 FragColorLight;
 void shade(in vec3 position, in vec3 normal) {
   // Reset global colors to black as in an unlit scene
   gAccumDiffuse = vec3(0.0);
@@ -23,5 +24,5 @@ void shade(in vec3 position, in vec3 normal) {
     + gAccumSpecular;
 
   color = clamp(color, 0.0, 1.0);
-  gl_FragColor = vec4(color.xyz, gColor.w);
+  FragColorLight = vec4(color.xyz, gColor.w);
 }

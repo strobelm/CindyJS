@@ -1,5 +1,5 @@
-varying vec4 vPos;
-varying vec4 vNormal;
+out vec4 vPos;
+out vec4 vNormal;
 
 uniform bool uTextured;
 uniform sampler2D uTexture;

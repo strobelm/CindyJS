@@ -1,10 +1,10 @@
-varying vec3 vPoint1;
+out vec3 vPoint1;
 
-varying vec3 vPoint2;
+out vec3 vPoint2;
 
-varying vec3 vPos;
+out vec3 vPos;
 
-varying float vRadius;
+out float vRadius;
 
 vec3 endcaps(in float mu, inout vec3 pos) {
   vec3 center;
