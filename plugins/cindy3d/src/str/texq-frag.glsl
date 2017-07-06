@@ -1,9 +1,10 @@
+#version 300 es
 precision highp float;
 
 uniform sampler2D uTexture;
-out vec2 vPos;
+in vec2 vPos;
 
-out texture2D FragColor;
+out vec4 FragColor;
 void main() {
-  FragColor = texture2D(uTexture, vPos);
+  FragColor = texture(uTexture, vPos);
 }
