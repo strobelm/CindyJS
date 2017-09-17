@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Cindy JS Example</title>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../build/js/CindyJS.css">
+<script type="text/javascript" src="../build/js/Cindy.js"></script>
+<script id="csinit" type="text/x-cindyscript">
+
+// Initialization code, executed once up front.
+
+</script>
+<script id="csdraw" type="text/x-cindyscript">
+draw((1,0),size->10,noborder->true);
+draw((1,1),size->10,noborder->false);
+draw((5,1),size->10,noborder->"test");
+// Drawing code, executed whenever the canvas gets redrawn.
+
+</script>
+<script type="text/javascript">
+
+var cdy = CindyJS({ // See ref/createCindy documentation for details.
+  ports: [{id: "CSCanvas", width: 500, height: 500}],
+  scripts: "cs*",
+  language: "en",
+  defaultAppearance: {
+    // See GeoBasics.js for possible attributes.
+  },
+  geometry: [
+    {name:"A", type:"Free", pos:[-2,0], noborder:true},
+    {name:"B", type:"Free", pos:[-2,-1], noborder:false},
+    {name:"C", type:"Free", pos:[-5,-1], noborder:"test"},
+    // For allowed types, see GeoOps.js.
+    // For allowed properties, see csinit in GeoBasics.js.
+  ] // End of geometry array.
+});
+
+// Remove all comments after adjusting this template for your use case.
+
+</script>
+</head>
+
+<body style="font-family:Arial;">
+  <div id="CSCanvas" style="border:2px solid black"></div>
+</body>
+
+</html>

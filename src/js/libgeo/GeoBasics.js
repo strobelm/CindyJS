@@ -10,6 +10,7 @@ defaultAppearance.overhangSeg = 1;
 defaultAppearance.dimDependent = 0.7;
 defaultAppearance.fontFamily = "sans-serif";
 defaultAppearance.textsize = 20; // Cinderella uses 12 by default
+defaultAppearance.noborder = false;
 
 defaultAppearance.lineHeight = 1.45;
 /* The value of 1.45 for the line height agrees reasonably well with
@@ -91,6 +92,9 @@ function pointDefault(el) {
     }
     if (el.alpha === undefined) el.alpha = defaultAppearance.alpha;
     el.alpha = CSNumber.real(el.alpha);
+
+    if (el.noborder === undefined) el.noborder = defaultAppearance.noborder;
+    el.noborder = General.bool(el.noborder);
 
     if (el.drawtrace) {
         setupTraceDrawing(el);
