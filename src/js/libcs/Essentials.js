@@ -123,6 +123,14 @@ function niceprint(a) {
     if (a.ctype === 'image') {
         return "IMAGE";
     }
+    if (a.ctype === 'json') {
+        var erg = "{";
+        for (var val in a.value){
+            erg = erg + "'" + String(val) + "'" + " : " + niceprint(evaluate(a.value[val])) + ",";
+        }
+        erg = erg.slice(0,erg.length-1) + "}";
+        return erg;
+    }
 
 
     return "_?_";
