@@ -421,14 +421,17 @@ evaluator.genList = function(args, modifs) { //VARIADIC!
     return List.turnIntoCSList(args.map(evaluate));
 };
 
-evaluator.genJSON= function(args, modifs) {
+evaluator.genJSON = function(args, modifs) {
     var val = {};
     var mapped = args.map(evaluate);
     // convert array to object
-    mapped.forEach(function(obj){
-        for(var key in obj) val[key] = obj[key];
-        });
-    return {ctype: "json", value: val};
+    mapped.forEach(function(obj) {
+        for (var key in obj) val[key] = obj[key];
+    });
+    return {
+        ctype: "json",
+        value: val
+    };
 };
 
 
@@ -4916,7 +4919,7 @@ function infix_json(args, modifs) {
     var erg = {};
     var a0 = args[0];
     var a1 = args[1];
- 
+
     erg[a0.value] = evaluate(a1);
     return erg;
 }
