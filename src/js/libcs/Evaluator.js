@@ -29,6 +29,10 @@ function evaluate(a) {
         if (obj.ctype === "list") {
             return List.getField(obj, a.key);
         }
+        if (obj.ctype === "json"){
+            var val = obj.value[a.key];
+            return val ? val : nada;
+        }
         return nada;
     }
     return a;

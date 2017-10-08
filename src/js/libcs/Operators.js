@@ -422,13 +422,13 @@ evaluator.genList = function(args, modifs) { //VARIADIC!
 };
 
 evaluator.genJSON= function(args, modifs) {
-    var result = {};
+    var val = {};
     var mapped = args.map(evaluate);
     // convert array to object
     mapped.forEach(function(obj){
-        for(var key in obj) result[key] = obj[key];
+        for(var key in obj) val[key] = obj[key];
         });
-    return result;
+    return {ctype: "json", value: val};
 };
 
 
