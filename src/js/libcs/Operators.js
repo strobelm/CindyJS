@@ -467,6 +467,9 @@ eval_helper.assigndot = function(data, what) {
     if (where.ctype === 'geo' && field) {
         Accessor.setField(where.value, field, evaluateAndVal(what));
     }
+    if (where.ctype === 'json' && field) {
+        where.value[field] = evaluate(what);
+    }
 
     return nada;
 
