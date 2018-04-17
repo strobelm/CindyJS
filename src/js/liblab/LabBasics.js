@@ -1,5 +1,19 @@
 var lab = {};
 
+var ode23 = {};
+
+
+ode23.a = [
+    [],
+    [1/2],
+    [0, 3/4],
+    [2/9, 1/3, 4/9]
+];
+ode23.dt = [0, 1 / 2, 3 / 4, 1];
+ode23.b1 = [2/9, 1/3, 4/9, 0];
+ode23.b2 = [7/24, 1/4, 1/3, 1/8];
+ode23.size = 4; //is this 5, 6 or 7
+
 var doPri45 = {};
 
 
@@ -42,7 +56,7 @@ fehlberg78.size = 13;
 
 
 //var rk = fehlberg78;
-var rk = doPri45;
+var rk = ode23;
 var behaviors;
 var masses = [];
 var springs = [];
