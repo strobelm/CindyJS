@@ -12,53 +12,61 @@
 
 </script>
 <script id="csdraw" type="text/x-cindyscript">
-lst = [1,2,3];
-println("=== lists ===");
-lst = [1,2,3];
-lst:"age"=17;
-lst:"list"=lst;
-lst:"pt" = B;
-println(lst:"age");
-println(lst:"list");
-println(lst:"pt");
-println(lst:"age");
+//lst = [1,2,3];
+//println("=== lists ===");
+//lst = [1,2,3];
+//lst:"age"=17;
+//lst:"list"=lst;
+//lst:"pt" = B;
+//println(lst:"age");
+//println(lst:"list");
+//println(lst:"pt");
+//println(lst:"age");
+//
+//println(lst:"undef");
+//println(lst:pii);
+//
+//lst:12.3 = 4.56;
+//println(lst:"12.3");
+//
+//
+//println("=== geo ===");
+//A:"age"=17;
+//A:"list"=lst;
+//A:"pt" = B;
+//println(A:"age");
+//println(A:"list");
+//println(A:"pt");
+//
+//println(A:"undef");
+//
+//println("debug tests");
+//a = [];
+//a:1 = 1;
+//a:(1+i) = 2;
+//errc(a:1); //gives 2, but I would expect 1 (and so does Cinderella)
+//
+//a = [];
+//a:[1,2,3] = 10;
+//a:[3,4,5] = 34;
+//errc(a:[1,2,3]); //gives 34, Cinderella gives 10
+//
+//// assigntake
+//a = [1,2,3];
+//a:"bla" = 23;
+//
+//errc(a:"bla");
+//
+//a_2 = 34;
+//errc(a:"bla");
 
-println(lst:"undef");
-println(lst:pii);
+thing1=[-54,12];
+thing1:"color"="red";
 
-lst:12.3 = 4.56;
-println(lst:"12.3");
+thing2=thing1;
+thing2:"color"="blue";
 
-
-println("=== geo ===");
-A:"age"=17;
-A:"list"=lst;
-A:"pt" = B;
-println(A:"age");
-println(A:"list");
-println(A:"pt");
-
-println(A:"undef");
-
-println("debug tests");
-a = [];
-a:1 = 1;
-a:(1+i) = 2;
-errc(a:1); //gives 2, but I would expect 1 (and so does Cinderella)
-
-a = [];
-a:[1,2,3] = 10;
-a:[3,4,5] = 34;
-errc(a:[1,2,3]); //gives 34, Cinderella gives 10
-
-// assigntake
-a = [1,2,3];
-a:"bla" = 23;
-
-errc(a:"bla");
-
-a_2 = 34;
-errc(a:"bla");
+errc(thing1:"color"); //should be red, but it gives blue
 
 // Drawing code, executed whenever the canvas gets redrawn.
 
