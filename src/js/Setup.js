@@ -679,8 +679,8 @@ function doneLoadingModule(skipInit) {
     if (--modulesToLoad !== 0)
         return;
 
-    //Evaluate Init script
     if (!skipInit) {
+        //Evaluate Init script
         evaluate(cscompiled.init);
 
         if ((instanceInvocationArguments.animation ||
@@ -689,7 +689,7 @@ function doneLoadingModule(skipInit) {
 
         if (globalInstance.canvas)
             setuplisteners(globalInstance.canvas, instanceInvocationArguments);
-    }
+    } else updateCindy();
 }
 
 var backup = null;
