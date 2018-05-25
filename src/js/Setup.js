@@ -689,7 +689,8 @@ function doneLoadingModule(skipInit) {
 
         if (globalInstance.canvas)
             setuplisteners(globalInstance.canvas, instanceInvocationArguments);
-    } else updateCindy();
+    //} else updateCindy();
+    } else scheduleUpdate();
 }
 
 var backup = null;
