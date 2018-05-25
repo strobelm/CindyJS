@@ -73,7 +73,7 @@ function evalcs(a) {
 
 function evokeCS(code) {
     var parsed = analyse(code, false);
-    console.log(parsed);
+    //console.log(parsed);
     evaluate(parsed);
     scheduleUpdate();
 }
