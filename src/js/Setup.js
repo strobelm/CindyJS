@@ -73,7 +73,6 @@ function evalcs(a) {
 
 function evokeCS(code) {
     var parsed = analyse(code, false);
-    //console.log(parsed);
     evaluate(parsed);
     scheduleUpdate();
 }
@@ -689,7 +688,6 @@ function doneLoadingModule(skipInit) {
 
         if (globalInstance.canvas)
             setuplisteners(globalInstance.canvas, instanceInvocationArguments);
-    //} else updateCindy();
     } else scheduleUpdate();
 }
 
