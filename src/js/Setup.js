@@ -73,7 +73,6 @@ function evalcs(a) {
 
 function evokeCS(code) {
     var parsed = analyse(code, false);
-    console.log(parsed);
     evaluate(parsed);
     scheduleUpdate();
 }
@@ -324,7 +323,7 @@ function createCindyNow() {
                 cscode.message
             );
         } else {
-            cscompiled[s] = cscode;
+            cscompiled[s] = labelCode(cscode, s);
         }
     });
     if (isCinderellaBeforeVersion(2, 9, 1888) && !cscompiled.keydown) {
@@ -642,11 +641,17 @@ function loadExtraModules() {
     if (usedFunctions.convexhull3d$1) {
         loadExtraPlugin("QuickHull3D", "QuickHull3D.js");
     }
+    if (usedFunctions.colorplot$1 || usedFunctions.colorplot$2 || usedFunctions.colorplot$3 || usedFunctions.colorplot$4) {
+        loadExtraPlugin("CindyGL", "CindyGL.js");
+    }
+    if (usedFunctions.playtone$1 || usedFunctions.playmelody$1) {
+        loadExtraPlugin("midi", "midi-plugin.js");
+    }
 }
 
 var modulesToLoad = 1;
 
-function loadExtraPlugin(name, path) {
+function loadExtraPlugin(name, path, skipInit) {
     var cb = null;
     if (instanceInvocationArguments.plugins)
         cb = instanceInvocationArguments.plugins[name];
@@ -659,7 +664,7 @@ function loadExtraPlugin(name, path) {
     ++modulesToLoad;
     CindyJS.autoLoadPlugin(name, path, function() {
         evaluator.use$1([General.wrap(name)], {});
-        doneLoadingModule();
+        doneLoadingModule(skipInit);
     });
 }
 
@@ -672,19 +677,21 @@ function loadExtraModule(name, path) {
     });
 }
 
-function doneLoadingModule() {
+function doneLoadingModule(skipInit) {
     if (--modulesToLoad !== 0)
         return;
 
-    //Evaluate Init script
-    evaluate(cscompiled.init);
+    if (!skipInit) {
+        //Evaluate Init script
+        evaluate(cscompiled.init);
 
-    if ((instanceInvocationArguments.animation ||
-            instanceInvocationArguments).autoplay)
-        csplay();
+        if ((instanceInvocationArguments.animation ||
+                instanceInvocationArguments).autoplay)
+            csplay();
 
-    if (globalInstance.canvas)
-        setuplisteners(globalInstance.canvas, instanceInvocationArguments);
+        if (globalInstance.canvas)
+            setuplisteners(globalInstance.canvas, instanceInvocationArguments);
+    } else scheduleUpdate();
 }
 
 var backup = null;

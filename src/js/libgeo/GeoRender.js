@@ -1,3 +1,29 @@
+function drawlabel(el, lbl, pos, lpos, color) {
+    var textsize = el.textsize || defaultAppearance.textsize;
+    var bold = (el.textbold === true);
+    var italics = (el.textitalics === true);
+    var family = el.text_fontfamily || defaultAppearance.fontFamily;
+    var dist = lpos.x * lpos.x + lpos.y * lpos.y;
+    var factor = 1.0;
+    if (dist > 0) {
+        factor = 1.0 + el.size.value.real / Math.sqrt(dist);
+    }
+
+
+    var alpha = el.alpha || CSNumber.real(defaultAppearance.alpha);
+    eval_helper.drawtext(
+        [pos, General.wrap(lbl)], {
+            'x_offset': General.wrap(factor * lpos.x),
+            'y_offset': General.wrap(factor * lpos.y),
+            'size': General.wrap(textsize),
+            'bold': General.wrap(bold),
+            'italics': General.wrap(italics),
+            'family': General.wrap(family),
+            'color': color,
+            'alpha': alpha
+        });
+}
+
 function drawgeopoint(el) {
     if (!el.isshowing || el.visible === false || !List._helper.isAlmostReal(el.homog))
         return;
@@ -9,7 +35,9 @@ function drawgeopoint(el) {
     evaluator.draw$1([el.homog], {
         size: el.size,
         color: col,
-        alpha: el.alpha
+        alpha: el.alpha,
+        noborder: el.noborder,
+        border: el.border,
     });
     if (el.labeled && !el.tmp) {
         var lbl = el.printname || el.name || "P";
@@ -17,24 +45,9 @@ function drawgeopoint(el) {
             'x': 3,
             'y': 3
         };
-        var textsize = el.textsize || defaultAppearance.textsize;
-        var bold = (el.textbold === true);
-        var italics = (el.textitalics === true);
-        var family = el.text_fontfamily || defaultAppearance.fontFamily;
-        var dist = lpos.x * lpos.x + lpos.y * lpos.y;
-        var factor = 1.0;
-        if (dist > 0) {
-            factor = 1.0 + el.size.value.real / Math.sqrt(dist);
-        }
-        eval_helper.drawtext(
-            [el.homog, General.wrap(lbl)], {
-                'x_offset': General.wrap(factor * lpos.x),
-                'y_offset': General.wrap(factor * lpos.y),
-                'size': General.wrap(textsize),
-                'bold': General.wrap(bold),
-                'italics': General.wrap(italics),
-                'family': General.wrap(family)
-            });
+        var color = Render2D.makeColor(defaultAppearance.textColor);
+        if (el.noborder.value === true || el.border.value === false) color = col;
+        drawlabel(el, lbl, el.homog, lpos, color);
     }
 }
 
@@ -91,6 +104,33 @@ function drawgeoline(el) {
         if (zz.value.real >= 0) { // finite segment
             evaluator.draw$2(
                 [el.startpos, el.endpos], modifs);
+            if (el.labeled && !el.tmp) {
+                var lbl = el.printname || el.name || "S";
+                var orientedline = List.scalmult(
+                    CSNumber.real(Math.sign(el.startpos.value[2].value.real) * Math.sign(el.endpos.value[2].value.real)),
+                    List.cross(el.startpos, el.endpos)
+                );
+
+                var npos = {
+                    'x': orientedline.value[0].value.real,
+                    'y': orientedline.value[1].value.real
+                };
+
+                //normalize npos
+                var nposlength = Math.sqrt(npos.x * npos.x + npos.y * npos.y);
+
+                // TODO: synchronize these constants with Cinderella
+                npos = {
+                    'x': 8 * npos.x / nposlength - 3,
+                    'y': 8 * npos.y / nposlength - 3
+                };
+                var lpos = el.labelpos || npos;
+                var color = Render2D.makeColor(defaultAppearance.textColor);
+
+                // TODO: synchronize these constants with Cinderella
+                var pos = geoOps._helper.midpoint(geoOps._helper.midpoint(el.startpos, el.endpos), el.endpos);
+                drawlabel(el, lbl, pos, lpos, color);
+            }
             return;
         } else { // transformed segment through infinity, consisting of 2 rays
             Render2D.handleModifs(modifs, Render2D.lineModifs);
@@ -282,6 +322,17 @@ function drawgeopolygon(el) {
     eval_helper.drawpolygon([el.vertices], modifs, "D", true);
 }
 
+function drawgeoifs() {
+    if (ifs.dirty ||
+        !General.deeplyEqual(ifs.mat, csport.drawingstate.matrix)) {
+        geoOps.IFS.updateParameters();
+        ifs.dirty = false;
+    }
+    if (ifs.img) {
+        csctx.drawImage(ifs.img, 0, 0, csw, csh);
+    }
+}
+
 function render() {
 
     var i;
@@ -307,6 +358,10 @@ function render() {
 
     for (i = 0; i < csgeo.texts.length; i++) {
         drawgeotext(csgeo.texts[i]);
+    }
+
+    if (csgeo.ifs.length) {
+        drawgeoifs();
     }
 
 }

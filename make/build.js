@@ -9,12 +9,20 @@ var qfs = require("q-io/fs");
 var getversion = require("./getversion");
 var src = require("./sources");
 
+var soundfonts = require("./soundfonts");
+
 module.exports = function build(settings, task) {
 
     function jsCompiler() {
         if ((/release/i).test(settings.get("build")))
             return "closure";
         return "plain";
+    }
+
+    function emDep() {
+        if (settings.get("em"))
+            return Array.prototype.slice.call(arguments);
+        return [];
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -57,6 +65,36 @@ module.exports = function build(settings, task) {
     task("plain", ["cs2js"], function() {
         version(this);
         this.concat(src.srcs, "build/js/Cindy.plain.js");
+    });
+
+    task("ifs", emDep("em.ifs"), function() {
+        this.concat(src.ifs, "build/js/ifs.js");
+    });
+
+    task("em.ifs", [], function() {
+        var settings = {
+            ONLY_MY_CODE: 1,
+            EXPORTED_FUNCTIONS: [
+                "_real",
+                "_init",
+                "_setIFS",
+                "_setProj",
+                "_setMoebius",
+            ],
+        };
+        var args = [
+            "--std=c++11",
+            "-Wall",
+            "-O3",
+            "-g1",
+            "--separate-asm",
+            "-o", this.output("src/js/ifs/ifs.js"),
+            this.input("src/c/ifs/ifs.cc")
+        ];
+        for (var key in settings) {
+            args.push("-s", key + "=" + JSON.stringify(settings[key]));
+        }
+        this.cmd("em++", args);
     });
 
     task("ours", ["cs2js"], function() {
@@ -200,13 +238,13 @@ module.exports = function build(settings, task) {
     ]);
     
     task("beautified", [], function() {
-        this.cmd("git", "diff", "--exit-code", "--name-only", {
+        this.cmd("git", "diff", "--exit-code", "--name-only", "\":(excluded)*!package-lock.json\"", {
             errorMessages: {
                 "1": "Please stage the files listed above (e.g. using “git add -u”)"
             }
         });
         this.cmdscript("js-beautify", "--quiet", beautify_args);
-        this.cmd("git", "diff", "--exit-code", {
+        this.cmd("git", "diff", "--exit-code", "\":(excluded)*!package-lock.json\"", {
             errorMessages: {
                 "1": "Your code has been beautified. Please review these changes."
             }
@@ -284,6 +322,7 @@ module.exports = function build(settings, task) {
         "Camera",
         "Appearance",
         "Viewer",
+        "Controls",
         "Lighting",
         "PrimitiveRenderer",
         "Spheres",
@@ -425,27 +464,11 @@ module.exports = function build(settings, task) {
         return commit;
     }
     var cc_lib_dir = "plugins/ComplexCurves/lib/ComplexCurves/";
-    var cc_shaders = Array.prototype.concat.apply(
-        ["Common.glsl", "Textures.glsl"], [
-            "Assembly", "CachedSurface", "DomainColouring", "Export", "FXAA",
-            "Initial", "Subdivision", "SubdivisionPre", "Surface",
-        ].map(function(name) { return [name + ".vert", name + ".frag"]; }))
-        .map(function(name) { return cc_lib_dir + "src/glsl/" + name; });
-    var cc_mods = [
-        "Assembly", "CachedSurface", "Complex", "ComplexCurves", "Export",
-        "GLSL", "Initial", "Matrix", "Mesh", "Misc", "Monomial", "Parser",
-        "Polynomial", "PolynomialParser", "Quaternion", "Stage", "State3D",
-        "StateGL", "Subdivision", "SubdivisionPre", "Surface", "Term",
-        "Tokenizer"
-    ];
-    var cc_mods_from_c3d = [
-        "Interface"
-    ];
 
     task("ComplexCurves.get", [], function() {
         var id = cc_get_commit();
         this.download(
-            "https://github.com/kranich/ComplexCurves/archive/" + id + ".zip",
+            "https://github.com/ComplexCurves/ComplexCurves/archive/" + id + ".zip",
             "download/arch/ComplexCurves-" + id + ".zip"
         );
     });
@@ -461,41 +484,41 @@ module.exports = function build(settings, task) {
         );
     });
 
-    task("ComplexCurves.glsl.js", ["ComplexCurves.unzip"], function() {
-        this.input(cc_shaders);
-        this.node(
-            "tools/files2json.js",
-            "-varname=resources",
-            "-preserve_file_names=yes",
-            "-strip=no",
-            "-output=" + this.output("build/js/ComplexCurves.glsl.js"),
-            cc_shaders);
+    task("ComplexCurves.lib", ["ComplexCurves.unzip"], function() {
+        this.sh("cd " + cc_lib_dir + "; npm install; npm run-script prepare");
+        this.output(cc_lib_dir + "build/ComplexCurves.js");
     });
 
-    task("ComplexCurves", ["ComplexCurves.glsl.js", "closure-jar"], function() {
+    task("ComplexCurves.plugin", ["closure-jar"], function() {
         this.setting("closure_version");
         var opts = {
             language_in: "ECMASCRIPT6_STRICT",
             language_out: "ECMASCRIPT5_STRICT",
-            dependency_mode: "LOOSE",
             compilation_level: this.setting("cc_closure_level"),
             rewrite_polyfills: false,
             warning_level: this.setting("cc_closure_warnings"),
-            output_wrapper_file: cc_lib_dir + "src/js/ComplexCurves.js.wrapper",
-            js_output_file: "build/js/ComplexCurves.js",
-            externs: "plugins/cindyjs.externs",
-            js: ["build/js/ComplexCurves.glsl.js"].concat(cc_mods.map(function(name) {
-                return cc_lib_dir + "src/js/" + name + ".js";
-            })).concat(cc_mods_from_c3d.map(function(name) {
-                return "plugins/cindy3d/src/js/" + name + ".js";
-            })).concat([
-                "plugins/ComplexCurves/src/js/Plugin.js"
-            ])
+            output_wrapper_file: "plugins/ComplexCurves/src/js/Plugin.js.wrapper",
+            js_output_file: "build/js/ComplexCurves.plugin.js",
+            externs: [
+                "plugins/cindyjs.externs",
+                "plugins/ComplexCurves/ComplexCurves.externs"
+            ],
+            js: [
+                "plugins/ComplexCurves/src/js/Plugin.js",
+                "plugins/cindy3d/src/js/Interface.js"
+            ]
         };
         this.closureCompiler(closure_jar, opts);
     });
     
-    
+
+    task("ComplexCurves", ["ComplexCurves.lib", "ComplexCurves.plugin"], function() {
+        this.concat([
+            cc_lib_dir + "build/ComplexCurves.js",
+            "build/js/ComplexCurves.plugin.js"
+        ], "build/js/ComplexCurves.js");
+    });
+
     
     //////////////////////////////////////////////////////////////////////
     // Build symbolic-plugin
@@ -656,6 +679,58 @@ module.exports = function build(settings, task) {
     task("katex", ["katex_src", "katex-plugin"]);
 
     //////////////////////////////////////////////////////////////////////
+    // Copy MIDI to build directory
+    //////////////////////////////////////////////////////////////////////
+
+    var midi_src = glob.sync("lib/midi/*.*");
+
+    task("midi_src", [], function() {
+        this.parallel(function() {
+            midi_src.forEach(function(input) {
+                this.copy(input, path.join("build", "js", input.substr(4)));
+            }, this);
+        });
+    });
+
+    task("midi-plugin", [], function() {
+        this.copy("plugins/midi/src/js/midi-plugin.js", "build/js/midi-plugin.js");
+    });
+
+    task("midi", ["midi_src", "midi-plugin"]);
+    
+    //////////////////////////////////////////////////////////////////////
+    // Download the soundfonts
+    //////////////////////////////////////////////////////////////////////
+    
+    task("soundfonts.get", [], function() {
+        this.download(
+            soundfonts.url,
+            "download/arch/midi-js-soundfonts.zip"
+        );
+    });
+
+    task("soundfonts.unzip", ["soundfonts.get"], function() {
+        //this.delete("download/midi-js-soundfonts");
+        this.unzip(
+            "download/arch/midi-js-soundfonts.zip",
+            "download/midi-js-soundfonts",
+            soundfonts.files.map(function(file){
+              return soundfonts.basepath + file
+            })
+        );
+    });
+    
+    task("soundfonts", ["soundfonts.unzip"], function() {
+
+      this.parallel(function() {
+          soundfonts.files.forEach(function(file) {
+              this.copy("download/midi-js-soundfonts/" + soundfonts.basepath + file, path.join("build", "js", "soundfonts", path.basename(file)));
+          }, this);
+      });
+
+    });
+
+    //////////////////////////////////////////////////////////////////////
     // Compile SASS to CSS
     //////////////////////////////////////////////////////////////////////
 
@@ -703,7 +778,7 @@ module.exports = function build(settings, task) {
     // Copy things which constitute a release
     //////////////////////////////////////////////////////////////////////
 
-    task("deploy", ["all", "closure"], function() {
+    task("deploy", ["all", "ComplexCurves", "soundfonts", "closure"], function() {
         this.delete("build/deploy");
         this.mkdir("build/deploy");
         this.node("tools/prepare-deploy.js", {
@@ -731,14 +806,15 @@ module.exports = function build(settings, task) {
 
     task("all", [
         "Cindy.js",
+        "ifs",
         "cindy3d",
         "cindygl",
         "quickhull3d",
         "katex",
+        "midi",
         "xlibs",
         "images",
         "sass",
-        "ComplexCurves",
         "symbolic"
     ].concat(gwt_modules));
 

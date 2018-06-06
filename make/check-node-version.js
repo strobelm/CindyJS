@@ -7,8 +7,8 @@ v = v.map(function(s){
   return parseInt(s);
 });
 var a = v[0], b = v[1], c = v[2];
-if (a == 0 && b < 12) {
-  console.error("Node 0.12 or later required. Version " +
+if (a < 8 || a == 8 && b < 11 || a == 8 && b == 10 && c < 2) {
+  console.error("Node 8.11.2 or later required. Version " +
                 process.version + " found");
   process.exit(1);
 }

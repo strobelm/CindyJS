@@ -13,7 +13,10 @@ function evaluate(a) {
         return evaluate(namespace.getvar(a.name));
     }
     if (a.ctype === 'function') {
-        return eval_helper.evaluate(a.oper, a.args, a.modifs);
+        callStack.push(a);
+        a = eval_helper.evaluate(a.oper, a.args, a.modifs);
+        callStack.pop();
+        return a;
     }
     if (a.ctype === 'void') {
         return nada;
@@ -25,6 +28,19 @@ function evaluate(a) {
         }
         if (obj.ctype === "list") {
             return List.getField(obj, a.key);
+        }
+        return nada;
+    }
+    if (a.ctype === 'userdata') {
+        var uobj = evaluate(a.obj);
+        var key = niceprint(evaluate(a.key));
+        if (key === "_?_") key = undefined;
+
+        if (uobj.ctype === "geo") {
+            return Accessor.getuserData(uobj.value, key);
+        }
+        if (uobj.ctype === "list" || uobj.ctype === "string") {
+            return Accessor.getuserData(uobj, key);
         }
         return nada;
     }
@@ -150,4 +166,30 @@ function analyse(code) {
     for (var name in parser.usedVariables)
         namespace.create(name);
     return res;
+}
+
+var callStack = [];
+
+function labelCode(code, label) {
+    function run() {
+        return evaluate(code);
+    }
+    return {
+        ctype: "infix",
+        args: [],
+        impl: function() {
+            callStack = [{
+                oper: label
+            }];
+            var res = evaluate(code);
+            callStack = [];
+            return res;
+        }
+    };
+}
+
+function printStackTrace(msg) {
+    csconsole.err(msg + callStack.map(function(frame) {
+        return "\n  at " + frame.oper;
+    }).join("\n"));
 }

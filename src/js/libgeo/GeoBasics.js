@@ -9,7 +9,9 @@ defaultAppearance.overhangLine = 1;
 defaultAppearance.overhangSeg = 1;
 defaultAppearance.dimDependent = 0.7;
 defaultAppearance.fontFamily = "sans-serif";
+defaultAppearance.textColor = [0, 0, 0];
 defaultAppearance.textsize = 20; // Cinderella uses 12 by default
+defaultAppearance.noborder = false;
 
 defaultAppearance.lineHeight = 1.45;
 /* The value of 1.45 for the line height agrees reasonably well with
@@ -62,6 +64,7 @@ function csinit(gslp) {
     csgeo.texts = [];
     csgeo.free = [];
     csgeo.polygons = [];
+    csgeo.ifs = [];
 
     gslp.forEach(addElementNoProof);
     checkConjectures();
@@ -90,6 +93,12 @@ function pointDefault(el) {
     }
     if (el.alpha === undefined) el.alpha = defaultAppearance.alpha;
     el.alpha = CSNumber.real(el.alpha);
+
+    if (typeof(el.noborder) !== 'boolean') el.noborder = defaultAppearance.noborder;
+    el.noborder = General.bool(el.noborder);
+
+    if (typeof(el.border) !== 'boolean') el.border = !(defaultAppearance.noborder);
+    el.border = General.bool(el.border);
 
     if (el.drawtrace) {
         setupTraceDrawing(el);
@@ -285,6 +294,9 @@ function addElementNoProof(el) {
     if (el.kind === "Poly") {
         csgeo.polygons.push(el);
         polygonDefault(el);
+    }
+    if (el.kind === "IFS") {
+        csgeo.ifs.push(el);
     }
 
     if (true || op.stateSize !== 0) {

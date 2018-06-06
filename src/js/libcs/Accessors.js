@@ -181,6 +181,9 @@ Accessor.getField = function(geo, field) {
         if (field === "f" && geo.behavior.type === "Mass") {
             return List.realVector([geo.behavior.fx, geo.behavior.fy]);
         }
+        if (field === "ldiff" && geo.behavior.type === "Spring") {
+            return CSNumber.real(geo.behavior.ldiff);
+        }
 
     }
     var getter = geoOps[geo.type]["get_" + field];
@@ -318,4 +321,22 @@ Accessor.setField = function(geo, field, value) {
     }
 
 
+};
+
+Accessor.getuserData = function(obj, key) {
+    var val;
+    if (obj.userData && obj.userData[key]) val = obj.userData[key];
+
+    if (val && val.ctype) {
+        return val;
+    } else if (typeof val !== "object") {
+        return General.wrap(val);
+    } else {
+        return nada;
+    }
+};
+
+Accessor.setuserData = function(obj, key, value) {
+    if (!obj.userData) obj.userData = {};
+    obj.userData[key] = value;
 };

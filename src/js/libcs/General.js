@@ -271,3 +271,29 @@ General.wrapJSON = function(data) {
 General.identity = function(x) {
     return x;
 };
+
+General.deeplyEqual = function(a, b) {
+    if (typeof a !== "object" || typeof b !== "object" ||
+        a === null || b === null)
+        return a === b;
+    var cnt = 0;
+    var k;
+    for (k in a) {
+        ++cnt;
+        if (!(k in b && General.deeplyEqual(a[k], b[k])))
+            return false;
+    }
+    for (k in b)
+        --cnt;
+    return cnt === 0;
+};
+
+General.DeepCloneJSON = function(o) {
+    var out, v, key;
+    out = Array.isArray(o) ? [] : {};
+    for (key in o) {
+        v = o[key];
+        out[key] = (typeof v === "object" && v !== null) ? General.DeepCloneJSON(v) : v;
+    }
+    return out;
+};

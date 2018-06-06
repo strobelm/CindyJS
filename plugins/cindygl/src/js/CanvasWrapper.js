@@ -1,56 +1,25 @@
-/**
- * adds a canvasWrapper to an image object for reading access. A reference will in the 'readcanvaswrappers' list. If argument is an image that was not loaded, this will be done as onload-event.
- * @param {CindyJS.image} imageobject
- * @return {CanvasWrapper}
- */
-function generateReadCanvasWrapperIfRequired(imageobject, api, properties) {
-    if (!imageobject.hasOwnProperty('readcanvaswrappers')) {
-        imageobject['readcanvaswrappers'] = Array(4);
-    }
-    let idx = properties.mipmap * 2 + properties.interpolate;
-    if (!imageobject['readcanvaswrappers'].hasOwnProperty(idx)) {
-        if (imageobject['writecanvaswrapper'] && imageobject['writecanvaswrapper'].generation > imageobject.generation) imageobject['writecanvaswrapper'].copyTextureToCanvas();
+function generateCanvasWrapperIfRequired(imageobject, api, properties) {
+    if (imageobject['canvaswrapper']) {
+        if (properties) imageobject['canvaswrapper'].updateReadingProperties(properties);
+    } else {
+        imageobject['canvaswrapper'] = new CanvasWrapper(imageobject, properties || {
+            interpolate: true,
+            mipmap: false,
+            repeat: false
+        });
 
-        imageobject['readcanvaswrappers'][idx] = new CanvasWrapper(imageobject, properties);
         if (!imageobject.ready) {
             console.error("Image not ready. Creating onload event.");
             imageobject.whenReady(() => {
-                imageobject.generation = Math.max(imageobject.generation, imageobject['readcanvaswrappers'][idx].generation + 1);
+                imageobject.generation = Math.max(imageobject.generation, imageobject['canvaswrapper'].generation + 1);
             });
         }
     }
-    if (imageobject['writecanvaswrapper']) imageobject['writecanvaswrapper'] = imageobject['readcanvaswrappers'][idx]; //It makes sense to write to that canvaswrapper that is used to read. It is necessary to copy textures if there are multiple readers
-    return imageobject['readcanvaswrappers'][idx];
-}
+    //imageobject['readPixels'] = imageobject['canvaswrapper'].readPixels.bind(imageobject['canvaswrapper']);
+    //if (imageobject['canvaswrapper'] && imageobject['canvaswrapper'].generation > imageobject.generation) imageobject['canvaswrapper'].copyTextureToCanvas();
 
-/**
- * adds a canvasWrapper that is supposed to be written to an image object. A reference 'writecanvaswrapper' will be added to imageobject. If it already exists, take it. If none exists, try to find the canvaswrapper of some existing texturereader
- * @param {CindyJS.image} imageobject
- * @return {CanvasWrapper}
- */
-function generateWriteCanvasWrapperIfRequired(imageobject, api) {
-    if (!imageobject.hasOwnProperty('writecanvaswrapper')) {
-        let idx = -1;
-        if (imageobject['readcanvaswrappers']) {
-            for (let i = 3; i >= 0; i--) {
-                if (imageobject['readcanvaswrappers'].hasOwnProperty(idx)) idx = i;
-            }
-        } else imageobject['readcanvaswrappers'] = Array(4);
-        if (idx == -1) {
-            let properties = {
-                interpolate: true,
-                mipmap: false,
-                repeat: false
-            }
-            idx = properties.mipmap * 2 + properties.interpolate;
-            imageobject['readcanvaswrappers'][idx] = new CanvasWrapper(imageobject, properties);
-        }
-        imageobject['writecanvaswrapper'] = imageobject['readcanvaswrappers'][idx];
-    }
-    imageobject['readPixels'] = imageobject['writecanvaswrapper'].readPixels.bind(imageobject['writecanvaswrapper']);
-    return imageobject['writecanvaswrapper'];
+    return imageobject['canvaswrapper'];
 }
-
 
 /**
  * Note that CanvasWrapper might also wrap an image instead of a canvas
@@ -135,6 +104,9 @@ CanvasWrapper.prototype.sizeY;
 /** @type {number} */
 CanvasWrapper.prototype.ratio;
 
+/** @type {number} */
+CanvasWrapper.prototype.lastframecount;
+
 /** @type {CindyJS.image} */
 CanvasWrapper.prototype.canvas;
 
@@ -152,6 +124,27 @@ CanvasWrapper.prototype.it;
 /** @type {ShaderProgram} */
 CanvasWrapper.prototype.shaderProgram;
 
+CanvasWrapper.prototype.updateReadingProperties = function(properties) {
+    let oldproperties = this.properties;
+    if (properties &&
+        (
+            properties.repeat != oldproperties.repeat ||
+            properties.mipmap != oldproperties.mipmap ||
+            properties.interpolate != oldproperties.interpolate
+        )
+    ) {
+        this.properties = properties;
+        for (let j = 0; j < 2; j++) {
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[j]);
+            if (properties.mipmap)
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, properties.interpolate ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST_MIPMAP_LINEAR); //always interpolate between 2 mipmap levels NEAREST_MIPMAP_LINEAR
+            else
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, properties.interpolate ? gl.LINEAR : gl.NEAREST);
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, properties.interpolate ? gl.LINEAR : gl.NEAREST);
+        }
+    }
+};
 
 CanvasWrapper.prototype.updateInternalTextureMeasures = function() {
     this.sizeXP = smallestPowerOfTwoGreaterOrEqual(this.sizeX + (this.sizeX / 2) * (this.properties.mipmap && this.properties.repeat));
@@ -197,6 +190,10 @@ CanvasWrapper.prototype.copyTextureToCanvas = function() {
  * Reload texture data from input element (e.g. HTML video)
  */
 CanvasWrapper.prototype.reloadIfRequired = function() {
+    if (this.canvas.live && (this.canvas.img.webkitDecodedFrameCount || this.canvas.img.mozDecodedFrames) && this.lastframecount >= (this.canvas.img.webkitDecodedFrameCount || this.canvas.img.mozDecodedFrames)) {
+        return;
+    }
+
     if (!this.canvas.live && (!this.canvas.ready || this.generation >= this.canvas.generation)) {
         return;
     }
@@ -243,7 +240,7 @@ CanvasWrapper.prototype.reloadIfRequired = function() {
 
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
     this.generation = this.canvas.generation;
-    console.log("Image has been loaded to GPU");
+    this.lastframecount = Math.min(this.lastframecount + 1, this.canvas.img.webkitDecodedFrameCount || this.canvas.img.mozDecodedFrames);
 };
 
 CanvasWrapper.prototype.drawTo = function(context, x, y) {

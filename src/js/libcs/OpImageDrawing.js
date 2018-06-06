@@ -419,7 +419,7 @@ evaluator.cameravideo$0 = function(args, modifs) {
         // width, but Chrome again appears to have a problem with this. See also
         // https://bugs.chromium.org/p/chromium/issues/detail?id=657145
         if (false) {
-            constraints = constraints.concat([1.34, 1.59, 1.78].map(function(a) {
+            constraints = constraints.concat([1.34, 1.59, 1.78, 2].map(function(a) {
                 return {
                     aspectRatio: {
                         max: a
@@ -466,8 +466,15 @@ evaluator.cameravideo$0 = function(args, modifs) {
     var img = loadImage(video, true);
     console.log("Opening stream.");
     openVideoStream(function success(stream) {
+        /* does not work in Safari 11.0 (beta)
         var url = window.URL.createObjectURL(stream);
         video.src = url;
+        */
+        video.srcObject = stream;
+        video.setAttribute('autoplay', '');
+        video.setAttribute('muted', '');
+        video.setAttribute('playsinline', '');
+        video.play();
         video.addEventListener("loadeddata", csplay);
     }, function failure(err) {
         console.error("Could not get user video:", String(err), err);
@@ -659,4 +666,14 @@ evaluator.imagergb$4 = function(args, modifs) {
     var rgba = evaluator.imagergba$4(args, modifs);
     if (rgba === nada) return nada;
     return List.turnIntoCSList(rgba.value.slice(0, 3));
+};
+
+evaluator.readpixels$1 = function(args, modifs) {
+    var img = imageFromValue(evaluateAndVal(args[0]));
+    var data = readPixelsIndirection(img, 0, 0, img.width, img.height);
+    var pixels = [];
+    for (var i = 0; i + 3 < data.length; i += 4) {
+        pixels.push(List.turnIntoCSList([CSNumber.real(data[i + 0]), CSNumber.real(data[i + 1]), CSNumber.real(data[i + 2]), CSNumber.real(data[i + 3])]));
+    }
+    return List.turnIntoCSList(pixels);
 };

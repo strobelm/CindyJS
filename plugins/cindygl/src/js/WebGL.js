@@ -22,12 +22,29 @@ let getImag = c => `(${c}).y`
 var webgl = {};
 
 webgl['join'] = first([
-    [type.point, type.point], type.line, usefunction('cross')
+    [
+        [type.point, type.point], type.line, usefunction('cross')
+    ]
 ]);
 
 webgl['meet'] = first([
-    [type.line, type.line], type.point, usefunction('cross')
+    [
+        [type.line, type.line], type.point, usefunction('cross')
+    ]
 ]);
+
+webgl['gauss'] = first([
+    [
+        [type.complex], type.vec2, identity
+    ]
+]);
+
+webgl['complex'] = first([
+    [
+        [type.vec2], type.complex, identity
+    ]
+]);
+
 
 webgl['if'] = (argtypes) => { //generator is not used yet
     if (!argtypes.every(a => a)) return false;
@@ -197,6 +214,25 @@ webgl['arctan'] = first([
         [type.complex], type.complex, useincludefunction('arctanc')
     ]
 ]);
+
+webgl['arcsin'] = first([
+    [
+        [type.float], type.complex, useincludefunction('arcsinf')
+    ],
+    [
+        [type.complex], type.complex, useincludefunction('arcsinc')
+    ]
+]);
+
+webgl['arccos'] = first([
+    [
+        [type.float], type.complex, useincludefunction('arccosf')
+    ],
+    [
+        [type.complex], type.complex, useincludefunction('arccosc')
+    ]
+]);
+
 
 webgl['log'] = first([
     [
@@ -476,14 +512,36 @@ webgl["random"] = first([
         [], type.float, useincludefunction('random')
     ],
     [
-        [type.float], type.float, (a, cb) => (`${useincludefunction('random')([], cb)}*${a[0]}`)
+        [type.float], type.float, (a, modifs, cb) => (`${useincludefunction('random')([], modifs, cb)}*${a[0]}`)
     ],
     [
-        [type.complex], type.complex, (a, cb) => (`vec2(${useincludefunction('random')([], cb)},${useincludefunction('random')([], cb)})*${a[0]}`)
+        [type.complex], type.complex, (a, modifs, cb) => (`vec2(${useincludefunction('random')([], modifs, cb)},${useincludefunction('random')([], modifs, cb)})*${a[0]}`)
     ]
 
 ]);
 
+webgl["randomint"] = first([
+    [
+        [type.int], type.int, (a, modifs, cb) => (`int(floor(${useincludefunction('random')([], modifs, cb)}*float(${a[0]})))`)
+    ],
+    [
+        [type.float], type.int, (a, modifs, cb) => (`int(floor(${useincludefunction('random')([], modifs, cb)}*floor(${a[0]})))`)
+    ]
+]);
+
+webgl["randominteger"] = webgl["randomint"];
+
+webgl["randombool"] = first([
+    [
+        [], type.bool, (a, modifs, cb) => (`(${useincludefunction('random')([], modifs, cb)}>.5)`)
+    ]
+]);
+
+webgl["randomnormal"] = first([
+    [
+        [], type.float, useincludefunction('randomnormal')
+    ]
+]);
 
 webgl['arctan2'] = first([
     [
@@ -517,9 +575,6 @@ webgl["grey"] = webgl["gray"];
 webgl["min"] = args => {
     let match = first([
         [
-            [type.int, type.int], type.int, usefunction('min')
-        ],
-        [
             [type.float, type.float], type.float, usefunction('min')
         ]
     ])(args);
@@ -552,12 +607,6 @@ webgl["max"] = args => {
         };
 }
 
-
-webgl["complex"] = first([
-    [
-        [type.vec2], type.complex, identity
-    ]
-]);
 
 let createraise = (k, codebuilder) => {
     if (k <= 1) {
@@ -712,6 +761,7 @@ requires['arctanc'] = ['logc', 'addc', 'multc', 'subc'];
 requires['arctan2c'] = ['logc', 'divc', 'sqrtc', 'multc'];
 requires['arctan2vec2c'] = ['arctan2c'];
 requires['hue'] = ['hsv2rgb'];
+requires['randomnormal'] = ['random'];
 
 
 Object.freeze(requires);
