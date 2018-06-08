@@ -157,6 +157,7 @@ function polygonDefault(el) {
 function addElement(el) {
     el = addElementNoProof(el);
     checkConjectures();
+    debugger;
     return el;
 }
 
