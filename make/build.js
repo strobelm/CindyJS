@@ -189,6 +189,7 @@ module.exports = function build(settings, task) {
     });
 
     task("tests", [
+        "closure",
         "nodetest",
         "unittests",
         "excomp",
