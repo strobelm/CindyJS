@@ -88,7 +88,7 @@ CSNumber._helper.complex = class extends Float64Array {
     get imag() {
         return this[1];
     }
-}
+};
 
 CSNumber.complex = function(r, i) {
     return {
@@ -130,7 +130,7 @@ CSNumber.max = function(a, b) {
     return {
         "ctype": "number",
         "value": new CSNumber._helper.complex([Math.max(a.value.real, b.value.real), Math.max(a.value.imag, b.value.imag)])
-    }
+    };
 };
 
 
@@ -138,7 +138,7 @@ CSNumber.min = function(a, b) {
     return {
         "ctype": "number",
         "value": new CSNumber._helper.complex([Math.min(a.value.real, b.value.real), Math.min(a.value.imag, b.value.imag)])
-    }
+    };
 };
 
 
