@@ -48,6 +48,6 @@ describe("Determinants", function() {
             [45, 89, 69, 47]]);
         var m = List.add(r, List.scalmult(CSNumber.complex(0, 1), i));
         var actual = List.det4m(m);
-        actual.value.should.eql({real: -14134415, imag: -69048490});
+        actual.value.should.eql({0: -14134415, 1: -69048490});
     });
 });
