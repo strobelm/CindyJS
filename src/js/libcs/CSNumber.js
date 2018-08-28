@@ -146,8 +146,8 @@ CSNumber.add = function(a, b) {
     return {
         "ctype": "number",
         "value": new CSNumber._helper.complex([
-            a.real + b.real,
-            a.imag + b.imag
+            a.value.real + b.value.real,
+            a.value.imag + b.value.imag
         ])
     };
 };
