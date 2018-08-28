@@ -163,10 +163,7 @@ evaluator.repeat$3 = function(args, modifs) { //OK
     for (var i = 0; i < n; i++) {
         namespace.setvar(lauf, {
             'ctype': 'number',
-            'value': {
-                'real': i * step + start,
-                'imag': 0
-            }
+            'value': new CSNumber._helper.complex([i * step + start, 0])
         });
         erg = evaluate(args[2]);
     }

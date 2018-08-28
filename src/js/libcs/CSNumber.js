@@ -62,23 +62,45 @@ CSNumber._helper.niceangle = function(a) {
     return "(" + num + ")" + angleUnit;
 };
 
+// MST: typed arrays for better performance
+
+CSNumber._helper.complex = class extends Float64Array {
+    constructor(...args) {
+        super(...args);
+
+        if (this.length !== 2) {
+            throw new Error('Invalid construction of complex number');
+        }
+    }
+
+    // setters
+    set real(r) {
+        this[0] = r;
+    }
+    set imag(i) {
+        this[1] = i;
+    }
+
+    // getters
+    get real() {
+        return this[0];
+    }
+    get imag() {
+        return this[1];
+    }
+}
+
 CSNumber.complex = function(r, i) {
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 };
 
 CSNumber.real = function(r) {
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': 0
-        }
+        "value": new CSNumber._helper.complex([r, 0])
     };
 };
 
@@ -107,52 +129,43 @@ CSNumber.argmax = function(a, b) {
 CSNumber.max = function(a, b) {
     return {
         "ctype": "number",
-        "value": {
-            'real': Math.max(a.value.real, b.value.real),
-            'imag': Math.max(a.value.imag, b.value.imag)
-        }
-    };
+        "value": new CSNumber._helper.complex([Math.max(a.value.real, b.value.real), Math.max(a.value.imag, b.value.imag)])
+    }
 };
 
 
 CSNumber.min = function(a, b) {
     return {
         "ctype": "number",
-        "value": {
-            'real': Math.min(a.value.real, b.value.real),
-            'imag': Math.min(a.value.imag, b.value.imag)
-        }
-    };
+        "value": new CSNumber._helper.complex([Math.min(a.value.real, b.value.real), Math.min(a.value.imag, b.value.imag)])
+    }
 };
 
 
 CSNumber.add = function(a, b) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real + b.value.real,
-            'imag': a.value.imag + b.value.imag
-        }
+        "value": new CSNumber._helper.complex([
+            a.real + b.real,
+            a.imag + b.imag
+        ])
     };
 };
 
 CSNumber.sub = function(a, b) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real - b.value.real,
-            'imag': a.value.imag - b.value.imag
-        }
+        "value": new CSNumber._helper.complex([
+            a.value.real - b.value.real,
+            a.value.imag - b.value.imag
+        ])
     };
 };
 
 CSNumber.neg = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': -a.value.real,
-            'imag': -a.value.imag
-        }
+        "value": new CSNumber._helper.complex([-a.value.real, -a.value.imag, ])
     };
 };
 
@@ -160,30 +173,29 @@ CSNumber.neg = function(a) {
 CSNumber.re = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real,
-            'imag': 0
-        }
+        "value": new CSNumber._helper.complex([
+            a.value.real,
+            0
+        ])
     };
 };
 
 CSNumber.im = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.imag,
-            'imag': 0
-        }
+        "value": new CSNumber._helper.complex([
+            a.value.imag,
+            0
+        ])
     };
 };
 
 CSNumber.conjugate = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real,
-            'imag': -a.value.imag
-        }
+        "value": new CSNumber._helper.complex([
+            a.value.real, -a.value.imag
+        ])
     };
 };
 
@@ -191,30 +203,25 @@ CSNumber.conjugate = function(a) {
 CSNumber.round = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': Math.round(a.value.real),
-            'imag': Math.round(a.value.imag)
-        }
+        "value": new CSNumber._helper.complex([Math.round(a.value.real),
+            Math.round(a.value.imag)
+        ])
     };
 };
 
 CSNumber.ceil = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': Math.ceil(a.value.real),
-            'imag': Math.ceil(a.value.imag)
-        }
+        "value": new CSNumber._helper.complex([Math.ceil(a.value.real),
+            Math.ceil(a.value.imag)
+        ])
     };
 };
 
 CSNumber.floor = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': Math.floor(a.value.real),
-            'imag': Math.floor(a.value.imag)
-        }
+        "value": new CSNumber._helper.complex([Math.floor(a.value.real), Math.floor(a.value.imag)])
     };
 };
 
@@ -222,20 +229,14 @@ CSNumber.floor = function(a) {
 CSNumber.mult = function(a, b) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real * b.value.real - a.value.imag * b.value.imag,
-            'imag': a.value.real * b.value.imag + a.value.imag * b.value.real
-        }
+        "value": new CSNumber._helper.complex([a.value.real * b.value.real - a.value.imag * b.value.imag, a.value.real * b.value.imag + a.value.imag * b.value.real])
     };
 };
 
 CSNumber.realmult = function(r, c) {
     return {
         "ctype": "number",
-        "value": {
-            'real': r * c.value.real,
-            'imag': r * c.value.imag
-        }
+        "value": new CSNumber._helper.complex([r * c.value.real, r * c.value.imag])
     };
 };
 
@@ -255,10 +256,7 @@ CSNumber.multiMult = function(arr) {
 CSNumber.abs2 = function(a) {
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real * a.value.real + a.value.imag * a.value.imag,
-            'imag': 0
-        }
+        "value": new CSNumber._helper.complex([a.value.real * a.value.real + a.value.imag * a.value.imag, 0])
     };
 };
 
@@ -271,10 +269,7 @@ CSNumber.inv = function(a) {
     var s = a.value.real * a.value.real + a.value.imag * a.value.imag;
     return {
         "ctype": "number",
-        "value": {
-            'real': a.value.real / s,
-            'imag': -a.value.imag / s
-        }
+        "value": new CSNumber._helper.complex([a.value.real / s, -a.value.imag / s])
     };
 };
 
@@ -287,10 +282,7 @@ CSNumber.div = function(a, b) {
     var s = br * br + bi * bi;
     return {
         "ctype": "number",
-        "value": {
-            'real': (ar * br + ai * bi) / s,
-            'imag': (ai * br - ar * bi) / s
-        }
+        "value": new CSNumber._helper.complex([(ar * br + ai * bi) / s, (ai * br - ar * bi) / s])
     };
 };
 
@@ -308,10 +300,7 @@ CSNumber.snap = function(a) {
     }
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 
 };
@@ -322,10 +311,7 @@ CSNumber.exp = function(a) {
     var i = n * Math.sin(a.value.imag);
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 };
 
@@ -344,10 +330,7 @@ CSNumber.cos = function(a) {
     //  if (r * r < 1E-30) r = 0;
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 };
 
@@ -366,10 +349,7 @@ CSNumber.sin = function(a) {
     //  if (r * r < 1E-30) r = 0;
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 };
 
@@ -427,10 +407,7 @@ CSNumber.sqrt = function(a) {
     var r = n * Math.cos(w / 2);
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 };
 
@@ -443,10 +420,7 @@ CSNumber.powRealExponent = function(a, b) {
     var r = n * Math.cos(w * b);
     return {
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     };
 };
 
@@ -471,10 +445,7 @@ CSNumber.log = function(a) {
 
     return CSNumber.snap({
         "ctype": "number",
-        "value": {
-            'real': real,
-            'imag': imag
-        }
+        "value": new CSNumber._helper.complex([real, imag])
     });
 };
 
@@ -504,10 +475,7 @@ CSNumber.mod = function(a, b) {
 
     return CSNumber.snap({
         "ctype": "number",
-        "value": {
-            'real': r,
-            'imag': i
-        }
+        "value": new CSNumber._helper.complex([r, i])
     });
 };
 

@@ -72,5 +72,9 @@
   "bugs": {
     "url": "https://github.com/CindyJS/CindyJS/issues"
   },
-  "homepage": "https://github.com/CindyJS/CindyJS#readme"
+  "homepage": "https://github.com/CindyJS/CindyJS#readme",
+  "dependencies": {
+    "uglify-js": "^3.4.8",
+    "uglifyjs": "^2.4.11"
+  }
 }

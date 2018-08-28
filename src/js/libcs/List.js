@@ -29,10 +29,7 @@ List.realVector = function(l) {
     for (var i = 0; i < l.length; i++) {
         erg[i] = {
             "ctype": "number",
-            "value": {
-                'real': l[i],
-                'imag': 0
-            }
+            "value": new CSNumber._helper.complex([l[i], 0])
         };
     }
     return {
@@ -127,10 +124,7 @@ List.sequence = function(a, b) {
     for (var i = Math.round(a.value.real); i < Math.round(b.value.real) + 1; i++) {
         erg[ct] = {
             "ctype": "number",
-            "value": {
-                'real': i,
-                'imag': 0
-            }
+            "value": new CSNumber._helper.complex([i, 0])
         };
         ct++;
     }
@@ -701,10 +695,7 @@ List.abs2 = function(a1) {
 
     return {
         "ctype": "number",
-        "value": {
-            'real': erg,
-            'imag': 0
-        }
+        "value": new CSNumber._helper.complex([erg, 0])
     };
 };
 
@@ -906,10 +897,7 @@ List.scalproduct = function(a1, a2) {
     }
     var erg = {
         'ctype': 'number',
-        'value': {
-            'real': 0,
-            'imag': 0
-        }
+        'value': new CSNumber._helper.complex([0, 0])
     };
     for (var i = 0; i < a2.value.length; i++) {
         var av1 = a1.value[i];
@@ -956,10 +944,7 @@ List.productMV = function(a, b) {
     for (var j = 0; j < a.value.length; j++) {
         var erg = {
             'ctype': 'number',
-            'value': {
-                'real': 0,
-                'imag': 0
-            }
+            'value': new CSNumber._helper.complex([0, 0])
         };
         var a1 = a.value[j];
         for (var i = 0; i < b.value.length; i++) {
@@ -987,10 +972,7 @@ List.productVM = function(a, b) {
     for (var j = 0; j < b.value[0].value.length; j++) {
         var erg = {
             'ctype': 'number',
-            'value': {
-                'real': 0,
-                'imag': 0
-            }
+            'value': new CSNumber._helper.complex([0, 0])
         };
         for (var i = 0; i < a.value.length; i++) {
             var av1 = a.value[i];
@@ -1399,64 +1381,40 @@ List.adjoint3 = function(a) {
             'ctype': 'list',
             'value': [{
                 'ctype': 'number',
-                'value': {
-                    'real': r22 * r33 - r23 * r32 - i22 * i33 + i23 * i32,
-                    'imag': r22 * i33 - r23 * i32 - r32 * i23 + r33 * i22
-                }
+                'value': new CSNumber._helper.complex([r22 * r33 - r23 * r32 - i22 * i33 + i23 * i32, r22 * i33 - r23 * i32 - r32 * i23 + r33 * i22])
             }, {
                 'ctype': 'number',
-                'value': {
-                    'real': -r12 * r33 + r13 * r32 + i12 * i33 - i13 * i32,
-                    'imag': -r12 * i33 + r13 * i32 + r32 * i13 - r33 * i12
-                }
+                'value': new CSNumber._helper.complex([-r12 * r33 + r13 * r32 + i12 * i33 - i13 * i32, -r12 * i33 + r13 * i32 + r32 * i13 - r33 * i12])
             }, {
                 'ctype': 'number',
-                'value': {
-                    'real': r12 * r23 - r13 * r22 - i12 * i23 + i13 * i22,
-                    'imag': r12 * i23 - r13 * i22 - r22 * i13 + r23 * i12
-                }
+                'value': new CSNumber._helper.complex([
+                    r12 * r23 - r13 * r22 - i12 * i23 + i13 * i22, r12 * i23 - r13 * i22 - r22 * i13 + r23 * i12
+                ])
             }]
         }, {
             'ctype': 'list',
             'value': [{
                 'ctype': 'number',
-                'value': {
-                    'real': -r21 * r33 + r23 * r31 + i21 * i33 - i23 * i31,
-                    'imag': -r21 * i33 + r23 * i31 + r31 * i23 - r33 * i21
-                }
+                'value': new CSNumber._helper.complex([-r21 * r33 + r23 * r31 + i21 * i33 - i23 * i31, -r21 * i33 + r23 * i31 + r31 * i23 - r33 * i21])
+
             }, {
                 'ctype': 'number',
-                'value': {
-                    'real': r11 * r33 - r13 * r31 - i11 * i33 + i13 * i31,
-                    'imag': r11 * i33 - r13 * i31 - r31 * i13 + r33 * i11
-                }
+                'value': new CSNumber._helper.complex([r11 * r33 - r13 * r31 - i11 * i33 + i13 * i31, r11 * i33 - r13 * i31 - r31 * i13 + r33 * i11])
             }, {
                 'ctype': 'number',
-                'value': {
-                    'real': -r11 * r23 + r13 * r21 + i11 * i23 - i13 * i21,
-                    'imag': -r11 * i23 + r13 * i21 + r21 * i13 - r23 * i11
-                }
+                'value': new CSNumber._helper.complex([-r11 * r23 + r13 * r21 + i11 * i23 - i13 * i21, -r11 * i23 + r13 * i21 + r21 * i13 - r23 * i11])
             }]
         }, {
             'ctype': 'list',
             'value': [{
                 'ctype': 'number',
-                'value': {
-                    'real': r21 * r32 - r22 * r31 - i21 * i32 + i22 * i31,
-                    'imag': r21 * i32 - r22 * i31 - r31 * i22 + r32 * i21
-                }
+                'value': new CSNumber._helper.complex([r21 * r32 - r22 * r31 - i21 * i32 + i22 * i31, r21 * i32 - r22 * i31 - r31 * i22 + r32 * i21])
             }, {
                 'ctype': 'number',
-                'value': {
-                    'real': -r11 * r32 + r12 * r31 + i11 * i32 - i12 * i31,
-                    'imag': -r11 * i32 + r12 * i31 + r31 * i12 - r32 * i11
-                }
+                'value': new CSNumber._helper.complex([-r11 * r32 + r12 * r31 + i11 * i32 - i12 * i31, -r11 * i32 + r12 * i31 + r31 * i12 - r32 * i11])
             }, {
                 'ctype': 'number',
-                'value': {
-                    'real': r11 * r22 - r12 * r21 - i11 * i22 + i12 * i21,
-                    'imag': r11 * i22 - r12 * i21 - r21 * i12 + r22 * i11
-                }
+                'value': new CSNumber._helper.complex([r11 * r22 - r12 * r21 - i11 * i22 + i12 * i21, r11 * i22 - r12 * i21 - r21 * i12 + r22 * i11])
             }]
         }]
     };
