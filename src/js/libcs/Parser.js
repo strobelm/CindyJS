@@ -545,7 +545,12 @@ function parseRec(tokens, closing) {
                                 ' arguments', tok.start);
                         }
                     } else if (pair === '{}') {
-                        throw ParseError('{…} reserved for future use', tok.start);
+                        seq.push({
+                            ctype: 'function',
+                            oper: 'genJSON',
+                            args: lst,
+                            modifs: {},
+                        });
                     } else if (pair !== '[]' && lst.length === 1) {
                         seq.push({
                             ctype: 'paren',
@@ -668,7 +673,7 @@ Parser.prototype.postprocess = function(expr) {
             if (expr.oper === ':') {
                 if (!(expr.args[1])) {
                     throw ParseError(
-                        'Data key undefined', expr.start, expr.text);
+                        'UserData/JSON: Key or Value undefined', expr.start, expr.text);
                 }
                 expr.ctype = 'userdata';
                 expr.obj = expr.args[0];

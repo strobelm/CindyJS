@@ -421,6 +421,46 @@ evaluator.genList = function(args, modifs) { //VARIADIC!
     return List.turnIntoCSList(args.map(evaluate));
 };
 
+evaluator.genJSON = function(args, modifs) {
+    function genJSONObj(el) {
+        // key/obj are reversed due to the semantics of the ":" operator in CindyScript
+        var key = el.obj;
+        var obj = el.key;
+
+        if (key.ctype !== "string") {
+            console.log("Waning: JSON keys have to be strings.");
+            return nada;
+        }
+        if (!obj) {
+            console.log("Warning: JSON object not defined.");
+            return {
+                "key": key,
+                "val": nada,
+            };
+        } else return {
+            "key": key.value,
+            "val": evaluate(obj)
+        };
+    }
+
+    var res = {};
+    for (var i = 0; i < args.length; i++) {
+        var atom = genJSONObj(args[i]);
+        // discard values that have no key
+        if (!atom.key) {
+            continue;
+        }
+        res[atom.key] = atom.val;
+    }
+
+    var tmp = {
+        'ctype': 'JSON',
+        'value': res
+    };
+
+    console.log(tmp);
+    return tmp;
+};
 
 eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher obs das so tut
     var lhs = data.args[0];
