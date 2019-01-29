@@ -193,14 +193,13 @@ evaluator.while$2 = function(args, modifs) { //OK
 };
 
 
-evaluator.apply$2 = function(args, modifs) { //OK
+evaluator.apply$2 = function(args, modifs) {
     return evaluator.apply$3([args[0], null, args[1]], modifs);
 };
 
-evaluator.apply$3 = function(args, modifs) { //OK
-
+evaluator.apply$3 = function(args, modifs) {
     var v1 = evaluateAndVal(args[0]);
-    if (v1.ctype !== 'list') {
+    if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
@@ -212,18 +211,36 @@ evaluator.apply$3 = function(args, modifs) { //OK
     }
 
     var li = v1.value;
-    var erg = [];
+    var erg, res;
     namespace.newvar(lauf);
-    for (var i = 0; i < li.length; i++) {
-        namespace.setvar(lauf, li[i]);
-        erg[i] = evaluate(args[2]);
+
+    if (v1.ctype === "list") {
+        erg = [];
+        for (var i = 0; i < li.length; i++) {
+            namespace.setvar(lauf, li[i]);
+            erg[i] = evaluate(args[2]);
+        }
+
+        res = {
+            'ctype': 'list',
+            'value': erg
+        };
+    } else { // JSON
+        erg = {};
+        for (var k in li) {
+            namespace.setvar(lauf, li[k]);
+            erg[k] = evaluate(args[2]);
+        }
+
+        res = {
+            'ctype': 'JSON',
+            'value': erg
+        };
     }
+
     namespace.removevar(lauf);
 
-    return {
-        'ctype': 'list',
-        'value': erg
-    };
+    return res;
 
 };
 
@@ -232,9 +249,9 @@ evaluator.forall$2 = function(args, modifs) { //OK
 };
 
 evaluator.forall$3 = function(args, modifs) { //OK
-
     var v1 = evaluateAndVal(args[0]);
-    if (v1.ctype !== 'list') {
+
+    if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
@@ -246,16 +263,25 @@ evaluator.forall$3 = function(args, modifs) { //OK
     }
 
     var li = v1.value;
-    var erg = [];
+    var erg, res;
     namespace.newvar(lauf);
-    var res;
-    for (var i = 0; i < li.length; i++) {
-        namespace.setvar(lauf, li[i]);
-        res = evaluate(args[2]);
-        erg[i] = res;
-    }
-    namespace.removevar(lauf);
 
+    if (v1.ctype === "list") {
+        erg = [];
+        for (var i = 0; i < li.length; i++) {
+            namespace.setvar(lauf, li[i]);
+            res = evaluate(args[2]);
+            erg[i] = res;
+        }
+    } else { // JSON
+        for (var k in li) {
+            // iterate over keys 
+            namespace.setvar(lauf, General.string(k));
+            res = evaluate(args[2]);
+        }
+    }
+
+    namespace.removevar(lauf);
     return res;
 
 };
@@ -265,9 +291,8 @@ evaluator.select$2 = function(args, modifs) { //OK
 };
 
 evaluator.select$3 = function(args, modifs) { //OK
-
     var v1 = evaluateAndVal(args[0]);
-    if (v1.ctype !== 'list') {
+    if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
@@ -279,26 +304,49 @@ evaluator.select$3 = function(args, modifs) { //OK
     }
 
     var li = v1.value;
-    var erg = [];
+    var erg, ret, res;
     namespace.newvar(lauf);
-    var ct = 0;
-    for (var i = 0; i < li.length; i++) {
-        namespace.setvar(lauf, li[i]);
-        var res = evaluate(args[2]);
-        if (res.ctype === 'boolean') {
-            if (res.value === true) {
-                erg[ct] = li[i];
-                ct++;
+
+    if (v1.ctype === "list") {
+        erg = [];
+        var ct = 0;
+        for (var i = 0; i < li.length; i++) {
+            namespace.setvar(lauf, li[i]);
+            res = evaluate(args[2]);
+            if (res.ctype === 'boolean') {
+                if (res.value === true) {
+                    erg[ct] = li[i];
+                    ct++;
+                }
             }
         }
+
+        ret = {
+            'ctype': 'list',
+            'value': erg
+        };
+
+    } else { // JSON
+        erg = {};
+        for (var k in li) {
+            namespace.setvar(lauf, li[k]);
+            res = evaluate(args[2]);
+            if (res.ctype === 'boolean') {
+                if (res.value === true) {
+                    erg[k] = li[k];
+                }
+            }
+        }
+
+        ret = {
+            'ctype': 'JSON',
+            'value': erg
+        };
     }
+
     namespace.removevar(lauf);
 
-    return {
-        'ctype': 'list',
-        'value': erg
-    };
-
+    return ret;
 };
 
 
@@ -421,6 +469,22 @@ evaluator.genList = function(args, modifs) { //VARIADIC!
     return List.turnIntoCSList(args.map(evaluate));
 };
 
+evaluator.genJSON = function(args, modifs) {
+    var res = {};
+    for (var i = 0; i < args.length; i++) {
+        var atom = Json.GenFromUserDataEl(args[i]);
+        // discard values that have no key
+        if (!atom.key) {
+            continue;
+        }
+        res[atom.key] = atom.val;
+    }
+
+    return {
+        'ctype': 'JSON',
+        'value': res
+    };
+};
 
 eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher obs das so tut
     var lhs = data.args[0];
@@ -428,6 +492,7 @@ eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher ob
     var ind = evaluateAndVal(data.args[1]);
     var rhs = nada;
 
+    // TODO fix ind must be number
     if (where.ctype === 'list' || where.ctype === 'string') {
         var ind1 = Math.floor(ind.value.real);
         if (ind1 < 0) {
@@ -440,13 +505,20 @@ eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher ob
                 rhs = List.turnIntoCSList(lst);
                 // update colon op
                 if (where.userData) rhs.userData = where.userData;
-            } else {
+            } else { // string
                 var str = where.value;
                 str = str.substring(0, ind1 - 1) +
                     niceprint(evaluate(what)) +
                     str.substring(ind1, str.length);
                 rhs = General.string(str);
             }
+        }
+    }
+    if (where.ctype === 'JSON') {
+        var key = niceprint(ind);
+        if (key !== niceprint(nada)) {
+            rhs = Json._helper.ShallowClone(where);
+            rhs.value[key] = evaluate(what);
         }
     }
     infix_assign([lhs, rhs]);
@@ -457,8 +529,11 @@ eval_helper.assigndot = function(data, what) {
     var where = evaluate(data.obj);
     var field = data.key;
 
-    if (where.ctype === 'geo' && field) {
+    if (where.ctype === 'geo' && typeof(field) === "string") {
         Accessor.setField(where.value, field, evaluateAndVal(what));
+    }
+    if (where.ctype === 'JSON' && typeof(field) === "string") {
+        Json.setField(where.value, field, evaluateAndVal(what));
     }
 
     return nada;
@@ -468,8 +543,8 @@ eval_helper.assigncolon = function(data, what) {
     var lhs = data.obj;
     var where = evaluate(lhs);
 
-    var key = niceprint(evaluate(data.key));
-    if (key === "_?_") key = undefined;
+    var key = General.string(niceprint(evaluate(data.key)));
+    if (key.value === "_?_") key = nada;
 
     if (where.ctype === 'geo' && key) {
         Accessor.setuserData(where.value, key, evaluateAndVal(what));
@@ -485,11 +560,11 @@ eval_helper.assigncolon = function(data, what) {
             rhs.userData = tmpObj;
         }
 
-        rhs.userData[key] = evaluateAndVal(what);
+        rhs.userData[key.value] = evaluateAndVal(what);
 
         infix_assign([lhs, rhs]);
     } else {
-        if (!key) console.log("Key is undefined");
+        if (!(key && key.ctype === "string")) console.log("Key is undefined");
         else console.log("User data can only be assigned to geo objects and lists.");
     }
 
@@ -500,12 +575,19 @@ eval_helper.assigncolon = function(data, what) {
 evaluator.keys$1 = function(args, modifs) {
     var obj = evaluate(args[0]);
     var ctype = obj.ctype;
-    if (ctype === "geo" || ctype === "list") {
+    if (ctype === "geo" || ctype === "list" || ctype === "JSON") {
         var keys = [];
 
-        var data = ctype === "geo" ? obj.value.userData : obj.userData;
+        var data;
+        if (ctype === "geo") {
+            data = obj.value.userData;
+        } else if (ctype === "list") {
+            data = obj.userData;
+        } else { // JSON
+            data = obj.value;
+        }
         if (data) {
-            keys = Object.keys(data).map(General.string);
+            keys = Object.keys(data).map(General.string).sort();
         }
         return List.turnIntoCSList(keys);
     }
@@ -2490,10 +2572,10 @@ evaluator.mincostmatching$1 = function(args, modifs) {
 function infix_take(args, modifs) {
     var v0 = evaluate(args[0]);
     var v1 = evaluateAndVal(args[1]);
-    if (v0.ctype !== 'string') {
+    if (v0.ctype !== 'string' && v0.ctype !== "JSON") {
         v0 = List.asList(v0);
     }
-    if (v1.ctype === 'number') {
+    if (v0.ctype !== "JSON" && v1.ctype === 'number') {
         var ind = Math.floor(v1.value.real);
         if (ind < 0) {
             ind = v0.value.length + ind + 1;
@@ -2510,6 +2592,10 @@ function infix_take(args, modifs) {
             printStackTrace("WARNING: Index out of range!");
             return nada;
         }
+    } else if (v0.ctype === "JSON" && v1.ctype === "string") {
+        var val = v0.value[v1.value];
+        if (val !== undefined && val.ctype) return val;
+        return nada;
     }
     if (v1.ctype === 'list') { // This is recursive, different from Cinderella
         var li = [];
