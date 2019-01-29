@@ -93,6 +93,9 @@ function niceprint(a) {
         }
         return erg + "]";
     }
+    if (a.ctype === 'JSON') {
+        return Json.niceprint(a);
+    }
     if (a.ctype === 'dict') {
         return Dict.niceprint(a);
     }

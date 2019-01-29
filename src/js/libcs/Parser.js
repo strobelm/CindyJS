@@ -571,7 +571,7 @@ function parseRec(tokens, closing) {
                     }
                 } else { // operator position, so it's a function call
                     if (pair === '{}')
-                        throw ParseError('{…} reserved for future use', tok.start);
+                        throw ParseError('{…} not yet implemented for operators.', tok.start);
                     var fname = seq[seq.length - 1];
                     if (fname.ctype !== 'variable')
                         throw ParseError(
