@@ -29,6 +29,9 @@ function evaluate(a) {
         if (obj.ctype === "list") {
             return List.getField(obj, a.key);
         }
+        if (obj.ctype === "JSON") {
+            return Json.getField(obj, a.key);
+        }
         return nada;
     }
     if (a.ctype === 'userdata') {

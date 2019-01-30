@@ -2,6 +2,12 @@
 var Json = {};
 Json._helper = {};
 
+Json.getField = function(obj, key) {
+    if (obj.value[key]) {
+        return obj.value[key];
+    }
+    return nada;
+};
 
 Json.GenFromUserDataEl = function(el) {
     // key/obj are reversed due to the semantics of the ":" operator in CindyScript
@@ -22,11 +28,11 @@ Json.GenFromUserDataEl = function(el) {
         "key": key.value,
         "val": evaluate(obj)
     };
-}
+};
 
-Json.niceprint = function(el){
+Json.niceprint = function(el) {
     var keys = Object.keys(el.value).sort();
     return "{\n" + keys.map(function(key) {
         return "\t" + key + ":" + "\t" + niceprint(el.value[key]);
     }).join(", \n") + "\n}";
-}
+};
