@@ -9,13 +9,17 @@ Json.getField = function(obj, key) {
     return nada;
 };
 
+Json.setField = function(where, field, what) {
+    where[field] = what;
+};
+
 Json.GenFromUserDataEl = function(el) {
     // key/obj are reversed due to the semantics of the ":" operator in CindyScript
     var key = el.obj;
     var obj = el.key;
 
-    if (key.ctype !== "string") {
-        console.log("Waning: JSON keys have to be strings.");
+    if (!key || key.ctype !== "string") {
+        console.log("Error: JSON keys have to be strings.");
         return nada;
     }
     if (!obj) {

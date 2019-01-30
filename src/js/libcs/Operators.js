@@ -473,8 +473,11 @@ eval_helper.assigndot = function(data, what) {
     var where = evaluate(data.obj);
     var field = data.key;
 
-    if (where.ctype === 'geo' && field) {
+    if (where.ctype === 'geo' && typeof(field) === "string") {
         Accessor.setField(where.value, field, evaluateAndVal(what));
+    }
+    if (where.ctype === 'JSON' && typeof(field) === "string") {
+        Json.setField(where.value, field, evaluateAndVal(what));
     }
 
     return nada;
