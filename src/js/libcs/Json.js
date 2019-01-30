@@ -3,7 +3,7 @@ var Json = {};
 Json._helper = {};
 
 Json.getField = function(obj, key) {
-    if (obj.value[key]) {
+    if (obj.value && obj.value[key]) {
         return obj.value[key];
     }
     return nada;
