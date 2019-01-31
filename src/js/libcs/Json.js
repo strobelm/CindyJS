@@ -34,9 +34,44 @@ Json.GenFromUserDataEl = function(el) {
     };
 };
 
+Json._helper.niceprint = function(a) {
+    if (a.ctype === "JSON") {
+        return Json.niceprint(a);
+    }
+    if (a.ctype === "number" && a.value.imag === 0) {
+        return a.value.real;
+    }
+    if (a.ctype === "boolean") {
+        return a.value;
+    }
+    if (a.ctype === 'list') {
+        var erg = "[";
+        for (var i = 0; i < a.value.length; i++) {
+            erg = erg + Json._helper.niceprint(evaluate(a.value[i]));
+            if (i !== a.value.length - 1) {
+                erg = erg + ', ';
+            }
+
+        }
+        return erg + "]";
+    }
+
+    return "\"" + String(niceprint(a)) + "\"";
+};
+
 Json.niceprint = function(el) {
     var keys = Object.keys(el.value).sort();
-    return "{\n" + keys.map(function(key) {
-        return "\t" + key + ":" + "\t" + niceprint(el.value[key]);
-    }).join(", \n") + "\n}";
+    var jsonString = "{" + keys.map(function(key) {
+        return "\"" + key + "\"" + ":" + Json._helper.niceprint(el.value[key]);
+    }).join(", ") + "}";
+
+    // pretty print 
+    try {
+        jsonString = JSON.stringify(JSON.parse(jsonString), null, 1);
+    } catch (e) {
+        console.log("Warning: JSON string could not be parsed!");
+        console.log(e);
+    }
+
+    return jsonString;
 };

@@ -12,10 +12,14 @@
 
 </script>
 <script id="csdraw" type="text/x-cindyscript">
+bla = circle(A,1);
 json1 =  
  {
+    "test" : bla,
+    "undef" : undef,
     "name":"John",
     "age":30,
+    "bool": false,
     "cars": [
         { "name":"Ford", "models":[ "Fiesta", "Focus", "Mustang" ] },
         { "name":"BMW", "models":[ "320", "X3", "X5" ] },
@@ -23,15 +27,18 @@ json1 =
     ]
 };
 json1.name = "Joe";
-println(json1.name);
-println(7 * {});
+//println(json1.name);
+println(json1);
+//println(7 * {});
 //a=json1;
 //println((json1.cars_1).name);
 //println((json1.cars_1).models);
 
 json2 = {"pt1": A, "pt2": B, "pt3" : C};
-//ptA = json2.pt1;
-//println(ptA.xy);
+ptA = json2.pt1;
+println(ptA.xy);
+json2.pt1 = B;
+println((json2.pt1).xy);
 </script>
 <script type="text/javascript">
 
