@@ -519,12 +519,19 @@ eval_helper.assigncolon = function(data, what) {
 evaluator.keys$1 = function(args, modifs) {
     var obj = evaluate(args[0]);
     var ctype = obj.ctype;
-    if (ctype === "geo" || ctype === "list") {
+    if (ctype === "geo" || ctype === "list" || ctype === "JSON") {
         var keys = [];
 
-        var data = ctype === "geo" ? obj.value.userData : obj.userData;
+        var data;
+        if (ctype === "geo") {
+            data = obj.value.userData;
+        } else if (ctype === "list") {
+            data = obj.userData;
+        } else { // JSON
+            data = obj.value;
+        }
         if (data) {
-            keys = Object.keys(data).map(General.string);
+            keys = Object.keys(data).map(General.string).sort();
         }
         return List.turnIntoCSList(keys);
     }

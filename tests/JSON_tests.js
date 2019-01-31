@@ -47,6 +47,9 @@ describe("JSON basic getter / setter", function(){
 
     // pretty print
     itCmd('json', getJSONprettyStr());
+    
+    // keys
+    itCmd('keys(json)', '[age, bool, cars, name, test, undef]');
 });
 
 describe("JSON geo objects", function(){
