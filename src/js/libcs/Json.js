@@ -25,7 +25,7 @@ Json.GenFromUserDataEl = function(el) {
     if (!obj) {
         console.log("Warning: JSON object not defined.");
         return {
-            "key": key,
+            "key": key.value,
             "val": nada,
         };
     } else return {
