@@ -292,9 +292,8 @@ evaluator.select$2 = function(args, modifs) { //OK
 };
 
 evaluator.select$3 = function(args, modifs) { //OK
-
     var v1 = evaluateAndVal(args[0]);
-    if (v1.ctype !== 'list') {
+    if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
@@ -306,26 +305,49 @@ evaluator.select$3 = function(args, modifs) { //OK
     }
 
     var li = v1.value;
-    var erg = [];
+    var erg, ret, res;
     namespace.newvar(lauf);
-    var ct = 0;
-    for (var i = 0; i < li.length; i++) {
-        namespace.setvar(lauf, li[i]);
-        var res = evaluate(args[2]);
-        if (res.ctype === 'boolean') {
-            if (res.value === true) {
-                erg[ct] = li[i];
-                ct++;
+
+    if (v1.ctype === "list") {
+        erg = [];
+        var ct = 0;
+        for (var i = 0; i < li.length; i++) {
+            namespace.setvar(lauf, li[i]);
+            res = evaluate(args[2]);
+            if (res.ctype === 'boolean') {
+                if (res.value === true) {
+                    erg[ct] = li[i];
+                    ct++;
+                }
             }
         }
+
+        ret = {
+            'ctype': 'list',
+            'value': erg
+        };
+
+    } else { // JSON
+        erg = {};
+        for (var k in li) {
+            namespace.setvar(lauf, li[k]);
+            res = evaluate(args[2]);
+            if (res.ctype === 'boolean') {
+                if (res.value === true) {
+                    erg[k] = li[k];
+                }
+            }
+        }
+
+        ret = {
+            'ctype': 'JSON',
+            'value': erg
+        };
     }
+
     namespace.removevar(lauf);
 
-    return {
-        'ctype': 'list',
-        'value': erg
-    };
-
+    return ret;
 };
 
 
