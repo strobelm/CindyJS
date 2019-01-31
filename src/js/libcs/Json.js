@@ -65,6 +65,9 @@ Json.niceprint = function(el) {
         return "\"" + key + "\"" + ":" + Json._helper.niceprint(el.value[key]);
     }).join(", ") + "}";
 
+    // to be valid JSON we need to replace single with double quotes
+    jsonString = jsonString.replace(/'/g, '"') ;
+
     // pretty print 
     try {
         jsonString = JSON.stringify(JSON.parse(jsonString), null, 1);
