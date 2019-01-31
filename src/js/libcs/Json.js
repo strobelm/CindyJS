@@ -70,7 +70,7 @@ Json.niceprint = function(el) {
 
     // pretty print 
     try {
-        jsonString = JSON.stringify(JSON.parse(jsonString), null, 1);
+        jsonString = JSON.stringify(JSON.parse(jsonString), null, 2);
     } catch (e) {
         console.log("Warning: JSON string could not be parsed!");
         console.log(e);

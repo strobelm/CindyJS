@@ -25,6 +25,10 @@ function getJSONStr() {
 return "{\"age\":30, \"bool\":false, \"cars\":[{\n \"models\": [\n  \"Fiesta\",\n  \"Focus\",\n  \"Mustang\"\n ],\n \"name\": \"Ford\"\n}, {\n \"models\": [\n  \"320\",\n  \"X3\",\n  \"X5\"\n ],\n \"name\": \"BMW\"\n}, {\n \"models\": [\n  \"500\",\n  \"Panda\"\n ],\n \"name\": \"Fiat\"\n}], \"name\":\"Joe\"}"
 }
 
+function getJSONprettyStr() {
+return "{\n  \"age\": 30,\n  \"bool\": false,\n  \"cars\": [\n    {\n      \"models\": [\n        \"Fiesta\",\n        \"Focus\",\n        \"Mustang\"\n      ],\n      \"name\": \"Ford\"\n    },\n    {\n      \"models\": [\n        \"320\",\n        \"X3\",\n        \"X5\"\n      ],\n      \"name\": \"BMW\"\n    },\n    {\n      \"models\": [\n        \"500\",\n        \"Panda\"\n      ],\n      \"name\": \"Fiat\"\n    }\n  ],\n  \"name\": \"Joe\",\n  \"test\": \"circle\",\n  \"undef\": \"___\"\n}";
+}
+
 describe("JSON basic getter / setter", function(){
     before(function(){
         cdy.evalcs('circ = circle(A,1);');
@@ -40,6 +44,9 @@ describe("JSON basic getter / setter", function(){
     itCmd('json.age', '30');
     itCmd('((json.cars)_1).models_2', 'Focus');
     itCmd('json.test', 'circle');
+
+    // pretty print
+    itCmd('json', getJSONprettyStr());
 });
 
 describe("JSON geo objects", function(){
@@ -51,3 +58,5 @@ describe("JSON geo objects", function(){
     itCmd('(geojson.pt1).xy', '[0, 0]');
     itCmd('geojson.pt1 = C; (geojson.pt1).xy', '[1, 2]');
 });
+
+
