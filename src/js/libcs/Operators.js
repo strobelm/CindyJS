@@ -193,14 +193,13 @@ evaluator.while$2 = function(args, modifs) { //OK
 };
 
 
-evaluator.apply$2 = function(args, modifs) { //OK
+evaluator.apply$2 = function(args, modifs) {
     return evaluator.apply$3([args[0], null, args[1]], modifs);
 };
 
-evaluator.apply$3 = function(args, modifs) { //OK
-
+evaluator.apply$3 = function(args, modifs) {
     var v1 = evaluateAndVal(args[0]);
-    if (v1.ctype !== 'list') {
+    if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
@@ -212,18 +211,36 @@ evaluator.apply$3 = function(args, modifs) { //OK
     }
 
     var li = v1.value;
-    var erg = [];
+    var erg, res;
     namespace.newvar(lauf);
-    for (var i = 0; i < li.length; i++) {
-        namespace.setvar(lauf, li[i]);
-        erg[i] = evaluate(args[2]);
+
+    if (v1.ctype === "list") {
+        erg = [];
+        for (var i = 0; i < li.length; i++) {
+            namespace.setvar(lauf, li[i]);
+            erg[i] = evaluate(args[2]);
+        }
+
+        res = {
+            'ctype': 'list',
+            'value': erg
+        };
+    } else { // JSON
+        erg = {};
+        for (var k in li) {
+            namespace.setvar(lauf, li[k]);
+            erg[k] = evaluate(args[2]);
+        }
+
+        res = {
+            'ctype': 'JSON',
+            'value': erg
+        };
     }
+
     namespace.removevar(lauf);
 
-    return {
-        'ctype': 'list',
-        'value': erg
-    };
+    return res;
 
 };
 
@@ -232,9 +249,9 @@ evaluator.forall$2 = function(args, modifs) { //OK
 };
 
 evaluator.forall$3 = function(args, modifs) { //OK
-
     var v1 = evaluateAndVal(args[0]);
-    if (v1.ctype !== 'list') {
+
+    if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
@@ -246,16 +263,26 @@ evaluator.forall$3 = function(args, modifs) { //OK
     }
 
     var li = v1.value;
-    var erg = [];
+    var erg, res;
     namespace.newvar(lauf);
-    var res;
-    for (var i = 0; i < li.length; i++) {
-        namespace.setvar(lauf, li[i]);
-        res = evaluate(args[2]);
-        erg[i] = res;
-    }
-    namespace.removevar(lauf);
 
+    if (v1.ctype === "list") {
+        erg = [];
+        for (var i = 0; i < li.length; i++) {
+            namespace.setvar(lauf, li[i]);
+            res = evaluate(args[2]);
+            erg[i] = res;
+        }
+    } else { // JSON
+        erg = {};
+        for (var k in li) {
+            namespace.setvar(lauf, li[k]);
+            res = evaluate(args[2]);
+            erg[k] = res;
+        }
+    }
+
+    namespace.removevar(lauf);
     return res;
 
 };
