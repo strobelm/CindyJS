@@ -186,6 +186,25 @@ The variable is local to the expression.
 
 ------
 
+#### The forall loop: `forall(‹list›,‹varValue›,‹varKey›,‹expr›)`
+
+**Description:**
+Similar to `forall(‹list›,‹var›,‹expr›)`, but the run variable is now named `‹var›`. The `key` variable can be accessed via ``‹varKey›``
+The variable is local to the expression.
+
+    > v=994;
+    > k=123;
+    > forall([4,5,6],v,k,println([k,v]))
+    * [1,4]
+    * [2,5]
+    * [3,6] 
+    > v
+    < 994
+    > k
+    < 123 
+
+------
+
 #### Applying an expression: `apply(‹list›,‹expr›)`
 
 **Description:**

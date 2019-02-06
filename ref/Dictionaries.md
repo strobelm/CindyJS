@@ -104,33 +104,36 @@ The variable is local to the expression.
 **Description:**
 This operator is useful for applying an operation to all elements of a dict.
 It takes a `‹dict›` as first argument.
-It produces a loop in which `‹expr›` is evaluated for each **key** of the list.
-For each run, the run variable `#` takes the value of the corresponding list key.
+It produces a loop in which `‹expr›` is evaluated for each **value** of the list.
+For each run, the run variable `#` takes the value of the corresponding list value.
 
 **Example:**
 
     > a={"a" : 5, "b" : 2};
-    > forall(a,println([#,a_#]))
+    > forall(a,println(#))
 
 This code fragment produces the output
 
-    * [a, 5]
-    * [b, 2]
+    * 5
+    * 2
 
 ------
 
-### The forall loop: `forall(‹dict›,‹var›,‹expr›)`
+### The forall loop: `forall(‹dict›,‹varVal›,‹varKey›,‹expr›)`
 
 **Description:**
-Similar to `forall(‹dict›,‹expr›)`, but the run variable is now named `‹var›`.
+Similar to `forall(‹dict›,<var>,‹expr›)`, but the run variable is now named `‹varVal›`. You can access the key via `<varKey>`.
 The variable is local to the expression.
 
     > v=994;
-    > forall({"a" : 5, "b" : 2},v,println(v))
-    * a
-    * b
+    > k=123;
+    > forall({"a" : 5, "b" : 2},v,k,println([k,v]))
+    * [a, 5]
+    * [b, 2]
     > v
     < 994
+    > k
+    < 123
 
 ------
 
