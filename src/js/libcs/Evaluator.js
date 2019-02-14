@@ -29,6 +29,14 @@ function evaluate(a) {
         if (obj.ctype === "list") {
             return List.getField(obj, a.key);
         }
+        if (obj.ctype === "JSONAtom") {
+            if (a.key === "key") {
+                return General.string(obj.value.key);
+            }
+            if (a.key === "value") {
+                return obj.value.value;
+            }
+        }
         if (obj.ctype === "JSON") {
             return Json.getField(obj, a.key);
         }

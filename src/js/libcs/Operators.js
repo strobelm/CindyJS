@@ -249,72 +249,63 @@ evaluator.forall$2 = function(args, modifs) { //OK
 };
 
 evaluator.forall$3 = function(args, modifs) { //OK
-    return evaluator.forall$4([args[0], args[1], null, args[2]], modifs);
-};
-
-evaluator.forall$4 = function(args, modifs) { //OK
     var v1 = evaluateAndVal(args[0]);
 
     if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
-    var valueVar = '#';
+    var runVar = '#';
     if (args[1] !== null) {
         if (args[1].ctype === 'variable') {
-            valueVar = args[1].name;
-        }
-    }
-
-    var keyVar;
-    if (args[2] !== null) {
-        if (args[2].ctype === 'variable') {
-            keyVar = args[2].name;
-            namespace.newvar(keyVar);
+            runVar = args[1].name;
         }
     }
 
     var li = v1.value;
     var erg, res;
-    namespace.newvar(valueVar);
+    namespace.newvar(runVar);
 
-    if (keyVar !== undefined) {
-        if (v1.ctype === "list") {
-            erg = [];
-            for (let i = 0; i < li.length; i++) {
-                namespace.setvar(keyVar, CSNumber.real(i+1));
-                namespace.setvar(valueVar, li[i]);
-                res = evaluate(args[3]);
-                erg[i] = res;
-            }
-        } else { // JSON
-            for (let k in li) {
-                // iterate over values 
-                namespace.setvar(keyVar, General.string(k));
-                namespace.setvar(valueVar, li[k]);
-                res = evaluate(args[3]);
+    if (v1.ctype === "list") {
+        erg = [];
+        for (let i = 0; i < li.length; i++) {
+            namespace.setvar(runVar, li[i]);
+            res = evaluate(args[3]);
+            erg[i] = res;
+        }
+    } else { // JSON
+        // default iterate over values in JSON
+        var iteratorType = "value";
+        if (modifs.iterator !== undefined) {
+            let it = evaluate(modifs.iterator);
+            let iterTypes = ["key", "value", "pair"];
+            if (it.ctype === 'string' && iterTypes.includes(it.value)) {
+                iteratorType = it.value;
             }
         }
-        namespace.removevar(keyVar);
-    } else { // no key var
-        if (v1.ctype === "list") {
-            erg = [];
-            for (let i = 0; i < li.length; i++) {
-                namespace.setvar(valueVar, li[i]);
-                res = evaluate(args[3]);
-                erg[i] = res;
-            }
-        } else { // JSON
+        if (iteratorType === "value") {
             for (let k in li) {
                 // iterate over values 
-                namespace.setvar(valueVar, li[k]);
-                res = evaluate(args[3]);
+                namespace.setvar(runVar, li[k]);
+                res = evaluate(args[2]);
+            }
+        } else if (iteratorType === "key") {
+            for (let k in li) {
+                // iterate over keys
+                namespace.setvar(runVar, General.string(k));
+                res = evaluate(args[2]);
+            }
+        } else { // pair
+            for (let k in li) {
+                // iterate over values 
+                namespace.setvar(runVar, Json._helper.GenJSONAtom(k, li[k]));
+                res = evaluate(args[2]);
             }
         }
     }
 
+    namespace.removevar(runVar);
 
-    namespace.removevar(valueVar);
     return res;
 };
 

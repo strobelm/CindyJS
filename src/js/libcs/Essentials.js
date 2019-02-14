@@ -93,6 +93,9 @@ function niceprint(a) {
         }
         return erg + "]";
     }
+    if (a.ctype === 'JSONAtom') {
+        return Json.Atomniceprint(a);
+    }
     if (a.ctype === 'JSON') {
         return Json.niceprint(a);
     }

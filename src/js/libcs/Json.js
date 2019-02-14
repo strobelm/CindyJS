@@ -54,6 +54,16 @@ Json.GenFromUserDataEl = function(el) {
     };
 };
 
+Json._helper.GenJSONAtom = function(key, val) {
+    return {
+        "ctype": "JSONAtom",
+        "value": {
+            'key': key,
+            'value': val
+        }
+    };
+};
+
 Json._helper.niceprint = function(a) {
     if (a.ctype === "JSON") {
         return Json.niceprint(a);
@@ -77,6 +87,10 @@ Json._helper.niceprint = function(a) {
     }
 
     return "\"" + String(niceprint(a)) + "\"";
+};
+
+Json.Atomniceprint = function(el) {
+    return "\{" + el.value.key + ":" + niceprint(el.value.value) + "\}";
 };
 
 Json.niceprint = function(el) {
