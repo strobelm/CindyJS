@@ -542,11 +542,6 @@ eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher ob
         if (key !== niceprint(nada)) {
             rhs = Json._helper.ShallowClone(where);
             rhs.value[key] = evaluate(what);
-            if (Json._helper.isCyclic(rhs)) {
-                console.log("Error! Refusing to set cyclic dependency in dictionary.");
-                delete rhs.value[key];
-            }
-
         }
     }
     infix_assign([lhs, rhs]);

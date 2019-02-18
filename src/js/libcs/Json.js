@@ -31,10 +31,6 @@ Json.getField = function(obj, key) {
 
 Json.setField = function(where, field, what) {
     where[field] = what;
-    if (Json._helper.isCyclic(where)) {
-        console.log("Error! Refusing to set cyclic dependency in dictionary.");
-        delete where[field];
-    }
 };
 
 Json.GenFromUserDataEl = function(el) {
@@ -116,34 +112,4 @@ Json.niceprint = function(el) {
     }
 
     return jsonString;
-};
-
-// credits to http://blog.vjeux.com/2011/javascript/cyclic-object-detection.html
-Json._helper.isCyclic = function(obj) {
-    var seenObjects = [];
-    var mark = String(Math.random());
-
-    function detect(obj) {
-        if (typeof obj === 'object') {
-            if (mark in obj) {
-                return false;
-            }
-            obj[mark] = true;
-            seenObjects.push(obj);
-            for (var key in obj) {
-                if (obj.hasOwnProperty(key) && !detect(obj[key])) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    var result = detect(obj);
-
-    for (var i = 0; i < seenObjects.length; ++i) {
-        delete seenObjects[i][mark];
-    }
-
-    return result;
 };
