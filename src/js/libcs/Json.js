@@ -97,10 +97,14 @@ Json.niceprint = function(el, modifs, visitedMap) {
     // track visited elements for cycles
     if (!visitedMap) {
         visitedMap = {};
-        visitedMap.max = 500;
+        visitedMap.level = 0;
+        visitedMap.maxLevel = 5000;
+        visitedMap.maxElVisit = 500;
     }
-    // track if we have a new recursive call
+    // track a new recursive call
     visitedMap.newLevel = true;
+    visitedMap.level += 1;
+
 
     var keys = Object.keys(el.value).sort();
     var jsonString = "{" + keys.map(function(key) {
@@ -109,8 +113,8 @@ Json.niceprint = function(el, modifs, visitedMap) {
         if (!visitedMap[elValKey]) {
             visitedMap[elValKey] = 1;
         } else {
-            if (visitedMap[elValKey] > visitedMap.max) {
-                console.log("Warning: We visited a key-value pair very often. Dictionary is probably cyclic. Aborting.");
+            if (visitedMap[elValKey] > visitedMap.max || visitedMap.level > visitedMap.maxLevel) {
+                console.log("Warning: We visited a key-value pair very often or a very deeply nested dictionary. Dictionary is probably cyclic. Aborting.");
                 return "\"" + key + "\"" + ":" + '"..."';
             }
             // update only once a recursive call
