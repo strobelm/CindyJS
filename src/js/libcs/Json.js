@@ -64,9 +64,9 @@ Json._helper.GenJSONAtom = function(key, val) {
     };
 };
 
-Json._helper.niceprint = function(a) {
+Json._helper.niceprint = function(a, modifs, visitedMap) {
     if (a.ctype === "JSON") {
-        return Json.niceprint(a);
+        return Json.niceprint(a, modifs, visitedMap);
     }
     if (a.ctype === "number" && a.value.imag === 0) {
         return a.value.real;
@@ -93,23 +93,52 @@ Json.Atomniceprint = function(el) {
     return "\{" + el.value.key + ":" + niceprint(el.value.value) + "\}";
 };
 
-Json.niceprint = function(el) {
+Json.niceprint = function(el, modifs, visitedMap) {
+    // track visited elements for cycles
+    if (!visitedMap) {
+        visitedMap = {};
+        visitedMap.max = 500;
+    }
+    // track if we have a new recursive call
+    visitedMap.newLevel = true;
+
     var keys = Object.keys(el.value).sort();
     var jsonString = "{" + keys.map(function(key) {
-        return "\"" + key + "\"" + ":" + Json._helper.niceprint(el.value[key]);
+        // update visitedMap
+        let elValKey = el.value[key];
+        if (!visitedMap[elValKey]) {
+            visitedMap[elValKey] = 1;
+        } else {
+            if (visitedMap[elValKey] > visitedMap.max) {
+                console.log("Warning: We visited a key-value pair very often. Dictionary is probably cyclic. Aborting.");
+                return "\"" + key + "\"" + ":" + '"..."';
+            }
+            // update only once a recursive call
+            if (visitedMap.newLevel) {
+                visitedMap[elValKey] += 1;
+                // update only once each function call
+                visitedMap.newLevel = false;
+            }
+        }
+        return "\"" + key + "\"" + ":" + Json._helper.niceprint(elValKey, modifs, visitedMap);
     }).join(", ") + "}";
 
-    // to be valid JSON we need to replace single with double quotes
-    jsonString = jsonString.replace(/'/g, '"');
 
     // pretty print 
-    try {
-        jsonString = JSON.stringify(JSON.parse(jsonString), null, 0);
-        //jsonString = jsonString.replace(/,/g, ", ").replace(/:/g, " : "); // add whitespace
-    } catch (e) {
-        console.log("Warning: JSON string could not be parsed!");
-        console.log(e);
-    }
+    // to be valid JSON we need to replace single with double quotes
+    jsonString = jsonString.replace(/'/g, '"');
+    jsonString = JSON.stringify(JSON.parse(jsonString), null, 0);
 
     return jsonString;
+};
+
+Json._helper.handlePrintException = function(e) {
+    if (e instanceof RangeError) {
+        console.log("Warning: Dictionary string could not be generated! Probably large cyclic Dictionary!");
+    } else if (e instanceof SyntaxError) {
+        console.log("Warning: Dictionary string could not be parsed!");
+    } else {
+        console.log("Warning: Dictionary printing failed!");
+    }
+
 };
