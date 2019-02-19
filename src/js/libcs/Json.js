@@ -98,8 +98,8 @@ Json.niceprint = function(el, modifs, visitedMap) {
     if (!visitedMap) {
         visitedMap = {};
         visitedMap.level = 0;
-        visitedMap.maxLevel = 5000;
-        visitedMap.maxElVisit = 500;
+        visitedMap.maxLevel = 1000;
+        visitedMap.maxElVisit = 5000;
     }
     // track a new recursive call
     visitedMap.newLevel = true;
@@ -113,8 +113,9 @@ Json.niceprint = function(el, modifs, visitedMap) {
         if (!visitedMap[elValKey]) {
             visitedMap[elValKey] = 1;
         } else {
-            if (visitedMap[elValKey] > visitedMap.max || visitedMap.level > visitedMap.maxLevel) {
-                console.log("Warning: We visited a key-value pair very often or a very deeply nested dictionary. Dictionary is probably cyclic. Aborting.");
+            if (visitedMap[elValKey] > visitedMap.maxElVisit || visitedMap.level > visitedMap.maxLevel) {
+                //console.log([visitedMap[elValKey], visitedMap.level]);
+                console.log("Warning: We visited a key-value pair very often or encountered a very deeply nested dictionary. Dictionary is probably cyclic. Output will be probably incomplete.");
                 return "\"" + key + "\"" + ":" + '"..."';
             }
             // update only once a recursive call
