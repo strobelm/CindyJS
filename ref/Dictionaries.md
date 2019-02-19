@@ -117,19 +117,44 @@ This code fragment produces the output
     * 5
     * 2
 
+**Modifiers** 
+
+forall supports the modifier `iterator` that changes the behavior of the running variable: "value" iterates of the dictionary values (the default), "key" iterates over the dictionary keys and "pair" returns an elementary dictionary element that key and value can be accessed using the ".key" and ".value property".
+
+**Example iterator key:**
+
+    > a={"a" : 5, "b" : 2};
+    > forall(a,println(#), iterator->"key")
+
+This code fragment produces the output
+
+    * a
+    * b
+
+
+**Example iterator pair:**
+
+    > a={"a" : 5, "b" : 2};
+    > forall(a,println([#.key, #.value]), iterator->"pair")
+
+This code fragment produces the output
+
+    * [a, 5]
+    * [b, 2]
+
 ------
 
-### The forall loop: `forall(‹dict›,‹varVal›,‹varKey›,‹expr›)`
+### The forall loop: `forall(‹dict›,‹var›,‹expr›)`
 
 **Description:**
-Similar to `forall(‹dict›,<var>,‹expr›)`, but the run variable is now named `‹varVal›`. You can access the key via `<varKey>`.
+Similar to `forall(‹dict›,‹expr›)`, but the run variable is now named `‹var›`.
 The variable is local to the expression.
 
     > v=994;
     > k=123;
-    > forall({"a" : 5, "b" : 2},v,k,println([k,v]))
-    * [a, 5]
-    * [b, 2]
+    > forall({"a" : 5, "b" : 2},v,println(v))
+    * 5
+    * 2
     > v
     < 994
     > k

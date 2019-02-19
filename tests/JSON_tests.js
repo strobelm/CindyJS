@@ -51,6 +51,9 @@ describe("JSON basic getter / setter", function(){
     // keys
     itCmd('keys(json)', '[age, bool, cars, name, test, undef]');
 
+    // values  
+    itCmd('values({"a" : 5, "b" : 2})', '[5, 2]');
+
     // dynamic access
     itCmd('myvar = "name"; json_myvar = "Bob"; json.name', 'Bob');
     itCmd('json_undef', '___');
@@ -79,8 +82,10 @@ describe("JSON operations", function(){
 
     itCmd('apply(json3, #^2)', '{"a":1,"b":4,"c":100,"d":"___"}');
     itCmd('select(json3, isOdd(#))', '{"a":1}');
-    itCmd('li = []; forall(json3,v,k, li = li++[[k, v]]); li', '[[a, 1], [b, 2], [c, 10], [d, string]]');
 
+    itCmd('li = []; forall(json3,v, li = li++[[v.key, v.value]], iterator->"pair"); li', '[[a, 1], [b, 2], [c, 10], [d, string]]');
+
+    itCmd('li = []; forall(json3,v, li = li++[v], iterator->"key"); li', '[a, b, c, d]');
 
     itCmd('v=123;apply(json3,v, v^2); v', '123');
 });
