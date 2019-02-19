@@ -618,6 +618,29 @@ evaluator.keys$1 = function(args, modifs) {
     return nada;
 };
 
+evaluator.values$1 = function(args, modifs) {
+    var obj = evaluate(args[0]);
+    let ctype = obj.ctype;
+    if (ctype === "list") return obj;
+
+    if (ctype === "geo" || ctype === "JSON") {
+        let values = [];
+
+        let data;
+        if (ctype === "geo") {
+            data = obj.value.userData;
+        } else { // JSON
+            data = obj.value;
+        }
+        if (data) {
+            values = Object.keys(data).sort().map(key => data[key]);
+        }
+        return List.turnIntoCSList(values);
+    }
+
+    return nada;
+};
+
 
 eval_helper.assignlist = function(vars, vals) {
     var n = vars.length;

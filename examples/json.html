@@ -48,7 +48,12 @@ json1 =
 //json3 = {"bla": 1, "blubb": 2, "lala": 10, "c" : "string" };
 //println(apply(json3, #^2));
 
-//json3 = {"bla": 1, "blubb": 2, "lala": 10 };
+json3 = {"bla": 1, "blubb": 2, "lala": 10 };
+println(keys(json3));
+println(values(json3));
+A:"bla" = 5;
+println(keys(A));
+println(values(A));
 //println(select(json3, isOdd(#)));
 //json33 = forall(json3, println(json3_#));
 //println(json33);
@@ -58,13 +63,13 @@ json1 =
 //forall(a,println(#))
 //forall(json3,iterator->"pair", println([#.key, #.value]));
 //forall(json3,iterator->"value", println(#));
-Jason = {"age":13};
-Jasonica = {"age":15};
+//Jason = {"age":13};
+//Jasonica = {"age":15};
+//
+//Jason.sister = Jasonica;
+//Jasonica.brother = Jason;
 
-Jason.sister = Jasonica;
-Jasonica.brother = Jason;
-
-errc(Jason);
+//errc(Jason);
 
 </script>
 <script type="text/javascript">
