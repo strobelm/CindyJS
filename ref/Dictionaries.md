@@ -79,8 +79,8 @@ The variable is local to the expression.
 Similar to `apply(‹list›,‹var›, ‹expr›)`, but with two running variables: `‹varVal›` for the value and `‹varVal›` for the key.
 The variables are local to the expression.
 
-    > apply({"a" : 1, "b" : 2}, v, k, k=k+k; v^2);
-    < {"aa":1,"bb":4}
+    > apply({"a" : 1, "b" : 2}, v, k, k+v);
+    < {"a":"a1","b":"b2"}
 
 ------
 

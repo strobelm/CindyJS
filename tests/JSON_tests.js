@@ -92,7 +92,8 @@ describe("JSON operations", function(){
 
     // 4ary apply
     itCmd('apply(json3, v, k, v+k)', '{"a":"1a","b":"2b","c":"10c","d":"stringd"}');
-    itCmd('apply(json3, v, k, k=k+1; v=v+2);', '{"a1":3,"b1":4,"c1":12,"d1":"string2"}');
+    // check that keys are by value and not by reference
+    itCmd('apply(json3, v, k, k=k+1; v=v+2);', '{"a":3,"b":4,"c":12,"d":"string2"}');
 });
 
 

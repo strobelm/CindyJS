@@ -236,13 +236,11 @@ evaluator.apply$4 = function(args, modifs) {
                 erg[i] = evaluate(args[3]);
             }
         } else { // JSON
-            var res, newKey;
+            var res;
             for (let k in li) {
                 namespace.setvar(keyVar, General.string(k));
                 namespace.setvar(valueVar, li[k]);
-                res = evaluate(args[3]);
-                newKey = niceprint(namespace.getvar(keyVar));
-                erg[newKey] = res;
+                erg[k] = evaluate(args[3]);
             }
         }
         namespace.removevar(keyVar);
