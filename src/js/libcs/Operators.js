@@ -198,50 +198,74 @@ evaluator.apply$2 = function(args, modifs) {
 };
 
 evaluator.apply$3 = function(args, modifs) {
+    return evaluator.apply$4([args[0], args[1], null, args[2]], modifs);
+};
+
+evaluator.apply$4 = function(args, modifs) {
     var v1 = evaluateAndVal(args[0]);
+
     if (!(v1.ctype === 'list' || v1.ctype === "JSON")) {
         return nada;
     }
 
-    var lauf = '#';
+    var valueVar = '#';
     if (args[1] !== null) {
         if (args[1].ctype === 'variable') {
-            lauf = args[1].name;
+            valueVar = args[1].name;
+        }
+    }
+
+    var keyVar;
+    if (args[2] !== null) {
+        if (args[2].ctype === 'variable') {
+            keyVar = args[2].name;
+            namespace.newvar(keyVar);
         }
     }
 
     var li = v1.value;
-    var erg, res;
-    namespace.newvar(lauf);
+    var erg = v1.ctype === "list" ? [] : {};
 
-    if (v1.ctype === "list") {
-        erg = [];
-        for (var i = 0; i < li.length; i++) {
-            namespace.setvar(lauf, li[i]);
-            erg[i] = evaluate(args[2]);
+    namespace.newvar(valueVar);
+
+    if (keyVar !== undefined) {
+        if (v1.ctype === "list") {
+            for (let i = 0; i < li.length; i++) {
+                namespace.setvar(keyVar, CSNumber.real(i + 1));
+                namespace.setvar(valueVar, li[i]);
+                erg[i] = evaluate(args[3]);
+            }
+        } else { // JSON
+            var res, newKey;
+            for (let k in li) {
+                namespace.setvar(keyVar, General.string(k));
+                namespace.setvar(valueVar, li[k]);
+                res = evaluate(args[3]);
+                newKey = niceprint(namespace.getvar(keyVar));
+                erg[newKey] = res;
+            }
         }
-
-        res = {
-            'ctype': 'list',
-            'value': erg
-        };
-    } else { // JSON
-        erg = {};
-        for (var k in li) {
-            namespace.setvar(lauf, li[k]);
-            erg[k] = evaluate(args[2]);
+        namespace.removevar(keyVar);
+    } else { // no key var
+        if (v1.ctype === "list") {
+            erg = [];
+            for (let i = 0; i < li.length; i++) {
+                namespace.setvar(valueVar, li[i]);
+                erg[i] = evaluate(args[3]);
+            }
+        } else { // JSON
+            for (let k in li) {
+                // iterate over values 
+                namespace.setvar(valueVar, li[k]);
+                erg[k] = evaluate(args[3]);
+            }
         }
-
-        res = {
-            'ctype': 'JSON',
-            'value': erg
-        };
     }
 
-    namespace.removevar(lauf);
 
-    return res;
+    namespace.removevar(valueVar);
 
+    return (v1.ctype === "list") ? List.turnIntoCSList(erg) : Json.turnIntoCSJson(erg);
 };
 
 evaluator.forall$2 = function(args, modifs) { //OK

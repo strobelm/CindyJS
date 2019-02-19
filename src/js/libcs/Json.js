@@ -2,6 +2,14 @@
 var Json = {};
 Json._helper = {};
 
+
+Json.turnIntoCSJson = function(a) {
+    return {
+        "ctype": "JSON",
+        "value": a
+    };
+};
+
 Json._helper.ShallowClone = function(o) {
     var out, v, key;
     out = Array.isArray(o) ? [] : {};
@@ -71,7 +79,7 @@ Json._helper.niceprint = function(a, modifs, visitedMap) {
     if (a.ctype === "number" && a.value.imag === 0) {
         return a.value.real;
     }
-    if (a.ctype === "boolean") {
+    if (["boolean"].includes(a.ctype)) {
         return a.value;
     }
     if (a.ctype === 'list') {
