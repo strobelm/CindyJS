@@ -270,7 +270,7 @@ evaluator.forall$3 = function(args, modifs) { //OK
         erg = [];
         for (let i = 0; i < li.length; i++) {
             namespace.setvar(runVar, li[i]);
-            res = evaluate(args[3]);
+            res = evaluate(args[2]);
             erg[i] = res;
         }
     } else { // JSON
