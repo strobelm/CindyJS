@@ -72,6 +72,18 @@ The variable is local to the expression.
 
 ------
 
+
+### Applying an expression: `apply(‹dict›,‹varVal›, ‹varKey›,‹expr›)`
+
+**Description:**
+Similar to `apply(‹list›,‹var›, ‹expr›)`, but with two running variables: `‹varVal›` for the value and `‹varVal›` for the key.
+The variables are local to the expression.
+
+    > apply({"a" : 1, "b" : 2}, v, k, k=k+k; v^2);
+    < {"aa":1,"bb":4}
+
+------
+
 ### Selecting elements of a list: `select(‹list›,‹boolexpr›)`
 
 **Description:**
