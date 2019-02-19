@@ -276,6 +276,7 @@ evaluator.forall$3 = function(args, modifs) { //OK
     } else { // JSON
         // default iterate over values in JSON
         var iteratorType = "value";
+        erg = {};
         if (modifs.iterator !== undefined) {
             let it = evaluate(modifs.iterator);
             let iterTypes = ["key", "value", "pair"];
@@ -288,18 +289,21 @@ evaluator.forall$3 = function(args, modifs) { //OK
                 // iterate over values 
                 namespace.setvar(runVar, li[k]);
                 res = evaluate(args[2]);
+                erg[k] = res;
             }
         } else if (iteratorType === "key") {
             for (let k in li) {
                 // iterate over keys
                 namespace.setvar(runVar, General.string(k));
                 res = evaluate(args[2]);
+                erg[k] = res;
             }
         } else { // pair
             for (let k in li) {
                 // iterate over values 
                 namespace.setvar(runVar, Json._helper.GenJSONAtom(k, li[k]));
                 res = evaluate(args[2]);
+                erg[k] = res;
             }
         }
     }
