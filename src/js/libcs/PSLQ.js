@@ -23,4 +23,22 @@ class PSLQMatrix {
     exchange(p1, p2) {
         [this._e[p1], this._e[p2]] = [this._e[p2], this._e[p1]];
     }
+
+    invert() {
+        let e = this._e;
+        let det = -e[2] * e[4] * e[6] + e[1] * e[5] * e[6] + e[2] * e[3] * e[7] - e[0] * e[5] * e[7] - e[1] * e[3] * e[8] + e[0] * e[4] * e[8];
+
+        let res = [(-e[4] * e[7] + e[4] * e[8]), (e[5] * e[6] - e[3] * e[8]), (-e[4] * e[6] + e[3] * e[7]), (e[2] * e[7] - e[1] * e[8]),
+            (-e[2] * e[6] + e[0] * e[8]), (e[1] * e[6] - e[0] * e[7]), (-e[2] * e[4] + e[1] * e[5]), (e[2] * e[3] - e[0] * e[5]),
+            (-e[1] * e[3] + e[0] * e[4])
+        ];
+
+        if (Math.abs(det) < 1e-10) {
+            console.log("PSLQ: inverting singular matrix!")
+        }
+        this._e = res.map(e => e / det);
+        return this;
+    }
+
+
 }
