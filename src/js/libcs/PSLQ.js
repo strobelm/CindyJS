@@ -17,6 +17,11 @@ class PSLQMatrix {
         }
     }
 
+    clone() {
+        let mat = [...this._e];
+        return PSLQMatrix(mat);
+    }
+
     get(idx) {
         return this._e[idx];
     }
