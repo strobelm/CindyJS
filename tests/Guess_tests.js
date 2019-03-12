@@ -19,17 +19,40 @@ describe('PSLQ Matrix', function() {
 		return sameMembers(arr1, arr2); 
     }
 
-    beforeEach(function() {
-    });
 
-    it('initialization of PSLQMatrix object - unit matrix', function() {
-        let pslqMat = new PSLQMatrix();
-		assert(compArr(pslqMat._e, [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]));
-    });
+	describe('initialization', function(){
+    	it('initialization of PSLQMatrix object - unit matrix', function() {
+    	    let pslqMat = new PSLQMatrix();
+			assert(compArr(pslqMat._e, [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]));
+    	});
 
-    it('initialization of PSLQMatrix object - nonunit matrix', function() {
-		let init = [[1,2,3], [4,5,6], [7,8,9]];
-        let pslqMat = new PSLQMatrix(init);
-		assert(compArr(pslqMat._e, [ 1, 4, 7, 2, 5, 8, 3, 6, 9 ]));
-    });
+    	it('initialization of PSLQMatrix object - nonunit matrix', function() {
+			let init = [[1,2,3], [4,5,6], [7,8,9]];
+    	    let pslqMat = new PSLQMatrix(init);
+			assert(compArr(pslqMat._e, [ 1, 4, 7, 2, 5, 8, 3, 6, 9 ]));
+    	});
+	});
+
+	describe('basic methods', function(){
+		let pslqMat;
+
+   		beforeEach(function() {
+			let init = [[1,2,3], [4,5,6], [7,8,9]];
+    	    pslqMat = new PSLQMatrix(init);
+   		});
+
+    	it('get', function() {
+			assert(pslqMat.get(0), 1);
+			assert(pslqMat.get(1), 4);
+			assert(pslqMat.get(8), 9);
+    	});
+
+    	it('exchange', function() {
+			pslqMat.exchange(0,1);
+			assert(compArr(pslqMat._e, [ 4, 1, 7, 2, 5, 8, 3, 6, 9 ]));
+    	});
+	});
+
+
+
 });

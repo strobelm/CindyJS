@@ -15,4 +15,12 @@ class PSLQMatrix {
             this._e = [1, 0, 0, 0, 1, 0, 0, 0, 1];
         }
     }
+
+    get(idx) {
+        return this._e[idx];
+    }
+
+    exchange(p1, p2) {
+        [this._e[p1], this._e[p2]] = [this._e[p2], this._e[p1]];
+    }
 }
