@@ -19,7 +19,7 @@ class PSLQMatrix {
 
     clone() {
         let mat = [...this._e];
-        return PSLQMatrix(mat);
+        return new PSLQMatrix(mat);
     }
 
     get(idx) {
@@ -46,8 +46,9 @@ class PSLQMatrix {
         [this._e[idx1], this._e[idx2]] = [this._e[idx2], this._e[idx1]];
     }
 
-    invert() {
+    inverse() {
         let e = this._e;
+		console.log(["here!!", this._e, e]);
         let det = -e[2] * e[4] * e[6] + e[1] * e[5] * e[6] + e[2] * e[3] * e[7] - e[0] * e[5] * e[7] - e[1] * e[3] * e[8] + e[0] * e[4] * e[8];
 
         let res = [(-e[4] * e[7] + e[4] * e[8]), (e[5] * e[6] - e[3] * e[8]), (-e[4] * e[6] + e[3] * e[7]), (e[2] * e[7] - e[1] * e[8]),
@@ -58,7 +59,7 @@ class PSLQMatrix {
         if (Math.abs(det) < 1e-10) {
             console.log("PSLQ: inverting singular matrix!");
         }
-        this._e = res.map(e => e / det);
+        this._e = res.map(el => el / det);
         return this;
     }
 
@@ -110,4 +111,210 @@ class PSLQMatrix {
     }
 
 
+}
+
+class PSLQ {
+    // real scalar product
+    static dot(a, b) {
+        let res = 0;
+        for (let i = 0; i < a.length; i++) {
+            res += a[i] * b[i];
+        }
+        return res;
+    }
+
+    // scale 
+    static scale(vec, c) {
+        for (let i = 0; i < vec.length; ++i)
+            vec[i] *= c;
+    }
+
+    static maxIndex(v) {
+        let i = 0;
+        for (let j = 1; j < v.length; ++j) {
+            if (v[j] > v[i])
+                i = j;
+        }
+        return i;
+    }
+
+    static get MAX_ITER() {
+        return 20;
+    }
+
+    static get GAMMA() {
+        return 2 / Math.sqrt(3);
+    }
+
+    //    Hermite reduction of a 3x2 Matrix
+    // 	  H is modified in place!
+    static hermiteReduce(H) {
+        let D = [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0]
+        ];
+
+        let n = H.length;
+
+        // Clone H2
+        let H2 = H.map(a => ([...a]));
+
+        let q;
+        for (let i = 1; i < n; i++) {
+            for (let j = i - 1; j >= 0; j--) {
+                q = Math.round(H[i][j] / H[j][j]);
+
+                for (let k = 0; k <= j; k++) {
+                    H2[i][k] -= q * H2[j][k];
+                }
+                for (let k = 0; k < n; k++)
+                    D[i][k] -= q * D[j][k];
+            }
+        }
+
+
+        // copy back H2 to H
+        for (let i = 0; i < 3; i++) {
+            H[i] = H2[i];
+        }
+
+        return new PSLQMatrix(D);
+    }
+    
+        
+       //  PSLQ Algorithm 
+       //  Solve a_0*inx_0 + a_1*inx_1 + ... + a_n-1*inx_n-1=0
+       //  only for n = 3
+       //  
+       //  @param inx  Vector[x_0, x_1, ..., x_n-1]
+       //  @param prec Floating point precision
+       //  @return Vektor [a_0, a_1, ..., a_n-1], if converged undefined otherwise
+         
+    static doPSLQ(inx, prec) {
+        let n = inx.length;
+    
+        // Initialize
+        let x = [];
+        let s = []; 
+    
+        for (let k = 0; k < n; ++k) {
+            x[k] = inx[k] / Math.sqrt(PSLQ.dot(inx, inx));
+    
+            let rdx = 0;
+            for (let j = k; j < n; ++j)
+                rdx += Math.pow(inx[j], 2);
+            s[k] = Math.sqrt(rdx);
+        }
+        PSLQ.scale(s, 1 / s[0]);
+    
+        let A = new PSLQMatrix();
+        let B = new PSLQMatrix();
+    
+        var H = [...Array(n)].map(x=>Array(n-1));
+        for (let i = 0; i < n; ++i) {
+            for (let j = 0; j < n - 1; ++j) {
+                if (i > j)
+					H[i][j] = -x[i] * x[j] / s[j] / s[j + 1];
+                else if (i == j)
+                    H[i][j] = s[i + 1] / s[i];
+                else
+                    H[i][j] = 0;
+            }
+        }
+    
+        // Reduce H
+        let D = PSLQ.hermiteReduce(H);
+        let Dinv =  (D.clone()).inverse().transpose();
+    
+        // Update
+		console.log(["x, dInv", x, Dinv, D]);
+        PSLQMatrix.VMmult(x, Dinv, x);
+//		console.log(["x", x]);
+        PSLQMatrix.mult(D, A, A);
+//		console.log(["A", A]);
+        PSLQMatrix.mult(B, Dinv, B);
+//		console.log(["B", B]);
+
+    
+        // Main Iteration
+        for (let iter = 0; iter < PSLQ.MAX_ITER; ++iter) {
+    
+            // Step One (nur 3x3)
+            let tr = [ H[0][0], H[1][1] ];
+            let r = 0;
+            if (Math.pow(this.GAMMA, 2) * Math.abs(tr[1]) > Math.pow(this.GAMMA, 1) * Math.abs(tr[0]))
+                r = 1;
+    
+            let alpha = 0, beta = 0, lamda = 0, delta = 0;
+            if (r < n - 2) {
+                alpha = H[r][r];
+                beta = H[r + 1][r];
+                lamda = H[r + 1][r + 1];
+                delta = Math.sqrt(Math.pow(beta, 2) + Math.pow(lamda, 2));
+            }
+    
+            // Zeile r mit Zeile r + 1 auch in x, H, A und B vertauschen
+            let t = x[r];
+            x[r] = x[r + 1];
+            x[r + 1] = t;
+    
+            let zr =  [...H[r]];
+            H[r] = H[r + 1];
+            H[r + 1] = zr;
+    
+            A.swRow(r, r + 1);
+            B.swCol(r, r + 1);
+    
+            // Step Two (T enspricht Table)
+			let T = [...Array(2)].map(x=>Array(2));
+            if (r < n - 2) {
+                for (let i = 0; i < n - 1; ++i) {
+                    for (let j = 0; j < n - 1; ++j) {
+                        if ((i == r) && (j == r))
+                            T[i][j] = beta / delta;
+                        else if ((i == r) && (j == r + 1))
+                            T[i][j] = -lamda / delta;
+                        else if ((i == r + 1) && (j == r))
+                            T[i][j] = lamda / delta;
+                        else if ((i == r + 1) && (j == r + 1))
+                            T[i][j] = beta / delta;
+                        else if (((i == j) && (j != r)) || ((i == j) && (j != r + 1)))
+                            T[i][j] = 1;
+                        else
+                            T[i][j] = 0;
+                    }
+                }
+    
+                // Ergebnis der Matrizenmultiplikation
+				H = [ [ H[0][0] * T[0][0] + H[0][1] * T[1][0], H[0][0] * T[0][1] + H[0][1] * T[1][1] ],
+					[ H[1][0] * T[0][0] + H[1][1] * T[1][0], H[1][0] * T[0][1] + H[1][1] * T[1][1] ],
+					[ H[2][0] * T[0][0] + H[2][1] * T[1][0], H[2][0] * T[0][1] + H[2][1] * T[1][1] ], ];
+            }
+    
+            // Step Three
+            D = PSLQ.hermiteReduce(H);
+    
+            Dinv = ( D.clone()).inverse().transpose();
+    
+            // Update
+            PSLQMatrix.VMmult(x, Dinv, x);
+            PSLQMatrix.mult(D, A, A);
+            PSLQMatrix.mult(B, Dinv, B);
+    
+            // Step Four (stop criterion)
+            let crit = [ x[0], x[1], x[2], H[0][0], H[1][1] ];
+            for (let i = 0; i < crit.length; ++i)
+                if (Math.abs(crit[i]) <= Math.pow(10, -prec + 5)) {
+                    // build return value
+                    B.transpose();
+                    for (let j = 0; j < x.length; ++j)
+                        x[j] = -Math.abs(x[j]);
+                    return B.getRow(PSLQ.maxIndex(x));
+                }
+        } // Main Iteration
+    
+        // undefined if not converged
+        return undefined;
+    }
 }

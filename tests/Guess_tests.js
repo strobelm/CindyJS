@@ -4,6 +4,7 @@ let cindyJS = rewire('../build/js/exposed.js');
 let List = cindyJS.__get__('List');
 let CSNumber = cindyJS.__get__('CSNumber');
 let PSLQMatrix = cindyJS.__get__('PSLQMatrix');
+let PSLQ = cindyJS.__get__('PSLQ');
 let assert = require("chai").assert;
 
 let eps = 1e-8;
@@ -84,7 +85,7 @@ describe('PSLQ Matrix', function() {
     	it('invert', function() {
 			let init = [[1,0,0], [0,5,0], [0,0,8]];
     	    pslqMat = new PSLQMatrix(init);
-			pslqMat.invert();
+			pslqMat.inverse();
 			assert(compArr(pslqMat._e, [ 1, 0, 0, 0.2, 0, 0, 0, 0, 0.125 ]));
     	});
 
@@ -118,4 +119,38 @@ describe('PSLQ Matrix', function() {
     	});
 	});
 
+});
+
+
+describe('PSLQ', function() {
+    	it('dot', function() {
+            assert(PSLQ.dot([1,2,3], [3,2,1], 10));
+    	});
+    	it('scale', function() {
+            let v = [1,2,3];
+            PSLQ.scale(v,2);
+			assert.deepEqual(v, [2,4,6]);
+    	});
+    	it('maxIdx', function() {
+            let v = [1,8,3];
+			assert.equal(PSLQ.maxIndex(v), 1);
+    	});
+    	it('constants', function() {
+			assert.equal(PSLQ.MAX_ITER, 20);
+			assert.equal(PSLQ.GAMMA, 2 / Math.sqrt(3));
+    	});
+    	it('Hermite Reduction', function() {
+            let H = [[1,2],[3,4],[5,6]];
+            // H is modified in place
+            let res = PSLQ.hermiteReduce(H); 
+
+            let H2 = [ [ 1, 2 ], [ 0, 4 ], [ 0, -2 ] ];
+            assert.deepEqual(H, H2);
+    	});
+
+    	it('PSLQ', function() {
+            let coeff = [1,2,3];
+            let res = PSLQ.doPSLQ(coeff, 3);
+            assert.deepEqual(res, [1,-1,1]);
+    	});
 });
