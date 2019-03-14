@@ -182,89 +182,92 @@ class PSLQ {
 
         return new PSLQMatrix(D);
     }
-    
-        
-       //  PSLQ Algorithm 
-       //  Solve a_0*inx_0 + a_1*inx_1 + ... + a_n-1*inx_n-1=0
-       //  only for n = 3
-       //  
-       //  @param inx  Vector[x_0, x_1, ..., x_n-1]
-       //  @param prec Floating point precision
-       //  @return Vektor [a_0, a_1, ..., a_n-1], if converged undefined otherwise
-         
+
+
+    //  PSLQ Algorithm 
+    //  Solve a_0*inx_0 + a_1*inx_1 + ... + a_n-1*inx_n-1=0
+    //  only for n = 3
+    //  
+    //  @param inx  Vector[x_0, x_1, ..., x_n-1]
+    //  @param prec Floating point precision
+    //  @return Vektor [a_0, a_1, ..., a_n-1], if converged undefined otherwise
+
     static doPSLQ(inx, prec) {
         let n = inx.length;
-    
+
         // Initialize
         let x = [];
-        let s = []; 
-    
+        let s = [];
+
         for (let k = 0; k < n; ++k) {
             x[k] = inx[k] / Math.sqrt(PSLQ.dot(inx, inx));
-    
+
             let rdx = 0;
             for (let j = k; j < n; ++j)
                 rdx += Math.pow(inx[j], 2);
             s[k] = Math.sqrt(rdx);
         }
         PSLQ.scale(s, 1 / s[0]);
-    
+
         let A = new PSLQMatrix();
         let B = new PSLQMatrix();
-    
-        var H = [...Array(n)].map(x=>Array(n-1));
+
+        var H = [...Array(n)].map(x => Array(n - 1));
         for (let i = 0; i < n; ++i) {
             for (let j = 0; j < n - 1; ++j) {
                 if (i > j)
-					H[i][j] = -x[i] * x[j] / s[j] / s[j + 1];
+                    H[i][j] = -x[i] * x[j] / s[j] / s[j + 1];
                 else if (i == j)
                     H[i][j] = s[i + 1] / s[i];
                 else
                     H[i][j] = 0;
             }
         }
-    
+
         // Reduce H
         let D = PSLQ.hermiteReduce(H);
-        let Dinv =  (D.clone()).inverse().transpose();
-    
+        let Dinv = (D.clone()).inverse().transpose();
+
         // Update
         PSLQMatrix.VMmult(x, Dinv, x);
         PSLQMatrix.mult(D, A, A);
         PSLQMatrix.mult(B, Dinv, B);
 
-    
+
         // Main Iteration
         for (let iter = 0; iter < PSLQ.MAX_ITER; ++iter) {
-    
+
             // Step One (nur 3x3)
-            let tr = [ H[0][0], H[1][1] ];
+            let tr = [H[0][0], H[1][1]];
             let r = 0;
             if (Math.pow(this.GAMMA, 2) * Math.abs(tr[1]) > Math.pow(this.GAMMA, 1) * Math.abs(tr[0]))
                 r = 1;
-    
-            let alpha = 0, beta = 0, lamda = 0, delta = 0;
+
+            let alpha = 0,
+                beta = 0,
+                lamda = 0,
+                delta = 0;
             if (r < n - 2) {
                 alpha = H[r][r];
                 beta = H[r + 1][r];
                 lamda = H[r + 1][r + 1];
                 delta = Math.sqrt(Math.pow(beta, 2) + Math.pow(lamda, 2));
             }
-    
-            // Zeile r mit Zeile r + 1 auch in x, H, A und B vertauschen
+
+            // swap row r with r + 1 in x, H, A and B 
             let t = x[r];
             x[r] = x[r + 1];
             x[r + 1] = t;
-    
-            let zr =  [...H[r]];
+
+            let zr = [...H[r]];
             H[r] = H[r + 1];
             H[r + 1] = zr;
-    
+
             A.swRow(r, r + 1);
             B.swCol(r, r + 1);
-    
-            // Step Two (T enspricht Table)
-			let T = [...Array(2)].map(x=>Array(2));
+
+            // Step Two (T => Table)
+            let T = [...Array(2)].map(x => Array(2));
             if (r < n - 2) {
                 for (let i = 0; i < n - 1; ++i) {
                     for (let j = 0; j < n - 1; ++j) {
@@ -282,25 +285,27 @@ class PSLQ {
                             T[i][j] = 0;
                     }
                 }
-    
-                // Ergebnis der Matrizenmultiplikation
-				H = [ [ H[0][0] * T[0][0] + H[0][1] * T[1][0], H[0][0] * T[0][1] + H[0][1] * T[1][1] ],
-					[ H[1][0] * T[0][0] + H[1][1] * T[1][0], H[1][0] * T[0][1] + H[1][1] * T[1][1] ],
-					[ H[2][0] * T[0][0] + H[2][1] * T[1][0], H[2][0] * T[0][1] + H[2][1] * T[1][1] ], ];
+
+                // Result of matrix multiplication
+                H = [
+                    [H[0][0] * T[0][0] + H[0][1] * T[1][0], H[0][0] * T[0][1] + H[0][1] * T[1][1]],
+                    [H[1][0] * T[0][0] + H[1][1] * T[1][0], H[1][0] * T[0][1] + H[1][1] * T[1][1]],
+                    [H[2][0] * T[0][0] + H[2][1] * T[1][0], H[2][0] * T[0][1] + H[2][1] * T[1][1]],
+                ];
             }
-    
+
             // Step Three
             D = PSLQ.hermiteReduce(H);
-    
-            Dinv = ( D.clone()).inverse().transpose();
-    
+
+            Dinv = (D.clone()).inverse().transpose();
+
             // Update
             PSLQMatrix.VMmult(x, Dinv, x);
             PSLQMatrix.mult(D, A, A);
             PSLQMatrix.mult(B, Dinv, B);
-    
+
             // Step Four (stop criterion)
-            let crit = [ x[0], x[1], x[2], H[0][0], H[1][1] ];
+            let crit = [x[0], x[1], x[2], H[0][0], H[1][1]];
             for (let i = 0; i < crit.length; ++i)
                 if (Math.abs(crit[i]) <= Math.pow(10, -prec + 5)) {
                     // build return value
@@ -310,7 +315,7 @@ class PSLQ {
                     return B.getRow(PSLQ.maxIndex(x));
                 }
         } // Main Iteration
-    
+
         // undefined if not converged
         return undefined;
     }
