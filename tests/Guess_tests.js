@@ -163,3 +163,22 @@ describe('PSLQ', function() {
             assert.deepEqual(res3, [1,1,3]);
     	});
 });
+
+var CindyJS = require("../build/js/Cindy.plain.js");
+var cdy = CindyJS({
+            isNode: true,
+            csconsole: null,
+            geometry: [
+            ],
+        });
+
+function itCmd(command, expected) {
+    it(command, function() {
+        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    });
+}
+
+describe("Operators: guess", function(){
+    itCmd('guess(8.125)', '65/8');
+    itCmd('guess(0.774596669241483)', 'sqrt(3/5');
+});

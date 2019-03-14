@@ -20,7 +20,7 @@ class PSLQMatrix {
     clone() {
         let coeff = [...this._e];
         let mat = new PSLQMatrix();
-        mat.set(coeff)
+        mat.set(coeff);
         return mat;
     }
 
@@ -217,7 +217,7 @@ class PSLQ {
             for (let j = 0; j < n - 1; ++j) {
                 if (i > j)
                     H[i][j] = -x[i] * x[j] / s[j] / s[j + 1];
-                else if (i == j)
+                else if (i === j)
                     H[i][j] = s[i + 1] / s[i];
                 else
                     H[i][j] = 0;
@@ -271,15 +271,15 @@ class PSLQ {
             if (r < n - 2) {
                 for (let i = 0; i < n - 1; ++i) {
                     for (let j = 0; j < n - 1; ++j) {
-                        if ((i == r) && (j == r))
+                        if ((i === r) && (j === r))
                             T[i][j] = beta / delta;
-                        else if ((i == r) && (j == r + 1))
+                        else if ((i === r) && (j === r + 1))
                             T[i][j] = -lamda / delta;
-                        else if ((i == r + 1) && (j == r))
+                        else if ((i === r + 1) && (j === r))
                             T[i][j] = lamda / delta;
-                        else if ((i == r + 1) && (j == r + 1))
+                        else if ((i === r + 1) && (j === r + 1))
                             T[i][j] = beta / delta;
-                        else if (((i == j) && (j != r)) || ((i == j) && (j != r + 1)))
+                        else if (((i === j) && (j !== r)) || ((i === j) && (j !== r + 1)))
                             T[i][j] = 1;
                         else
                             T[i][j] = 0;
