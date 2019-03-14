@@ -149,8 +149,17 @@ describe('PSLQ', function() {
     	});
 
     	it('PSLQ', function() {
-            let coeff = [1,2,3];
-            let res = PSLQ.doPSLQ(coeff, 3);
-            assert.deepEqual(res, [1,-1,1]);
+            let preci = 10;
+            let coeff1 = [1,2,3];
+            let coeff2 = [-1,10,2];
+            let coeff3 = [-1,10,-3];
+
+            let res1 = PSLQ.doPSLQ(coeff1, preci);
+            let res2 = PSLQ.doPSLQ(coeff2, preci);
+            let res3 = PSLQ.doPSLQ(coeff3, preci);
+
+            assert.deepEqual(res1, [-3,0,1]);
+            assert.deepEqual(res2, [2,1,-4]);
+            assert.deepEqual(res3, [1,1,3]);
     	});
 });

@@ -18,8 +18,10 @@ class PSLQMatrix {
     }
 
     clone() {
-        let mat = [...this._e];
-        return new PSLQMatrix(mat);
+        let coeff = [...this._e];
+        let mat = new PSLQMatrix();
+        mat.set(coeff)
+        return mat;
     }
 
     get(idx) {
@@ -48,7 +50,6 @@ class PSLQMatrix {
 
     inverse() {
         let e = this._e;
-		console.log(["here!!", this._e, e]);
         let det = -e[2] * e[4] * e[6] + e[1] * e[5] * e[6] + e[2] * e[3] * e[7] - e[0] * e[5] * e[7] - e[1] * e[3] * e[8] + e[0] * e[4] * e[8];
 
         let res = [(-e[4] * e[7] + e[4] * e[8]), (e[5] * e[6] - e[3] * e[8]), (-e[4] * e[6] + e[3] * e[7]), (e[2] * e[7] - e[1] * e[8]),
@@ -228,13 +229,9 @@ class PSLQ {
         let Dinv =  (D.clone()).inverse().transpose();
     
         // Update
-		console.log(["x, dInv", x, Dinv, D]);
         PSLQMatrix.VMmult(x, Dinv, x);
-//		console.log(["x", x]);
         PSLQMatrix.mult(D, A, A);
-//		console.log(["A", A]);
         PSLQMatrix.mult(B, Dinv, B);
-//		console.log(["B", B]);
 
     
         // Main Iteration
