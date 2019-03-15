@@ -193,7 +193,7 @@ class PSLQ {
     //  @return Vektor [a_0, a_1, ..., a_n-1], if converged undefined otherwise
 
     static doPSLQ(inx, prec) {
-        let n = inx.length;
+        var n = inx.length;
 
         // Initialize
         let x = [];
@@ -212,7 +212,11 @@ class PSLQ {
         let A = new PSLQMatrix();
         let B = new PSLQMatrix();
 
-        var H = [...Array(n)].map(x => Array(n - 1));
+        console.log(n);
+        var H = [];
+        for(let i = 0; i < n - 1; i++)
+            H[i] = [];
+        console.log(H);
         for (let i = 0; i < n; ++i) {
             for (let j = 0; j < n - 1; ++j) {
                 if (i > j)
@@ -233,7 +237,7 @@ class PSLQ {
         PSLQMatrix.mult(D, A, A);
         PSLQMatrix.mult(B, Dinv, B);
 
-
+        var gen2DArrays = (m,n) => [...Array(m)].map(x => Array(n));
         // Main Iteration
         for (let iter = 0; iter < PSLQ.MAX_ITER; ++iter) {
 
@@ -267,7 +271,7 @@ class PSLQ {
             B.swCol(r, r + 1);
 
             // Step Two (T => Table)
-            let T = [...Array(2)].map(x => Array(2));
+            let T = gen2DArrays(2,3);
             if (r < n - 2) {
                 for (let i = 0; i < n - 1; ++i) {
                     for (let j = 0; j < n - 1; ++j) {
