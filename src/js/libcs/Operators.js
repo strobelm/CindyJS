@@ -5162,7 +5162,7 @@ evaluator.guess$1 = function(args, modifs) {
         //      System.err.println("TEST QUADRATIC");
         let r2 = 100000;
         if (res2 && (r2 = 10 + reasonable(res2)) < 9000) {
-            srealquad = quadratic(x.real, res2[0], res2[1], res2[2]);
+            srealquad = quadratic(x.value.real, res2[0], res2[1], res2[2]);
             error2 = error;
         }
 
@@ -5337,7 +5337,7 @@ evaluator.guess$1 = function(args, modifs) {
 
 
     let v1 = evaluateAndVal(args[0]);
-    if (v1.ctype === "number") {
+    if (v1.ctype === "number" && !CSNumber._helper.isNaN(v1) && CSNumber._helper.isFinite(v1)) {
         let sVal;
         let s = guess(v1);
         if (s === undefined)

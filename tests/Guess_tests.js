@@ -180,5 +180,10 @@ function itCmd(command, expected) {
 
 describe("Operators: guess", function(){
     itCmd('guess(8.125)', '65/8');
-    itCmd('guess(0.774596669241483)', 'sqrt(3/5');
+    itCmd('guess(0.774596669241483)', '1/5*sqrt(15)');
+    // no actual guess
+    itCmd('guess(0.12392903240304034030403403403049034902349)', '0.12392903240304035');
+    // no guess
+    itCmd('1/0', '___');
+    itCmd('0/0', '___');
 });
