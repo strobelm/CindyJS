@@ -5337,7 +5337,7 @@ evaluator.guess$1 = function(args, modifs) {
 
 
     let v1 = evaluateAndVal(args[0]);
-    if (v1.ctype === "number" && !CSNumber._helper.isNaN(v1) && CSNumber._helper.isFinite(v1)) {
+    if (v1.ctype === "number" && CSNumber._helper.isFinite(v1)) {
         let sVal;
         let s = guess(v1);
         if (s === undefined)

@@ -184,6 +184,6 @@ describe("Operators: guess", function(){
     // no actual guess
     itCmd('guess(0.12392903240304034030403403403049034902349)', '0.12392903240304035');
     // no guess
-    itCmd('1/0', '___');
-    itCmd('0/0', '___');
+    itCmd('guess(1/0)', '___');
+    itCmd('guess(0/0)', '___');
 });
