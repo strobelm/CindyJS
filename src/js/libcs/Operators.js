@@ -5138,7 +5138,6 @@ evaluator.guess$1 = function(args, modifs) {
         ];
 
         // Run PSLQ
-		console.log(inx);
         const res = PSLQ.doPSLQ(inx, 15);
 
         let sreal = "" + x.value.real;
@@ -5310,7 +5309,7 @@ evaluator.guess$1 = function(args, modifs) {
 
     var error = 0.0;
 
-    function quotient( x,  pi,  xx,  one) {
+    function quotient(x, pi, xx, one) {
         let a, b;
         let spi = "";
 
@@ -5337,18 +5336,17 @@ evaluator.guess$1 = function(args, modifs) {
     }
 
 
-        let v1 = evaluateAndVal(args[0]);
-		debugger;
-        if (v1.ctype === "number") {
-			let sVal;
-            let s = guess(v1);
-            if (s === undefined)
-                sVal = ("no guess");
-            else
-                sVal= guess(v1);
-            return sVal;
-        }
+    let v1 = evaluateAndVal(args[0]);
+    if (v1.ctype === "number") {
+        let sVal;
+        let s = guess(v1);
+        if (s === undefined)
+            sVal = ("no guess");
+        else
+            sVal = guess(v1);
+        return General.string(sVal);
+    }
 
-        return nada;
+    return nada;
 
 };

@@ -212,19 +212,19 @@ class PSLQ {
         let A = new PSLQMatrix();
         let B = new PSLQMatrix();
 
-        console.log(n);
-        var H = [];
-        for(let i = 0; i < n - 1; i++)
+        let H = [];
+        for (let i = 0; i < n; i++)
             H[i] = [];
-        console.log(H);
+
         for (let i = 0; i < n; ++i) {
             for (let j = 0; j < n - 1; ++j) {
-                if (i > j)
+                if (i > j) {
                     H[i][j] = -x[i] * x[j] / s[j] / s[j + 1];
-                else if (i === j)
+                } else if (i === j) {
                     H[i][j] = s[i + 1] / s[i];
-                else
+                } else {
                     H[i][j] = 0;
+                }
             }
         }
 
@@ -237,7 +237,13 @@ class PSLQ {
         PSLQMatrix.mult(D, A, A);
         PSLQMatrix.mult(B, Dinv, B);
 
-        var gen2DArrays = (m,n) => [...Array(m)].map(x => Array(n));
+        //var gen2DArrays = (m,n) => [...Array(m)].map(x => Array(n));
+        var gen2DArrays = function(m, n) {
+            let arr = new Array(m);
+            for (let i = 0; i < n; i++)
+                arr[i] = [];
+            return arr;
+        };
         // Main Iteration
         for (let iter = 0; iter < PSLQ.MAX_ITER; ++iter) {
 
@@ -271,7 +277,7 @@ class PSLQ {
             B.swCol(r, r + 1);
 
             // Step Two (T => Table)
-            let T = gen2DArrays(2,3);
+            let T = gen2DArrays(2, 3);
             if (r < n - 2) {
                 for (let i = 0; i < n - 1; ++i) {
                     for (let j = 0; j < n - 1; ++j) {
