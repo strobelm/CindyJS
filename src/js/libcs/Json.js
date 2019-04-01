@@ -45,11 +45,12 @@ Json.GenFromUserDataEl = function(el) {
     // key/obj are reversed due to the semantics of the ":" operator in CindyScript
     var key = el.obj;
     var obj = el.key;
-
-    if (!key || key.ctype !== "string") {
-        console.log("Error: JSON keys have to be strings.");
+    key = General.string(niceprint(key));
+    if (niceprint.errortypes.includes(key.value)) {
+        console.log("Error: JSON key could not be generated.");
         return nada;
     }
+
     if (!obj) {
         console.log("Warning: JSON object not defined.");
         return {

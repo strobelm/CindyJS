@@ -532,7 +532,7 @@ eval_helper.assigntake = function(data, what) { //TODO: Bin nicht ganz sicher ob
     }
     if (where.ctype === 'JSON') {
         var key = niceprint(ind);
-        if (key !== niceprint(nada)) {
+        if (!niceprint.errortypes.includes(key)) {
             rhs = Json._helper.ShallowClone(where);
             rhs.value[key] = evaluate(what);
         }
@@ -2631,8 +2631,12 @@ function infix_take(args, modifs) {
             printStackTrace("WARNING: Index out of range!");
             return nada;
         }
-    } else if (v0.ctype === "JSON" && v1.ctype === "string") {
-        var val = v0.value[v1.value];
+    } else if (v0.ctype === "JSON") {
+	    debugger;
+        var key = niceprint(v1);
+        if (!niceprint.errortypes.includes(key)) {
+            var val = v0.value[key];
+        }
         if (val !== undefined && val.ctype) return val;
         return nada;
     }

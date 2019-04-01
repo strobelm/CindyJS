@@ -44,8 +44,8 @@ function evaluate(a) {
     }
     if (a.ctype === 'userdata') {
         var uobj = evaluate(a.obj);
-        var key = General.string(niceprint(evaluate(a.key)));
-        if (key.value === "_?_") key = nada;
+        var key = General.string(niceprint(a.key));
+        if (niceprint.errortypes.includes(key.value)) key = nada;
 
         if (uobj.ctype === "geo") {
             return Accessor.getuserData(uobj.value, key);

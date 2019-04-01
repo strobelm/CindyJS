@@ -62,6 +62,10 @@ describe("JSON basic getter / setter", function(){
     // copy by reference
     itCmd('json1 = {"a":1}; json2=json1; json2.a=2; json1.a', '2');
     itCmd('json1 = {"a":1}; json2=json1; myvar = "a"; json2_myvar=2; json1.a', '2');
+
+    // access via object
+    itCmd('json1 = {A:1}; json1.A', '1'); 
+    itCmd('json1 = {A:1}; json1_A', '1'); 
 });
 
 describe("JSON geo objects", function(){
