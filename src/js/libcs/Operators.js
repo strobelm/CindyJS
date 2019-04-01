@@ -559,8 +559,8 @@ eval_helper.assigncolon = function(data, what) {
     var lhs = data.obj;
     var where = evaluate(lhs);
 
-    var key = General.string(niceprint(evaluate(data.key)));
-    if (key.value === "_?_") key = nada;
+    var key = General.string(niceprint((data.key)));
+    if (niceprint.errortypes.includes(key.value)) key = nada;
 
     if (where.ctype === 'geo' && key) {
         Accessor.setuserData(where.value, key, evaluateAndVal(what));
@@ -2633,7 +2633,7 @@ function infix_take(args, modifs) {
         }
     } else if (v0.ctype === "JSON") {
 	    debugger;
-        var key = niceprint(v1);
+        var key = niceprint(args[1]);
         if (!niceprint.errortypes.includes(key)) {
             var val = v0.value[key];
         }
