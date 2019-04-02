@@ -188,6 +188,10 @@ module.exports = function build(settings, task) {
         this.node("ref/js/runtests.js");
     });
 
+    task("nodetesta", ["plain"], function() {
+        this.node("ref/js/runtests.js");
+    });
+
     task("tests", [
         "closure",
         "nodetest",
@@ -202,6 +206,11 @@ module.exports = function build(settings, task) {
     task("unittests", ["exposed", "plain"], function() {
         this.cmdscript("mocha", "tests");
     });
+
+    //////////////////////////////////////////////////////////////////////
+    // Run separate unit tests to test various interna
+    //////////////////////////////////////////////////////////////////////
+
 
     //////////////////////////////////////////////////////////////////////
     // Check for forbidden patterns in certain files
