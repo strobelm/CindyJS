@@ -188,10 +188,6 @@ module.exports = function build(settings, task) {
         this.node("ref/js/runtests.js");
     });
 
-    task("nodetesta", ["plain"], function() {
-        this.node("ref/js/runtests.js");
-    });
-
     task("tests", [
         "closure",
         "nodetest",
@@ -208,8 +204,19 @@ module.exports = function build(settings, task) {
     });
 
     //////////////////////////////////////////////////////////////////////
-    // Run separate unit tests to test various interna
+    // Benchmarking
     //////////////////////////////////////////////////////////////////////
+
+    task("benchmarks", ["exposed", "closure"], function() {
+	const benchdir = './benchmarks/';
+	
+	fs.readdir(benchdir, (err, files) => {
+  	files.forEach(file => {
+	if(path.extname(file) !== ".js") return;
+    	this.node(benchdir + file);
+	  });
+	});
+    });
 
 
     //////////////////////////////////////////////////////////////////////

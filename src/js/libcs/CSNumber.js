@@ -2,6 +2,7 @@
 //      Complex Numbers
 //==========================================
 var CSNumber = {};
+CindyJS["CSNumber"] = CSNumber;
 CSNumber._helper = {};
 CSNumber._helper.roundingfactor = 1e4;
 CSNumber._helper.angleroundingfactor = 1e1;
