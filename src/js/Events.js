@@ -646,9 +646,21 @@ function doit() {
 }
 
 function updateCindy() {
+    // clear current csctx
+    csctx.clearRect(0, 0, csw, csh);
+
+    // create offscreen canvas 
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+
+    // switch context
+    let csctxBak = csctx;
+    csctx = offscreenCanvas.getContext('2d');
+    // render old state on canvas
+    csctx.drawImage(canvas, 0, 0);
+
     csport.reset();
     csctx.save();
-    csctx.clearRect(0, 0, csw, csh);
     var m = csport.drawingstate.matrix;
     var d, a, b, i, p;
     // due to the csport.reset(), m is initial, i.e. a = d and b = c = 0
@@ -738,6 +750,10 @@ function updateCindy() {
     draw_traces();
     render();
     csctx.restore();
+
+    // paint offscreen canvas and restore ctx
+    csctxBak.drawImage(offscreenCanvas, 0, 0);
+    csctx = csctxBak;
 }
 
 function keyEvent(e, script) {

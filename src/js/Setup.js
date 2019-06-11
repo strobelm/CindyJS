@@ -84,6 +84,7 @@ function evokeCS(code) {
 
 
 var canvas;
+var offscreenCanvas = document.createElement('canvas');
 var trafos;
 
 function updateCanvasDimensions() {
