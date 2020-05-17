@@ -206,7 +206,7 @@ Accessor.getField = function(geo, field) {
 };
 
 Accessor.setField = function(geo, field, value) {
-    var dir;
+    var oldState = JSON.stringify(geo);
 
     if (field === "color" && List._helper.isNumberVecN(value, 3)) {
         geo.color = value;
@@ -336,7 +336,8 @@ Accessor.setField = function(geo, field, value) {
         return setter(geo, value);
     }
 
-
+    // return if modified or not 
+    return JSON.stringify(geo) !== oldState;
 };
 
 Accessor.getuserData = function(obj, key) {

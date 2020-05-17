@@ -43,6 +43,7 @@ describe("Inspect", function () {
     });
     describe("Inspect(<arg>, <arg>, <arg>)", function () {
         itCmd('inspect("nada", "rien", "nix")', '___');
-        itCmd('inspect("A", "homog", [1,2,3]); A.homog', '[1, 2, 3]');
+        itCmd('inspect("A", "homog", [1,0,0]); A.homog', '[1, 0, 0]');
+        itCmd('inspect("A", "color", [1,1,1]); A.color', '[1, 1, 1]');
     });
 });

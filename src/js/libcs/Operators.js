@@ -94,6 +94,11 @@ evaluator.inspect$2 = function(args, modifs) {
 
     if (geoObj === nada || field.ctype !== "string") return nada;
 
+    // check if we can get the field by accessor
+    var acc_val = Accessor.getField(geoObj, field);
+    if (acc_val !== nada) return acc_val;
+
+    // last resort
     return General.wrap(geoObj[field.value]);
 };
 
@@ -104,7 +109,11 @@ evaluator.inspect$3 = function(args, modifs) {
 
     if (geoObj === nada || val === nada || field.ctype !== "string") return nada;
 
-    geoObj[field.value] = val;
+    var modified = Accessor.setField(geoObj, field.value, val);
+
+    if (!modified) {
+        console.log("Inspect: Could not set the field.");
+    }
 };
 
 evaluator.repeat$2 = function(args, modifs) { //OK
