@@ -64,11 +64,48 @@ evaluator.assert$2 = function(args, modifs) {
 };
 
 evaluator.dump$1 = function(args, modifs) {
-
     dump(args[0]);
     return nada;
 };
 
+eval_helper.inspectHelper = function(arg) {
+    var name = evaluate(arg);
+    var ctype = name.ctype;
+
+    if (ctype !== 'string') return nada;
+
+
+    var geoObj = csgeo.csnames[name.value];
+    if (!geoObj) return nada;
+
+    return geoObj;
+};
+
+evaluator.inspect$1 = function(args, modifs) {
+    var geoObj = eval_helper.inspectHelper(args[0]);
+    if (nada === geoObj) return nada;
+
+    return List.turnIntoCSList(Object.keys(geoObj).map(General.string));
+};
+
+evaluator.inspect$2 = function(args, modifs) {
+    var field = evaluate(args[1]);
+    var geoObj = eval_helper.inspectHelper(args[0]);
+
+    if (geoObj === nada || field.ctype !== "string") return nada;
+
+    return General.wrap(geoObj[field.value]);
+};
+
+evaluator.inspect$3 = function(args, modifs) {
+    var geoObj = eval_helper.inspectHelper(args[0]);
+    var field = evaluate(args[1]);
+    var val = evaluate(args[2]);
+
+    if (geoObj === nada || val === nada || field.ctype !== "string") return nada;
+
+    geoObj[field.value] = val;
+};
 
 evaluator.repeat$2 = function(args, modifs) { //OK
     return evaluator.repeat$3([args[0], null, args[1]], modifs);
