@@ -173,8 +173,8 @@ function evalmyfunctions(name, args, modifs) {
 //*******************************************************
 //this function evaluates a concrete function
 //*******************************************************
-var evaluator = {};
-var eval_helper = {};
+export var evaluator = {};
+export var eval_helper = {};
 
 eval_helper.evaluate = function(name, args, modifs) {
     if (myfunctions.hasOwnProperty(name))

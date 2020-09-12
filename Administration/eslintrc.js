@@ -5,10 +5,11 @@ module.exports = {
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 6
+        "ecmaVersion": 6,
+        "sourceType": "module",
     },
     "rules": {
-        "no-undef": ["off"],
+        // "no-undef": ["off"],
         "no-unused-vars": ["off"],
         "no-prototype-builtins": ["off"]
     },

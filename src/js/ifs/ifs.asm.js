@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 Module["asm"] = (function(global, env, buffer) {
  "use asm";
  var a = new global.Int8Array(buffer);

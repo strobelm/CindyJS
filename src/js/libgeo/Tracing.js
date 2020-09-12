@@ -126,7 +126,7 @@ function traceMouseAndScripts() {
     }
 }
 
-function movepointscr(mover, pos, type) {
+export function movepointscr(mover, pos, type) {
     traceMover(mover, pos, type);
     if (!inMouseMove && !tracingFailed)
         stateContinueFromHere();

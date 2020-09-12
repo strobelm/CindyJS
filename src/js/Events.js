@@ -817,7 +817,7 @@ function cs_tick(e) {
     }
 }
 
-function cs_simulationstep(e) {
+export function cs_simulationstep(_) {
     evaluate(cscompiled.simulationstep);
 }
 

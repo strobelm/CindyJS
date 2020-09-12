@@ -82,5 +82,8 @@
     "url": "https://github.com/CindyJS/CindyJS/issues"
   },
   "homepage": "https://github.com/CindyJS/CindyJS#readme",
-  "dependencies": {}
+  "dependencies": {
+    "eslint-path-formatter": "^0.1.1",
+    "esprima": "^4.0.1"
+  }
 }

@@ -1,3 +1,7 @@
+import {labObjects} from './LabObjects';
+import {
+    csgeo, simaccuracy, simtime, setSimtime} from 'src/js/Setup';
+import {cs_simulationstep} from 'src/js/Events';
 var lab = {};
 
 var doPri45 = {};
@@ -44,7 +48,7 @@ fehlberg78.size = 13;
 //var rk = fehlberg78;
 var rk = doPri45;
 var behaviors;
-var masses = [];
+export var masses = [];
 var springs = [];
 var csPhysicsInited = false;
 
@@ -110,7 +114,7 @@ lab.tick = function(deltat) {
     deltat = deltat / simaccuracy;
     for (var i = 0; i < simaccuracy; i++) {
         lab.tick1(deltat);
-        simtime += deltat;
+        setSimtime(simtime + deltat);
         cs_simulationstep();
     }
 };

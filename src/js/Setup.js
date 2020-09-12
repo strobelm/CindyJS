@@ -8,11 +8,11 @@ var cscompiled = {};
 // Simulation settings
 var csanimating = false;
 var csstopped = true;
-var simtime = 0; // accumulated simulation time since start
+export var simtime = 0; // accumulated simulation time since start
 var simspeed = 0.5; // global speed setting, will get scaled for applications
 var simcap = 1000 / 20; // max. ms between frames for fps-independent sim
 var simtick = 0; // Date.now of the most recent simulation tick
-var simaccuracy = 10; // number of sub-steps per frame
+export var simaccuracy = 10; // number of sub-steps per frame
 
 var simunit = 5 / 360; // reported simulationtime() per internal simtime unit
 /* Cinderella has a factor 5 for its internal animation clock,
@@ -152,7 +152,7 @@ var isFiniteNumber = Number.isFinite || function(x) {
     return (typeof x === 'number') && isFinite(x);
 };
 
-var csmouse, csctx, csw, csh, csgeo, images, dropped = nada,
+export var csmouse, csctx, csw, csh, csgeo, images, dropped = nada,
     dropPoint = nada;
 
 function canvasWithContainingDiv(elt) {
@@ -583,9 +583,17 @@ function setupAnimControls(data) {
 
 var setSpeedKnob = null;
 
-function setSpeed(speed) {
+export function setSpeed(speed) {
     simspeed = speed;
     if (setSpeedKnob) setSpeedKnob(speed);
+}
+
+export function setAccuracy(acc) {
+    simaccuracy = acc;
+}
+
+export function setSimtime(t) {
+    simtime = t;
 }
 
 /* Install layer ‹id› of Icons.svg as the src of the given img element.

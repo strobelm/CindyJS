@@ -2546,3 +2546,5 @@ List.getRandComplexVec3 = function(min, max) {
     var RC = CSNumber.getRandComplex;
     return List.turnIntoCSList([RC(min, max), RC(min, max), RC(min, max)]);
 };
+
+export default List;
