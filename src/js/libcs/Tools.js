@@ -390,7 +390,7 @@ tools.Move.actions[0] = {};
 tools.Move.actions[0].event = "mousedown";
 tools.Move.actions[0].tooltip = "Move free elements by dragging the mouse";
 tools.Move.actions[0].do = function() {
-    setMove(move = getmover(mouse));
+    setMove(getmover(mouse));
 
     return true;
 };
