@@ -4432,8 +4432,8 @@ evaluator.use$1 = function(args, modifs) {
                     return csport.drawingstate.initialmatrix;
                 },
                 "setTextRenderer": function(handlerCanvas, handlerHtml) {
-                    textRendererCanvas = handlerCanvas;
-                    if (handlerHtml) textRendererHtml = handlerHtml;
+                    setTextRendererCanvas(handlerCanvas);
+                    if (handlerHtml) SetTextRendererHtml(handlerHtml);
                 },
                 "getImage": function(name, lazy) {
                     if (typeof name === "string")
@@ -4960,6 +4960,10 @@ evaluator.setsimulationquality$1 = function(args, modifs) {
 
 var activeButton = null;
 var statusbar = null;
+
+function setStatusBar(b) {
+    statusbar = b
+}
 
 evaluator.createtool$3 = function(args, modifs) {
     var modif;

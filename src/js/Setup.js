@@ -58,6 +58,14 @@ var virtualwidth = 0;
 var virtualheight = 0;
 var vscale = 1;
 
+function setSimTick(t) {
+    simtick = t;
+}
+
+function setSimTime(t) {
+    simtime = t;
+}
+
 function dump(a) {
     console.log(JSON.stringify(a));
 }
@@ -164,6 +172,18 @@ var csmouse,
     dropped = nada,
     dropPoint = nada;
 
+function setCsctx(ct) {
+    csctx = ct;
+}
+
+function setDropped(d) {
+    dropped = d;
+}
+
+function setDropPoint(d) {
+    dropPoint = d;
+}
+
 function canvasWithContainingDiv(elt) {
     var div;
     if (elt.tagName.toLowerCase() !== "canvas") {
@@ -262,8 +282,10 @@ function createCindyNow() {
 
             if (port.background) c.style.backgroundColor = port.background;
             if (port.transform !== undefined) trafos = port.transform;
-            if (isFiniteNumber(port.grid) && port.grid > 0) csgridsize = port.grid;
-            if (isFiniteNumber(port.tgrid) && port.tgrid > 0) cstgrid = port.tgrid;
+            if (isFiniteNumber(port.grid) && port.grid > 0)
+                csgridsize = port.grid;
+            if (isFiniteNumber(port.tgrid) && port.tgrid > 0)
+                cstgrid = port.tgrid;
             if (port.snap) cssnap = true;
             if (Number.isFinite(port.snapdistance))
                 cssnapDistance = Math.max(port.snapdistance, 0);
@@ -297,9 +319,9 @@ function createCindyNow() {
     }
     if (data.statusbar) {
         if (typeof data.statusbar === "string") {
-            statusbar = document.getElementById(data.statusbar);
+            setStatusBar(document.getElementById(data.statusbar));
         } else {
-            statusbar = data.statusbar;
+            setStatusBar(data.statusbar);
         }
     }
 
@@ -361,7 +383,9 @@ function createCindyNow() {
         }
         cscode = analyse(cscode, false);
         if (cscode.ctype === "error") {
-            console.error("Error compiling " + s + " script: " + cscode.message);
+            console.error(
+                "Error compiling " + s + " script: " + cscode.message
+            );
         } else {
             cscompiled[s] = labelCode(cscode, s);
         }
@@ -642,7 +666,10 @@ var loadSvgIcon = function(img, id) {
         if (req.readyState !== XMLHttpRequest.DONE) return;
         if (req.status !== 200) {
             console.error(
-                "Failed to load CindyJS Icons.svg from " + url + ": " + req.statusText
+                "Failed to load CindyJS Icons.svg from " +
+                url +
+                ": " +
+                req.statusText
             );
             return;
         }
@@ -674,7 +701,8 @@ var loadSvgIcon = function(img, id) {
             } finally {
                 docElt.removeChild(layer);
             }
-            img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(str);
+            img.src =
+                "data:image/svg+xml;charset=utf-8," + encodeURIComponent(str);
         };
         iconsToLoad.forEach(function(icon) {
             loadSvgIcon(icon.img, icon.id);
@@ -725,7 +753,9 @@ function loadExtraPlugin(name, path, skipInit) {
 function loadExtraModule(name, path) {
     ++modulesToLoad;
     CindyJS.loadScript(name, path, doneLoadingModule, function() {
-        console.error("Failed to load " + path + ", can't start CindyJS instance");
+        console.error(
+            "Failed to load " + path + ", can't start CindyJS instance"
+        );
         shutdown();
     });
 }
@@ -738,8 +768,10 @@ function doneLoadingModule(skipInit) {
         evaluate(cscompiled.init);
 
         if (
-            (instanceInvocationArguments.animation || instanceInvocationArguments)
-            .autoplay
+            (
+                instanceInvocationArguments.animation ||
+                instanceInvocationArguments
+            ).autoplay
         )
             csplay();
 
@@ -898,11 +930,13 @@ if (instanceInvocationArguments.use) {
                 name + "-plugin.js",
                 function() {
                     console.log("Successfully loaded plugin " + name);
-                    if (--waitForPlugins === 0 && startupCalled) createCindyNow();
+                    if (--waitForPlugins === 0 && startupCalled)
+                        createCindyNow();
                 },
                 function() {
                     console.error("Failed to auto-load plugin " + name);
-                    if (--waitForPlugins === 0 && startupCalled) createCindyNow();
+                    if (--waitForPlugins === 0 && startupCalled)
+                        createCindyNow();
                 }
             );
         }

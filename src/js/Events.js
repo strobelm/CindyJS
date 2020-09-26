@@ -9,7 +9,7 @@ var multipos = {};
 var multiiddict = {};
 
 function setMove(m) {
-    move = m
+    move = m;
 }
 
 function getmover(mouse) {
@@ -35,7 +35,9 @@ function getmover(mouse) {
                 continue;
         } else if (el.kind === "C") {
             //Must be CircleMr
-            var normalizedmid = List.normalizeZ(csgeo.csnames[el.args[0]].homog);
+            var normalizedmid = List.normalizeZ(
+                csgeo.csnames[el.args[0]].homog
+            );
             var rad = el.radius;
 
             if (!List._helper.isAlmostReal(normalizedmid) ||
@@ -64,7 +66,8 @@ function getmover(mouse) {
 
             if (
                 el.narrow &&
-                dist > ((typeof el.narrow === "number" ? el.narrow : 20) + 30) / sc
+                dist >
+                ((typeof el.narrow === "number" ? el.narrow : 20) + 30) / sc
             )
                 continue;
         } else if (el.kind === "L") {
@@ -324,7 +327,7 @@ function setuplisteners(canvas, data) {
                     return !/^\s*(#|$)/.test(line);
                 });
                 countDown = data.length;
-                dropped = Array(countDown);
+                setDropped(Array(countDown));
                 files = Array(countDown);
                 data.forEach(dropUri);
             }
@@ -448,7 +451,8 @@ function setuplisteners(canvas, data) {
     });
 
     function getmultiid(identifier) {
-        if (multiiddict.hasOwnProperty(identifier)) return multiiddict[identifier];
+        if (multiiddict.hasOwnProperty(identifier))
+            return multiiddict[identifier];
         let used = Object.values(multiiddict);
 
         //find the smallest integer >= 1 that is not already used in O(n log n)
@@ -487,8 +491,11 @@ function setuplisteners(canvas, data) {
         if (mouse.down) {
             if (
                 mousedownevent &&
-                (Math.abs(mousedownevent.clientX - e.targetTouches[0].clientX) > 2 ||
-                    Math.abs(mousedownevent.clientY - e.targetTouches[0].clientY) > 2)
+                (Math.abs(mousedownevent.clientX - e.targetTouches[0].clientX) >
+                    2 ||
+                    Math.abs(
+                        mousedownevent.clientY - e.targetTouches[0].clientY
+                    ) > 2)
             )
                 hasmoved = true;
             multiid = getmultiid(activeTouchID);
@@ -563,7 +570,12 @@ function setuplisteners(canvas, data) {
     addAutoCleaningEventListener(canvas, "touchmove", touchMove, true);
     addAutoCleaningEventListener(canvas, "touchend", touchUp, false);
     if (typeof document !== "undefined" && document.body) {
-        addAutoCleaningEventListener(document.body, "touchcancel", touchUp, false);
+        addAutoCleaningEventListener(
+            document.body,
+            "touchcancel",
+            touchUp,
+            false
+        );
         // addAutoCleaningEventListener(document.body, "mouseup", mouseUp, false);
     }
 
@@ -836,12 +848,12 @@ function cs_mouseclick(e) {
 function cs_tick(e) {
     var now = Date.now();
     var delta = Math.min(simcap, now - simtick) * simspeed * simfactor;
-    simtick = now;
+    setSimTick(now);
     var time = simtime + delta;
     if (csPhysicsInited && typeof lab !== "undefined") {
         lab.tick(delta);
     }
-    simtime = time;
+    setSimTime(time);
     if (csanimating) {
         evaluate(cscompiled.tick);
     }
@@ -860,11 +872,11 @@ function cs_simulationstop(e) {
 }
 
 function cs_onDrop(lst, pos) {
-    dropped = List.turnIntoCSList(lst);
-    dropPoint = pos;
+    setDropped(List.turnIntoCSList(lst));
+    setDropPoint(pos);
     evaluate(cscompiled.ondrop);
-    dropped = nada;
-    dropPoint = nada;
+    setDropped(nada);
+    setDropPoint(nada);
     scheduleUpdate();
 }
 
