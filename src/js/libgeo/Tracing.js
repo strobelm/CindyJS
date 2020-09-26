@@ -34,7 +34,9 @@ function stateAlloc(newSize) {
     }
     for (i = 0; i < states; ++i) {
         stateArrays[stateArrayNames[i]] = stateMasterArray.subarray(
-            i * offset, i * offset + newSize);
+            i * offset,
+            i * offset + newSize
+        );
     }
     // No array content is deliberately preserved by the above.
     // Now we do preserve the stateLastGood.
@@ -76,7 +78,7 @@ var inMouseMove = false;
 var RefineException = {
     toString: function() {
         return "RefineException";
-    }
+    },
 };
 
 function requestRefinement() {
@@ -114,9 +116,11 @@ function traceMouseAndScripts() {
     }
     inMouseMove = false;
     if (traceLog) {
-        traceLog.fullLog.push(List.turnIntoCSList([
-            List.turnIntoCSList(traceLog.currentMouseAndScripts)
-        ]));
+        traceLog.fullLog.push(
+            List.turnIntoCSList([
+                List.turnIntoCSList(traceLog.currentMouseAndScripts),
+            ])
+        );
         if (traceLog.length > traceLog.logLength)
             traceLog.splice(0, traceLog.length - traceLog.logLength);
         traceLog.currentMouseAndScripts = null;
@@ -126,10 +130,9 @@ function traceMouseAndScripts() {
     }
 }
 
-export function movepointscr(mover, pos, type) {
+function movepointscr(mover, pos, type) {
     traceMover(mover, pos, type);
-    if (!inMouseMove && !tracingFailed)
-        stateContinueFromHere();
+    if (!inMouseMove && !tracingFailed) stateContinueFromHere();
 }
 
 // Remember the last point which got moved.
@@ -169,8 +172,8 @@ function traceMover(mover, pos, type) {
         // see http://jsperf.com/half-circle-parametrization
         var t2 = t * t;
         var dt = 0.5 / (1 + t2);
-        var tc = CSNumber.complex((2 * t) * dt + 0.5, (1 - t2) * dt);
-        noMoreRefinements = (last + 0.5 * step <= last || traceLimit === 0);
+        var tc = CSNumber.complex(2 * t * dt + 0.5, (1 - t2) * dt);
+        noMoreRefinements = last + 0.5 * step <= last || traceLimit === 0;
         if (traceLimit === 0) console.log("tracing limit Reached");
         var refining = false;
 
@@ -180,21 +183,22 @@ function traceMover(mover, pos, type) {
         try {
             traceOneStep();
         } catch (e) {
-            if (e !== RefineException)
-                throw e;
+            if (e !== RefineException) throw e;
             step *= 0.5; // reduce step size
             t = last + step;
             --traceLimit;
             refining = true;
         }
         if (traceLog && traceLog.currentMouseAndScripts) {
-            traceLog.currentMover.push(List.turnIntoCSList([
-                List.turnIntoCSList(traceLog.currentStep), // 1
-                General.wrap(refining), //                    2
-                General.wrap(last), //                        3
-                General.wrap(t), //                           4
-                General.wrap(traceLog.currentParam), //       5
-            ]));
+            traceLog.currentMover.push(
+                List.turnIntoCSList([
+                    List.turnIntoCSList(traceLog.currentStep), // 1
+                    General.wrap(refining), //                    2
+                    General.wrap(last), //                        3
+                    General.wrap(t), //                           4
+                    General.wrap(traceLog.currentParam), //       5
+                ])
+            );
             traceLog.currentStep = null;
             traceLog.currentParam = null;
         }
@@ -206,23 +210,24 @@ function traceMover(mover, pos, type) {
         isShowing(el, op);
     }
     if (traceLog && traceLog.currentMouseAndScripts) {
-        traceLog.currentMouseAndScripts.push(List.turnIntoCSList([
-            List.turnIntoCSList(traceLog.currentMover), //    1
-            General.wrap(tracingFailed), //                   2
-            General.wrap(mover.name), //                      3
-            pos, //                                           4
-            General.wrap(type), //                            5
-            originParam, //                                   6
-            targetParam, //                                   7
-        ]));
+        traceLog.currentMouseAndScripts.push(
+            List.turnIntoCSList([
+                List.turnIntoCSList(traceLog.currentMover), //    1
+                General.wrap(tracingFailed), //                   2
+                General.wrap(mover.name), //                      3
+                pos, //                                           4
+                General.wrap(type), //                            5
+                originParam, //                                   6
+                targetParam, //                                   7
+            ])
+        );
         traceLog.currentMover = null;
     }
 
     // use own function to enable compiler optimization
     function traceOneStep() {
         stateInIdx = stateOutIdx = mover.stateIdx;
-        var param =
-            parameterPath(mover, t, tc, originParam, targetParam);
+        var param = parameterPath(mover, t, tc, originParam, targetParam);
         if (traceLog) traceLog.currentParam = param;
 
         var stateTmp = stateOut;
@@ -233,8 +238,14 @@ function traceMover(mover, pos, type) {
 
         if (traceLog) traceLog.currentElement = mover;
         opMover.updatePosition(mover, true);
-        assert(stateInIdx === mover.stateIdx + opMover.stateSize, "State fully consumed");
-        assert(stateOutIdx === mover.stateIdx + opMover.stateSize, "State fully updated");
+        assert(
+            stateInIdx === mover.stateIdx + opMover.stateSize,
+            "State fully consumed"
+        );
+        assert(
+            stateOutIdx === mover.stateIdx + opMover.stateSize,
+            "State fully updated"
+        );
         for (i = 0; i < deps.length; ++i) {
             el = deps[i];
             op = geoOps[el.type];
@@ -276,8 +287,7 @@ function recalcAll() {
 function tracingStateReport(failed) {
     var arg = instanceInvocationArguments.tracingStateReport;
     if (typeof arg === "string") {
-        document.getElementById(arg).textContent =
-            failed ? "BAD" : "GOOD";
+        document.getElementById(arg).textContent = failed ? "BAD" : "GOOD";
     }
 }
 
@@ -296,14 +306,15 @@ if (instanceInvocationArguments.enableTraceLog) {
         labelTracing2: General.wrap("tracing2"),
         labelTracing4: General.wrap("tracing4"),
         labelTracingSesq: General.wrap("tracingSesq"),
-        postMouseHooks: []
+        postMouseHooks: [],
     };
     if (typeof instanceInvocationArguments.enableTraceLog === "number")
         traceLog.logLength = instanceInvocationArguments.enableTraceLog;
     globalInstance.getTraceLog = getTraceLog;
     globalInstance.formatTraceLog = formatTraceLog;
-    globalInstance.addTraceHook =
-        traceLog.postMouseHooks.push.bind(traceLog.postMouseHooks);
+    globalInstance.addTraceHook = traceLog.postMouseHooks.push.bind(
+        traceLog.postMouseHooks
+    );
 }
 
 function getTraceLog() {
@@ -312,9 +323,9 @@ function getTraceLog() {
 
 function formatTraceLog(save) {
     var str = JSON.stringify(traceLog.fullLog);
-    var type = save ? 'application/octet-stream' : 'application/json';
+    var type = save ? "application/octet-stream" : "application/json";
     var blob = new Blob([str], {
-        'type': type
+        type: type,
     });
     var uri = window.URL.createObjectURL(blob);
     // var uri = 'data:text/html;base64,' + window.btoa(html);
@@ -329,8 +340,7 @@ function getStateComplexNumber() {
 
 function getStateComplexVector(n) {
     var lst = new Array(n);
-    for (var i = 0; i < n; ++i)
-        lst[i] = getStateComplexNumber();
+    for (var i = 0; i < n; ++i) lst[i] = getStateComplexNumber();
     return List.turnIntoCSList(lst);
 }
 
@@ -357,8 +367,7 @@ function tracing2(n1, n2) {
 function tracing2core(n1, n2, o1, o2) {
     var safety = 3;
 
-    if (tracingInitial)
-        return [n1, n2];
+    if (tracingInitial) return [n1, n2];
 
     var do1n1 = List.projectiveDistMinScal(o1, n1);
     var do1n2 = List.projectiveDistMinScal(o1, n2);
@@ -388,9 +397,10 @@ function tracing2core(n1, n2, o1, o2) {
             General.wrap(traceLog.currentElement.name), //    2
             List.turnIntoCSList(res), //                      3
             List.turnIntoCSList([o1, o2]), //                 4
-            List.realMatrix([ //                              5
+            List.realMatrix([
+                //                              5
                 [do1n1, do1n2],
-                [do2n1, do2n2]
+                [do2n1, do2n2],
             ]),
             General.wrap(cost), //                            6
             General.wrap(do1o2), //                           7
@@ -399,8 +409,7 @@ function tracing2core(n1, n2, o1, o2) {
         ];
         traceLog.currentStep.push(List.turnIntoCSList(logRow));
         debug = function(msg) {
-            if (!traceLog.hasOwnProperty(msg))
-                traceLog[msg] = General.wrap(msg);
+            if (!traceLog.hasOwnProperty(msg)) traceLog[msg] = General.wrap(msg);
             logRow[logRow.length - 1] = traceLog[msg];
             // Evil: modify can break copy on write! But it's safe here.
         };
@@ -417,7 +426,8 @@ function tracing2core(n1, n2, o1, o2) {
         debug("Normal case, everything all right.");
     } else if (dn1n2 < 1e-5) {
         // New points too close: we presumably are inside a singularity.
-        if (do1o2 < 1e-5) { // Cinderella uses the constant 1e-6 here
+        if (do1o2 < 1e-5) {
+            // Cinderella uses the constant 1e-6 here
             // The last "good" position was already singular.
             // Nothing we can do about this.
             debug("Staying inside singularity.");
@@ -428,7 +438,8 @@ function tracing2core(n1, n2, o1, o2) {
             debug("Moved into singularity.");
             tracingFailed = true;
         }
-    } else if (do1o2 < 1e-5) { // Cinderella uses the constant 1e-6 here
+    } else if (do1o2 < 1e-5) {
+        // Cinderella uses the constant 1e-6 here
         // We just moved out of a singularity. Things can only get
         // better. If the singular situation was "good", we stay
         // "good", and keep track of things from now on.
@@ -436,10 +447,8 @@ function tracing2core(n1, n2, o1, o2) {
     } else {
         // Neither old nor new position looks singular, so there was
         // an avoidable singularity along the way. Refine to avoid it.
-        if (noMoreRefinements)
-            debug("Reached refinement limit, giving up.");
-        else
-            debug("Need to refine.");
+        if (noMoreRefinements) debug("Reached refinement limit, giving up.");
+        else debug("Need to refine.");
         requestRefinement();
     }
     return res;
@@ -462,7 +471,6 @@ function tracing4(n1, n2, n3, n4) {
 }
 tracing4.stateSize = 24; // four three-element complex vectors
 
-
 function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
     var debug = function() {};
     // var debug = console.log.bind(console);
@@ -474,8 +482,7 @@ function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
     var new_el = [n1, n2, n3, n4];
 
     // first we leave everything to input
-    if (tracingInitial)
-        return new_el;
+    if (tracingInitial) return new_el;
 
     var res, dist, i, j, distMatrix;
     var min_cost = 0;
@@ -558,8 +565,7 @@ function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
         ];
         traceLog.currentStep.push(List.turnIntoCSList(logRow));
         debug = function(msg) {
-            if (!traceLog.hasOwnProperty(msg))
-                traceLog[msg] = General.wrap(msg);
+            if (!traceLog.hasOwnProperty(msg)) traceLog[msg] = General.wrap(msg);
             logRow[logRow.length - 1] = traceLog[msg];
             // Evil: modify can break copy on write! But it's safe here.
         };
@@ -588,12 +594,9 @@ function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
         // "good", and keep track of things from now on.
         debug("Moved out of singularity.");
     } else {
-        if (noMoreRefinements)
-            debug("Reached refinement limit, giving up.");
-        else
-            debug("Need to refine.");
+        if (noMoreRefinements) debug("Reached refinement limit, giving up.");
+        else debug("Need to refine.");
         requestRefinement();
-
     }
     return res;
 }
@@ -614,7 +617,7 @@ function tracing2X(n1, n2, c1, c2, el) {
 
     //Das Kommt jetzt eins zu eins aus Cindy
 
-    var care = (do1o2 > 0.000001);
+    var care = do1o2 > 0.000001;
 
     // First we try to assign the points
 
@@ -689,21 +692,16 @@ function tracingSesq(newVecs) {
     for (i = 0; i < n; ++i) {
         for (j = 0; j < n; ++j) {
             p = List.sesquilinearproduct(oldVecs[i], newVecs[j]).value;
-            w = (p.real * p.real + p.imag * p.imag) /
-                (oldNorms[i] * newNorms[j]);
+            w = (p.real * p.real + p.imag * p.imag) / (oldNorms[i] * newNorms[j]);
             cost[i][j] = 1 - w;
         }
         for (j = i + 1; j < n; ++j) {
             p = List.sesquilinearproduct(oldVecs[i], oldVecs[j]).value;
-            w = (p.real * p.real + p.imag * p.imag) /
-                (oldNorms[i] * oldNorms[j]);
-            if (oldMinCost > 1 - w)
-                oldMinCost = 1 - w;
+            w = (p.real * p.real + p.imag * p.imag) / (oldNorms[i] * oldNorms[j]);
+            if (oldMinCost > 1 - w) oldMinCost = 1 - w;
             p = List.sesquilinearproduct(newVecs[i], newVecs[j]).value;
-            w = (p.real * p.real + p.imag * p.imag) /
-                (newNorms[i] * newNorms[j]);
-            if (newMinCost > 1 - w)
-                newMinCost = 1 - w;
+            w = (p.real * p.real + p.imag * p.imag) / (newNorms[i] * newNorms[j]);
+            if (newMinCost > 1 - w) newMinCost = 1 - w;
         }
     }
     var m = minCostMatching(cost);
@@ -712,7 +710,7 @@ function tracingSesq(newVecs) {
     var anyNaN = false;
     for (i = 0; i < n; ++i) {
         resCost += cost[i][m[i]];
-        var v = res[i] = newVecs[m[i]];
+        var v = (res[i] = newVecs[m[i]]);
         putStateComplexVector(v);
         anyNaN |= List._helper.isNaN(v);
     }
@@ -733,8 +731,7 @@ function tracingSesq(newVecs) {
         ];
         traceLog.currentStep.push(List.turnIntoCSList(logRow));
         debug = function(msg) {
-            if (!traceLog.hasOwnProperty(msg))
-                traceLog[msg] = General.wrap(msg);
+            if (!traceLog.hasOwnProperty(msg)) traceLog[msg] = General.wrap(msg);
             logRow[logRow.length - 1] = traceLog[msg];
             // Evil: modify can break copy on write! But it's safe here.
         };
@@ -770,10 +767,8 @@ function tracingSesq(newVecs) {
     } else {
         // Neither old nor new position looks singular, so there was
         // an avoidable singularity along the way. Refine to avoid it.
-        if (noMoreRefinements)
-            debug("Reached refinement limit, giving up.");
-        else
-            debug("Need to refine.");
+        if (noMoreRefinements) debug("Reached refinement limit, giving up.");
+        else debug("Need to refine.");
         requestRefinement();
     }
     return res;
