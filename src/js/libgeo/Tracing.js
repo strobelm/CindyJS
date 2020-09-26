@@ -81,7 +81,7 @@ function setTracingState(name, state) {
     else if (name === "stateOutIdx") stateOutIdx = state;
     else if (name === "stateIn") stateIn = state;
     else if (name === "stateOut") stateOut = state;
-    console.error("could not set tracing state");
+    else console.error("could not set tracing state");
 }
 
 var inMouseMove = false;
