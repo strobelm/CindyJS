@@ -457,7 +457,7 @@ geoOps.PointOnLine.initialize = function(el) {
     other = List.normalizeMax(other);
     putStateComplexVector(point);
     putStateComplexVector(line);
-    tracingInitial = false; // force updatePosition to do proper matching
+    setTracingState('tracingInitial', false); // force updatePosition to do proper matching
 };
 geoOps.PointOnLine.updatePosition = function(el, isMover) {
     var newPoint;
@@ -470,12 +470,12 @@ geoOps.PointOnLine.updatePosition = function(el, isMover) {
     } else {
         // Also read from last good, which is real,
         // instead of only stateIn which might be complex.
-        stateInIdx = el.stateIdx;
+        setTracingState("stateInIdx" , el.stateIdx);
         var tmpIn = stateIn;
-        stateIn = stateLastGood;
+        setTracingState("stateIn" , stateLastGood);
         var realPoint = getStateComplexVector(3);
         var realLine = getStateComplexVector(3);
-        stateIn = tmpIn;
+        setTracingState("stateIn", tmpIn);
 
         var center = List.cross(realLine, newLine);
         //if (CSNumber._helper.isAlmostZero(List.scalproduct(newLine, realPoint))) {
@@ -548,7 +548,7 @@ geoOps.PointOnCircle.initialize = function(el) {
     putStateComplexVector(param);
     putStateComplexVector(pos);
     putStateComplexVector(other);
-    tracingInitial = false; // force updatePosition to do proper matching
+    setTracingState("tracingInitial" , false); // force updatePosition to do proper matching
 };
 geoOps.PointOnCircle.putParamToState = function(el, param) {
     putStateComplexVector(param);
@@ -560,7 +560,7 @@ geoOps.PointOnCircle.getParamForInput = function(el, pos, type) {
     var circle = csgeo.csnames[el.args[0]];
     var mid = List.normalizeZ(geoOps._helper.CenterOfCircle(circle.matrix));
     var dir = List.sub(pos, mid);
-    stateInIdx = el.stateIdx;
+    setTracingState('stateInIdx' , el.stateIdx);
     var oldparam = getStateComplexVector(3);
     var oldpos = List.normalizeZ(getStateComplexVector(3));
     var olddir = List.sub(oldpos, mid);

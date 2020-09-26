@@ -328,26 +328,29 @@ function addElementNoProof(el) {
 
     if (true || op.stateSize !== 0) {
         stateAlloc(totalStateSize);
-        stateIn = stateOut = stateLastGood;
+        setTracingState('stateIn', stateLastGood);
+        setTracingState('stateOut', stateLastGood);
         // initially, stateIn and stateOut are the same, so that initialize can
         // write some state and updatePosition can immediately use it
-        tracingInitial = true;
+        setTracingState('tracingInitial', true);
         if (op.initialize) {
-            stateInIdx = stateOutIdx = el.stateIdx;
+            setTracingState('stateInIdx', el.stateIdx);
+            setTracingState('stateOutIdx', el.stateIdx);
             el.param = op.initialize(el);
             assert(stateOutIdx === el.stateIdx + op.stateSize,
                 "State fully initialized");
         }
-        stateInIdx = stateOutIdx = el.stateIdx;
+        setTracingState('stateInIdx', el.stateIdx);
+        setTracingState('stateOutIdx', el.stateIdx);
         op.updatePosition(el, false);
         assert(stateInIdx === el.stateIdx + op.stateSize,
             "State fully consumed");
         assert(stateOutIdx === el.stateIdx + op.stateSize,
             "State fully updated");
-        tracingInitial = false;
-        stateIn = stateArrays.in;
+        setTracingState('tracingInitial', false);
+        setTracingState('stateIn', stateArrays.in);
         stateIn.set(stateLastGood);
-        stateOut = stateArrays.out;
+        setTracingState('stateOut', stateArrays.out);
     } else {
         // Do the updatePosition call with correct state handling around it.
     }

@@ -13,7 +13,7 @@ var stateArrayNames = ["in", "out", "good", "backup", "prover"];
 // Initialize all state to zero-length arrays, can be reallocated later on
 var stateMasterArray = new Float64Array(0);
 var stateArrays = {};
-stateArrayNames.forEach(function(name) {
+stateArrayNames.forEach(function (name) {
     stateArrays[name] = stateMasterArray;
 });
 var stateIn = stateMasterArray;
@@ -72,11 +72,21 @@ function stateContinueFromHere() {
 var stateInIdx, stateOutIdx;
 
 var tracingInitial, tracingFailed, noMoreRefinements;
+function setTracingState(name, state) {
+    if (name === "tracingInitial") tracingInitial = state;
+    else if (name === "tracingFailed") tracingFailed = state;
+    else if (name === "noMoreRefinements") noMoreRefinements = state;
+    else if (name === "stateInIdx") stateInIdx = state;
+    else if (name === "stateOutIdx") stateOutIdx = state;
+    else if (name === "stateIn") stateIn= state;
+    else if (name === "stateOut") stateOut = state;
+    console.error("could not set tracing state");
+}
 
 var inMouseMove = false;
 
 var RefineException = {
-    toString: function() {
+    toString: function () {
         return "RefineException";
     },
 };
@@ -124,7 +134,7 @@ function traceMouseAndScripts() {
         if (traceLog.length > traceLog.logLength)
             traceLog.splice(0, traceLog.length - traceLog.logLength);
         traceLog.currentMouseAndScripts = null;
-        traceLog.postMouseHooks.forEach(function(cb) {
+        traceLog.postMouseHooks.forEach(function (cb) {
             cb();
         });
     }
@@ -252,8 +262,14 @@ function traceMover(mover, pos, type) {
             stateInIdx = stateOutIdx = el.stateIdx;
             if (traceLog) traceLog.currentElement = el;
             op.updatePosition(el, false);
-            assert(stateInIdx === el.stateIdx + op.stateSize, "State fully consumed");
-            assert(stateOutIdx === el.stateIdx + op.stateSize, "State fully updated");
+            assert(
+                stateInIdx === el.stateIdx + op.stateSize,
+                "State fully consumed"
+            );
+            assert(
+                stateOutIdx === el.stateIdx + op.stateSize,
+                "State fully updated"
+            );
         }
         if (traceLog) traceLog.currentElement = null;
         last = t; // successfully traced up to t
@@ -389,7 +405,7 @@ function tracing2core(n1, n2, o1, o2) {
         cost = cost1;
     }
 
-    var debug = function() {};
+    var debug = function () {};
     // debug = console.log.bind(console);
     if (traceLog && traceLog.currentStep) {
         var logRow = [
@@ -408,8 +424,9 @@ function tracing2core(n1, n2, o1, o2) {
             nada, // will become the outcome message //       9
         ];
         traceLog.currentStep.push(List.turnIntoCSList(logRow));
-        debug = function(msg) {
-            if (!traceLog.hasOwnProperty(msg)) traceLog[msg] = General.wrap(msg);
+        debug = function (msg) {
+            if (!traceLog.hasOwnProperty(msg))
+                traceLog[msg] = General.wrap(msg);
             logRow[logRow.length - 1] = traceLog[msg];
             // Evil: modify can break copy on write! But it's safe here.
         };
@@ -472,7 +489,7 @@ function tracing4(n1, n2, n3, n4) {
 tracing4.stateSize = 24; // four three-element complex vectors
 
 function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
-    var debug = function() {};
+    var debug = function () {};
     // var debug = console.log.bind(console);
 
     var useGreedy = false; // greedy or permutation?
@@ -564,8 +581,9 @@ function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
             nada, // will become the outcome message //       9
         ];
         traceLog.currentStep.push(List.turnIntoCSList(logRow));
-        debug = function(msg) {
-            if (!traceLog.hasOwnProperty(msg)) traceLog[msg] = General.wrap(msg);
+        debug = function (msg) {
+            if (!traceLog.hasOwnProperty(msg))
+                traceLog[msg] = General.wrap(msg);
             logRow[logRow.length - 1] = traceLog[msg];
             // Evil: modify can break copy on write! But it's safe here.
         };
@@ -692,15 +710,21 @@ function tracingSesq(newVecs) {
     for (i = 0; i < n; ++i) {
         for (j = 0; j < n; ++j) {
             p = List.sesquilinearproduct(oldVecs[i], newVecs[j]).value;
-            w = (p.real * p.real + p.imag * p.imag) / (oldNorms[i] * newNorms[j]);
+            w =
+                (p.real * p.real + p.imag * p.imag) /
+                (oldNorms[i] * newNorms[j]);
             cost[i][j] = 1 - w;
         }
         for (j = i + 1; j < n; ++j) {
             p = List.sesquilinearproduct(oldVecs[i], oldVecs[j]).value;
-            w = (p.real * p.real + p.imag * p.imag) / (oldNorms[i] * oldNorms[j]);
+            w =
+                (p.real * p.real + p.imag * p.imag) /
+                (oldNorms[i] * oldNorms[j]);
             if (oldMinCost > 1 - w) oldMinCost = 1 - w;
             p = List.sesquilinearproduct(newVecs[i], newVecs[j]).value;
-            w = (p.real * p.real + p.imag * p.imag) / (newNorms[i] * newNorms[j]);
+            w =
+                (p.real * p.real + p.imag * p.imag) /
+                (newNorms[i] * newNorms[j]);
             if (newMinCost > 1 - w) newMinCost = 1 - w;
         }
     }
@@ -716,7 +740,7 @@ function tracingSesq(newVecs) {
     }
     anyNaN |= isNaN(resCost);
     var safety = 3;
-    var debug = function() {};
+    var debug = function () {};
     if (traceLog && traceLog.currentStep) {
         var logRow = [
             traceLog.labelTracingSesq, //                     1
@@ -730,8 +754,9 @@ function tracingSesq(newVecs) {
             nada, // will become the outcome message //       9
         ];
         traceLog.currentStep.push(List.turnIntoCSList(logRow));
-        debug = function(msg) {
-            if (!traceLog.hasOwnProperty(msg)) traceLog[msg] = General.wrap(msg);
+        debug = function (msg) {
+            if (!traceLog.hasOwnProperty(msg))
+                traceLog[msg] = General.wrap(msg);
             logRow[logRow.length - 1] = traceLog[msg];
             // Evil: modify can break copy on write! But it's safe here.
         };
