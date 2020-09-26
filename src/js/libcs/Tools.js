@@ -244,7 +244,7 @@ function isConicAtMouse(element) {
  * @param element
  */
 function setElementAtMouse(element) {
-    move = {
+    setMove({
         mover: element,
         offset: {
             x: 0,
@@ -254,7 +254,7 @@ function setElementAtMouse(element) {
             x: mouse.x,
             y: mouse.y
         }
-    };
+    });
 }
 
 /**
@@ -374,7 +374,7 @@ tools.Delete.actions[0] = {};
 tools.Delete.actions[0].event = "mousedown";
 tools.Delete.actions[0].tooltip = "...";
 tools.Delete.actions[0].do = function() {
-    move = getElementAtMouse(mouse);
+    setMove(getElementAtMouse(mouse));
 
     if (move !== null) {
         removeElement(move.mover.name);
@@ -390,7 +390,7 @@ tools.Move.actions[0] = {};
 tools.Move.actions[0].event = "mousedown";
 tools.Move.actions[0].tooltip = "Move free elements by dragging the mouse";
 tools.Move.actions[0].do = function() {
-    move = getmover(mouse);
+    setMove(move = getmover(mouse));
 
     return true;
 };

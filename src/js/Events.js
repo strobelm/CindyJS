@@ -8,6 +8,10 @@ var multiid = 0;
 var multipos = {};
 var multiiddict = {};
 
+function setMove(m) {
+    move = m
+}
+
 function getmover(mouse) {
     var mov = null;
     var adist = 1000000;
