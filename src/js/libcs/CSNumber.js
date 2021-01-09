@@ -28,7 +28,7 @@ CSNumber.niceprint = function (a, roundingfactor) {
     }
 };
 
-var angleUnit = instanceInvocationArguments.angleUnit || "°";
+var angleUnit = instanceInvocationArguments?.angleUnit || "°";
 var angleUnitName = angleUnit.replace(/\s+/g, ""); // unit may contain space
 var TWOPI = Math.PI * 2;
 var PERTWOPI = 1 / TWOPI;
