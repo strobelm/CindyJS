@@ -1,4 +1,3 @@
-var should = require("chai").should();
 var rewire = require("rewire");
 
 global.navigator = {};
@@ -17,7 +16,7 @@ function almostEqualVector(a, b) {
 function homog(expected) {
     if (!expected.ctype) expected = List.realVector(expected);
     return function (el) {
-        if (!almostEqualVector(el.homog, expected)) niceprint(el.homog).should.equal(niceprint(expected));
+        if (!almostEqualVector(el.homog, expected)) expect(niceprint(el.homog)).toBe(niceprint(expected));
     };
 }
 
@@ -33,7 +32,7 @@ function homogPair(expected1, expected2) {
                 (almostEqualVector(actual1, expected2) && almostEqualVector(actual2, expected1))
             )
         )
-            niceprint(el.results).should.equal(niceprint(List.turnIntoCSList([expected1, expected2])));
+            expect(niceprint(el.results)).toBe(niceprint(List.turnIntoCSList([expected1, expected2])));
     };
 }
 
@@ -95,14 +94,14 @@ function testEqualPoints(geometry, equalities, done) {
 //////////////////////////////////////////////////////////////////////
 // Now come the test cases
 
-describe("Free point", function () {
-    it("must have the given coordinates", function (done) {
+describe("Free point", () => {
+    it("must have the given coordinates", (done) => {
         testGeo([{ name: "A", type: "Free", pos: [12, 34] }], homog([-120, -340, -10]), done);
     });
 });
 
-describe("Angle bisector", function () {
-    it("generic input", function (done) {
+describe("Angle bisector", () => {
+    it("generic input", (done) => {
         testGeo(
             [
                 { name: "A", type: "Free", pos: [3, 2] },
@@ -116,7 +115,7 @@ describe("Angle bisector", function () {
             done
         );
     });
-    it("finite identical", function (done) {
+    it("finite identical", (done) => {
         testGeo(
             [
                 { name: "A", type: "Free", pos: [-3, 2] },
@@ -130,7 +129,7 @@ describe("Angle bisector", function () {
             done
         );
     });
-    it("parallel", function (done) {
+    it("parallel", (done) => {
         testGeo(
             [
                 { name: "A", type: "Free", pos: [3, 2, 0] },
@@ -144,7 +143,7 @@ describe("Angle bisector", function () {
             done
         );
     });
-    it("identical with far point", function (done) {
+    it("identical with far point", (done) => {
         testGeo(
             [
                 { name: "A", type: "Free", pos: [3, 1, 0] },
@@ -158,7 +157,7 @@ describe("Angle bisector", function () {
             done
         );
     });
-    it("finite and infinite", function (done) {
+    it("finite and infinite", (done) => {
         testGeo(
             [
                 { name: "A", type: "Free", pos: [3, 1, 0] },
@@ -172,7 +171,7 @@ describe("Angle bisector", function () {
             done
         );
     });
-    it("twice infinite", function (done) {
+    it("twice infinite", (done) => {
         testGeo(
             [
                 { name: "A", type: "Free", pos: [3, 1, 0] },
@@ -188,8 +187,8 @@ describe("Angle bisector", function () {
     });
 });
 
-describe("IntersectLC helper", function () {
-    it("must not return null vector just because one result has x == 0", function () {
+describe("IntersectLC helper", () => {
+    it("must not return null vector just because one result has x == 0", () => {
         var circle = List.turnIntoCSList([
             List.realVector([1, 0, 2]),
             List.realVector([0, 1, 3]),
@@ -197,8 +196,8 @@ describe("IntersectLC helper", function () {
         ]);
         var line = List.realVector([0, -2, -6]);
         var pts = geoOps._helper.IntersectLC(line, circle);
-        pts.should.be.an.Array;
-        pts.should.have.length(2);
+        expect(Array.isArray(pts)).toBe(true);
+        expect(pts.length).toBe(2);
         var p1 = List.normalizeZ(pts[0]);
         var p2 = List.normalizeZ(pts[1]);
         if (p1.value[0].value.real > p2.value[0].value.real) {
@@ -206,19 +205,24 @@ describe("IntersectLC helper", function () {
             p2 = p1;
             p1 = tmp;
         }
-        p1.value[0].value.real.should.be.approximately(-4, 1e-12);
-        p1.value[0].value.imag.should.be.approximately(0, 1e-12);
-        p1.value[1].value.real.should.be.approximately(-3, 1e-12);
-        p1.value[1].value.imag.should.be.approximately(0, 1e-12);
-        p2.value[0].value.real.should.be.approximately(0, 1e-12);
-        p2.value[0].value.imag.should.be.approximately(0, 1e-12);
-        p2.value[1].value.real.should.be.approximately(-3, 1e-12);
-        p2.value[1].value.imag.should.be.approximately(0, 1e-12);
+
+        function abs(a, b, tol) {
+            return Math.abs(a - b);
+        }
+
+        expect(abs(p1.value[0].value.real, -4) < 1e-12).toBe(true);
+        expect(abs(p1.value[0].value.imag, 0) < 1e-12).toBe(true);
+        expect(abs(p1.value[1].value.real, -3) < 1e-12).toBe(true);
+        expect(abs(p1.value[1].value.imag, 0) < 1e-12).toBe(true);
+        expect(abs(p2.value[0].value.real, 0) < 1e-12).toBe(true);
+        expect(abs(p2.value[0].value.imag, 0) < 1e-12).toBe(true);
+        expect(abs(p2.value[1].value.real, -3) < 1e-12).toBe(true);
+        expect(abs(p2.value[1].value.imag, 0) < 1e-12).toBe(true);
     });
 });
 
-describe("Möbius Transformations", function () {
-    it("TrMoebius", function (done) {
+describe("Möbius Transformations", () => {
+    it("TrMoebius", (done) => {
         testEqualPoints(
             [
                 { name: "A1", type: "RandomPoint" },
@@ -236,7 +240,7 @@ describe("Möbius Transformations", function () {
             done
         );
     });
-    it("TrInverseMoebius", function (done) {
+    it("TrInverseMoebius", (done) => {
         testEqualPoints(
             [
                 { name: "A1", type: "RandomPoint" },
@@ -255,7 +259,7 @@ describe("Möbius Transformations", function () {
             done
         );
     });
-    it("TrReflectionC", function (done) {
+    it("TrReflectionC", (done) => {
         testEqualPoints(
             [
                 { name: "M", type: "RandomPoint" },
@@ -274,7 +278,7 @@ describe("Möbius Transformations", function () {
     });
 });
 
-describe("TrCompose", function () {
+describe("TrCompose", () => {
     function directMoebiusTrafo(name) {
         var P = [0, 1, 2, 3].map(function (i) {
             return name + "_P" + i;
@@ -328,66 +332,66 @@ describe("TrCompose", function () {
         testEqualPoints(geometry, ["P3=P4"], done);
     }
 
-    it("TrComposeTrTr direct direct", function (done) {
+    it("TrComposeTrTr direct direct", (done) => {
         testTrCompose(directEuclideanTrafo, directEuclideanTrafo, done);
     });
-    it("TrComposeTrTr direct reverse", function (done) {
+    it("TrComposeTrTr direct reverse", (done) => {
         testTrCompose(directEuclideanTrafo, reverseEuclideanTrafo, done);
     });
-    it("TrComposeTrTr reverse direct", function (done) {
+    it("TrComposeTrTr reverse direct", (done) => {
         testTrCompose(reverseEuclideanTrafo, directEuclideanTrafo, done);
     });
-    it("TrComposeTrTr reverse reverse", function (done) {
+    it("TrComposeTrTr reverse reverse", (done) => {
         testTrCompose(reverseEuclideanTrafo, reverseEuclideanTrafo, done);
     });
 
-    it("TrComposeMtMt direct direct", function (done) {
+    it("TrComposeMtMt direct direct", (done) => {
         testTrCompose(directMoebiusTrafo, directMoebiusTrafo, done);
     });
-    it("TrComposeMtMt direct reverse", function (done) {
+    it("TrComposeMtMt direct reverse", (done) => {
         testTrCompose(directMoebiusTrafo, reverseMoebiusTrafo, done);
     });
-    it("TrComposeMtMt reverse direct", function (done) {
+    it("TrComposeMtMt reverse direct", (done) => {
         testTrCompose(reverseMoebiusTrafo, directMoebiusTrafo, done);
     });
-    it("TrComposeMtMt reverse reverse", function (done) {
+    it("TrComposeMtMt reverse reverse", (done) => {
         testTrCompose(reverseMoebiusTrafo, reverseMoebiusTrafo, done);
     });
 
-    it("TrComposeTrMt direct direct", function (done) {
+    it("TrComposeTrMt direct direct", (done) => {
         testTrCompose(directEuclideanTrafo, directMoebiusTrafo, done);
     });
-    it("TrComposeTrMt direct reverse", function (done) {
+    it("TrComposeTrMt direct reverse", (done) => {
         testTrCompose(directEuclideanTrafo, reverseMoebiusTrafo, done);
     });
-    it("TrComposeTrMt reverse direct", function (done) {
+    it("TrComposeTrMt reverse direct", (done) => {
         testTrCompose(reverseEuclideanTrafo, directMoebiusTrafo, done);
     });
-    it("TrComposeTrMt reverse reverse", function (done) {
+    it("TrComposeTrMt reverse reverse", (done) => {
         testTrCompose(reverseEuclideanTrafo, reverseMoebiusTrafo, done);
     });
 
-    it("TrComposeMtTr direct direct", function (done) {
+    it("TrComposeMtTr direct direct", (done) => {
         testTrCompose(directMoebiusTrafo, directEuclideanTrafo, done);
     });
-    it("TrComposeMtTr direct reverse", function (done) {
+    it("TrComposeMtTr direct reverse", (done) => {
         testTrCompose(directMoebiusTrafo, reverseEuclideanTrafo, done);
     });
-    it("TrComposeMtTr reverse direct", function (done) {
+    it("TrComposeMtTr reverse direct", (done) => {
         testTrCompose(reverseMoebiusTrafo, directEuclideanTrafo, done);
     });
-    it("TrComposeMtTr reverse reverse", function (done) {
+    it("TrComposeMtTr reverse reverse", (done) => {
         testTrCompose(reverseMoebiusTrafo, reverseEuclideanTrafo, done);
     });
 });
 
-describe("All GeoOps", function () {
-    it("movable ops must have all required methods", function () {
+describe("All GeoOps", () => {
+    it("movable ops must have all required methods", () => {
         for (var type in geoOps) {
             var op = geoOps[type];
             if (op && op.isMovable) {
                 ["getParamFromState", "getParamForInput", "putParamToState", "updatePosition"].forEach(function (meth) {
-                    op.should.respondTo(meth, type + " should respond to " + meth);
+                    expect(typeof op[meth]).toBe("function");
                 });
             }
         }

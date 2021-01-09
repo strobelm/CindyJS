@@ -1,5 +1,4 @@
 "use strict";
-var should = require("chai").should();
 var rewire = require("rewire");
 
 global.navigator = {};
@@ -16,8 +15,8 @@ var cdy = CindyJS({
 });
 
 function itCmd(command, expected) {
-    it(command, function () {
-        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    it(command, () => {
+        expect(String(cdy.niceprint(cdy.evalcs(command)))).toBe(expected);
     });
 }
 
@@ -29,8 +28,8 @@ function getJSONprettyStr() {
     return "{age:30, bool:false, cars:[{models:[Fiesta, Focus, Mustang], name:Ford}, {models:[320, X3, X5], name:BMW}, {models:[500, Panda], name:Fiat}], name:Joe, test:circle, undef:___}";
 }
 
-describe("JSON basic getter / setter", function () {
-    before(function () {
+describe("JSON basic getter / setter", () => {
+    beforeAll(() => {
         cdy.evalcs("circ = circle(A,1);");
         cdy.evalcs("json = " + getJSONStr());
         cdy.evalcs("json.test = circ;");
@@ -67,8 +66,8 @@ describe("JSON basic getter / setter", function () {
     itCmd('json = {"a":[1,{"b":2},3]}; json.a_2.b=34; json', "{a:[1, {b:34}, 3]}");
 });
 
-describe("JSON geo objects", function () {
-    before(function () {
+describe("JSON geo objects", () => {
+    beforeAll(() => {
         cdy.evalcs('geojson = {"pt1": A, "pt2": B, "pt3" : C};');
     });
 
@@ -76,8 +75,8 @@ describe("JSON geo objects", function () {
     itCmd("geojson.pt1 = C; (geojson.pt1).xy", "[1, 2]");
 });
 
-describe("JSON operations", function () {
-    before(function () {
+describe("JSON operations", () => {
+    beforeAll(() => {
         cdy.evalcs('json3 = {"a": 1, "b": 2, "c": 10, "d" : "string" };');
     });
 

@@ -1,5 +1,4 @@
 "use strict";
-var should = require("chai").should();
 var rewire = require("rewire");
 
 global.navigator = {};
@@ -16,13 +15,13 @@ var cdy = CindyJS({
 });
 
 function itCmd(command, expected) {
-    it(command, function () {
-        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    it(command, () => {
+        expect(String(cdy.niceprint(cdy.evalcs(command)))).toBe(expected);
     });
 }
 
-describe("ColonOp: Lists", function () {
-    before(function () {
+describe("ColonOp: Lists", () => {
+    beforeAll(() => {
         cdy.evalcs(
             'lst = [1,2,3]; lst:"age"=17; lst:"list"=lst; lst:"pt" = B; lst:12.3 = 4.56; lst:1 = 1; lst:(1+i) = 2; lst:[1,2,3] = 10;'
         );
@@ -55,8 +54,8 @@ describe("ColonOp: Lists", function () {
     itCmd("keys(lst)", "[1, age, list, pt, 12.3, 1 + i*1, [1, 2, 3]]");
 });
 
-describe("ColonOp: GeoOps", function () {
-    before(function () {
+describe("ColonOp: GeoOps", () => {
+    beforeAll(() => {
         cdy.evalcs('A:"age"=17; A:"list"=lst; A:"pt" = B');
     });
 

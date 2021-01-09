@@ -1,6 +1,4 @@
 var rewire = require("rewire");
-var expect = require("chai").expect;
-var should = require("chai").should();
 
 var cindyJS = rewire("../build/js/exposed.js");
 
@@ -26,15 +24,15 @@ QH.__set__("HEO", HE.__get__("HEO"));
 
 var QuickHull3D = QH.__get__("QuickHull3D");
 
-describe("Quick hull", function () {
+describe("Quick hull", () => {
     var hull;
 
-    describe("build from points", function () {
+    describe("build from points", () => {
         var gg = (1 - Math.sqrt(5)) / 2;
         var vertices, faces;
         console.log("qh", QH);
 
-        beforeEach(function () {
+        beforeEach(() => {
             hull = new QuickHull3D();
         });
 
@@ -209,8 +207,8 @@ describe("Quick hull", function () {
         tests.forEach(function (test) {
             var result, expected;
 
-            describe(test.args.length + " points", function () {
-                it("Resulting vertices", function () {
+            describe(test.args.length + " points", () => {
+                it("Resulting vertices", () => {
                     hull.build(test.args);
 
                     result = hull.getVertices().map(function (point) {
@@ -218,10 +216,10 @@ describe("Quick hull", function () {
                     });
 
                     expected = test.expected.vertices;
-                    expect(result).to.deep.equal(expected);
+                    expect(result).toEqual(expected);
                 });
 
-                it("Resulting faces", function () {
+                it("Resulting faces", () => {
                     var sorting = function (a, b) {
                         return a > b ? 1 : a < b ? -1 : 0;
                     };
@@ -257,7 +255,7 @@ describe("Quick hull", function () {
                         }
                     }
 
-                    t.should.equal(true);
+                    expect(t).toBe(true);
                 });
             });
         });

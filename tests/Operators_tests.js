@@ -1,4 +1,3 @@
-var should = require("chai").should();
 var rewire = require("rewire");
 
 global.navigator = {};
@@ -11,12 +10,12 @@ var cdy = CindyJS({
 });
 
 function itCmd(command, expected) {
-    it(command, function () {
-        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    it(command, () => {
+        expect(String(cdy.niceprint(cdy.evalcs(command)))).toBe(expected);
     });
 }
 
-describe("Operators: format", function () {
+describe("Operators: format", () => {
     itCmd("format(1.23456, 0)", "1");
     itCmd("format(1.23456, 1)", "1.2");
 
