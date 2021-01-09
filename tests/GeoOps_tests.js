@@ -206,18 +206,18 @@ describe("IntersectLC helper", () => {
             p1 = tmp;
         }
 
-        function abs(a, b, tol) {
+        function Abs(a, b) {
             return Math.abs(a - b);
         }
 
-        expect(abs(p1.value[0].value.real, -4) < 1e-12).toBe(true);
-        expect(abs(p1.value[0].value.imag, 0) < 1e-12).toBe(true);
-        expect(abs(p1.value[1].value.real, -3) < 1e-12).toBe(true);
-        expect(abs(p1.value[1].value.imag, 0) < 1e-12).toBe(true);
-        expect(abs(p2.value[0].value.real, 0) < 1e-12).toBe(true);
-        expect(abs(p2.value[0].value.imag, 0) < 1e-12).toBe(true);
-        expect(abs(p2.value[1].value.real, -3) < 1e-12).toBe(true);
-        expect(abs(p2.value[1].value.imag, 0) < 1e-12).toBe(true);
+        expect(Abs(p1.value[0].value.real, -4) < 1e-12).toBe(true);
+        expect(Abs(p1.value[0].value.imag, 0) < 1e-12).toBe(true);
+        expect(Abs(p1.value[1].value.real, -3) < 1e-12).toBe(true);
+        expect(Abs(p1.value[1].value.imag, 0) < 1e-12).toBe(true);
+        expect(Abs(p2.value[0].value.real, 0) < 1e-12).toBe(true);
+        expect(Abs(p2.value[0].value.imag, 0) < 1e-12).toBe(true);
+        expect(Abs(p2.value[1].value.real, -3) < 1e-12).toBe(true);
+        expect(Abs(p2.value[1].value.imag, 0) < 1e-12).toBe(true);
     });
 });
 
