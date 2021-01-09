@@ -92,7 +92,7 @@ describe("PSLQ Matrix", () => {
                 [0, 5, 0],
                 [0, 0, 8],
             ];
-            pslqMat = new PSLQMatrix(init);
+            var pslqMat = new PSLQMatrix(init);
             pslqMat.inverse();
             assert(compArr(pslqMat._e, [1, 0, 0, 0.2, 0, 0, 0, 0, 0.125]));
         });

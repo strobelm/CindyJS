@@ -186,7 +186,7 @@ module.exports = function build(settings, task) {
     //////////////////////////////////////////////////////////////////////
 
     task("unittests", ["exposed", "plain"], function () {
-        this.cmdscript("mocha", "tests");
+        this.cmdscript("jest");
     });
 
     //////////////////////////////////////////////////////////////////////
