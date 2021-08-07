@@ -4,15 +4,16 @@ import { scheduleUpdate } from "Events";
 import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
 import { General } from "libcs/General";
-import { eval_helper, evaluator, niceprint } from "libcs/Essentials";
+import { evaluator, niceprint } from "libcs/Essentials";
 import { namespace } from "libcs/Namespace";
 import { Accessor } from "libcs/Accessors";
-import { imageFromValue } from "libcs/OpImageDrawing";
+import { imageFromValue } from "libcs/Images/ImageFromValue";
 import { evaluateAndVal, evaluateAndHomog, evaluate } from "libcs/Evaluator";
 import { Render2D } from "libcs/Render2D";
 import { csport } from "libgeo/GeoState";
 import { defaultAppearance } from "libgeo/GeoBasics";
 import { geoOps } from "libgeo/GeoOps";
+import { eval_helper } from "libcs/Eval_helper";
 
 //*******************************************************
 // and here are the definitions of the drawing operators

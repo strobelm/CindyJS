@@ -1,7 +1,7 @@
 import { nada } from "expose";
 import { CSNumber } from "libcs/CSNumber";
 import { General } from "libcs/General";
-import { eval_helper } from "libcs/Essentials";
+import { eval_helper } from "libcs/Eval_helper";
 import { comp_equals, comp_almostequals } from "libcs/Operators";
 import { evaluateAndVal } from "libcs/Evaluator";
 

@@ -4,10 +4,11 @@ import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
 import { Json } from "libcs/Json";
 import { General } from "libcs/General";
-import { eval_helper, niceprint, infixmap } from "libcs/Essentials";
+import { niceprint, infixmap } from "libcs/Essentials";
 import { namespace } from "libcs/Namespace";
 import { Accessor } from "libcs/Accessors";
 import { Parser } from "libcs/Parser";
+import { eval_helper } from "libcs/Eval_helper";
 
 //****************************************************************
 // this function is responsible for evaluation an expression tree

@@ -1,4 +1,4 @@
-import { images, csctx, loadImage, csplay, isFiniteNumber } from "Setup";
+import { csctx, loadImage, csplay, isFiniteNumber } from "Setup";
 import { nada, document } from "expose";
 import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
@@ -6,20 +6,11 @@ import { General } from "libcs/General";
 import { evaluator, eval_helper } from "libcs/Essentials";
 import { evaluateAndVal, evaluate, evaluateAndHomog } from "libcs/Evaluator";
 import { csport } from "libgeo/GeoState";
+import { imageFromValue } from "libcs/Images/ImageFromValue";
 
 //*******************************************************
 // and here are the definitions of the image operators
 //*******************************************************
-
-function imageFromValue(val) {
-    if (val.ctype === "image") {
-        return val.value;
-    }
-    if (val.ctype === "string" && images.hasOwnProperty(val.value)) {
-        return images[val.value].value;
-    }
-    return null;
-}
 
 evaluator.imagesize$1 = function (args, modifs) {
     var img = imageFromValue(evaluateAndVal(args[0]));
@@ -697,5 +688,3 @@ evaluator.readpixels$1 = function (args, modifs) {
     }
     return List.turnIntoCSList(pixels);
 };
-
-export { imageFromValue };
