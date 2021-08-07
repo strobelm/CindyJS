@@ -11,8 +11,7 @@ const withUsage = function (v, usage) {
 //==========================================
 //      Complex Numbers
 //==========================================
-// var CSNumber = {};
-function CSNumber() {}
+ var CSNumber = {};
 CSNumber._helper = {};
 CSNumber._helper.roundingfactor = 1e4;
 CSNumber._helper.angleroundingfactor = 1e1;

@@ -276,4 +276,9 @@ General.deeplyEqual = function (a, b) {
     return cnt === 0;
 };
 
+// eval_helper.genericListMathGen("product", General.mult, CSNumber.real(1));
+// eval_helper.genericListMathGen("sum", General.add, CSNumber.real(0));
+// eval_helper.genericListMathGen("max", General.max, nada);
+// eval_helper.genericListMathGen("min", General.min, nada);
+
 export { General };

@@ -1080,7 +1080,7 @@ function infix_sequence(args, modifs) {
     return nada;
 }
 
-eval_helper.genericListMathGen = function (name, op, emptyval) {
+const genericListMathGen = function (name, op, emptyval) {
     evaluator[name + "$1"] = function (args, modifs) {
         var v0 = evaluate(args[0]);
         if (v0.ctype !== "list") {
@@ -1131,10 +1131,10 @@ eval_helper.genericListMathGen = function (name, op, emptyval) {
     };
 };
 
-eval_helper.genericListMathGen("product", General.mult, CSNumber.real(1));
-eval_helper.genericListMathGen("sum", General.add, CSNumber.real(0));
-eval_helper.genericListMathGen("max", General.max, nada);
-eval_helper.genericListMathGen("min", General.min, nada);
+genericListMathGen("product", General.mult, CSNumber.real(1));
+genericListMathGen("sum", General.add, CSNumber.real(0));
+genericListMathGen("max", General.max, nada);
+genericListMathGen("min", General.min, nada);
 
 evaluator.max$2 = function (args, modifs) {
     var v1 = evaluateAndVal(args[0]);

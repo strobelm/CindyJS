@@ -211,5 +211,4 @@ function printStackTrace(msg) {
 //*******************************************************
 var evaluator = {};
 
-
 export { evaluate, analyse, labelCode, usedFunctions, evaluateAndVal, evaluateAndHomog, printStackTrace, evaluator };
