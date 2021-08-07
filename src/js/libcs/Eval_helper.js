@@ -2,8 +2,8 @@ import { myfunctions, evalmyfunctions } from "libcs/Essentials";
 import { evaluator } from "libcs/Evaluator";
 import { nada } from "expose";
 import { csconsole } from "Setup";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
+//import { List } from "libcs/List";
+//import { General } from "libcs/General";
 import { CSNumber } from "libcs/CSNumber";
 import { evaluate, evaluateAndVal } from "libcs/Evaluator";
 import { namespace } from "libcs/Namespace";
@@ -27,41 +27,6 @@ eval_helper.evaluate = function (name, args, modifs) {
     return nada;
 };
 
-eval_helper.equals = function (v0, v1) {
-    //Und nochmals un-OO
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return {
-            ctype: "boolean",
-            value: v0.value.real === v1.value.real && v0.value.imag === v1.value.imag,
-        };
-    }
-    if (v0.ctype === "string" && v1.ctype === "string") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    if (v0.ctype === "boolean" && v1.ctype === "boolean") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        var erg = List.equals(v0, v1);
-        return erg;
-    }
-    if (v0.ctype === "geo" && v1.ctype === "geo") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    return {
-        ctype: "boolean",
-        value: false,
-    };
-};
 
 eval_helper.genericListMathGen = function (name, op, emptyval) {
     evaluator[name + "$1"] = function (args, modifs) {
@@ -113,5 +78,6 @@ eval_helper.genericListMathGen = function (name, op, emptyval) {
         return erg;
     };
 };
+
 
 export { eval_helper };

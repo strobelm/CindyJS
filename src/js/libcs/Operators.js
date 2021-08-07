@@ -1438,28 +1438,6 @@ evaluator.log$1 = function (args, modifs) {
     return nada;
 };
 
-eval_helper.recursiveGen = function (op) {
-    var numOp = CSNumber[op],
-        listOp = List[op];
-    evaluator[op + "$1"] = function (args, modifs) {
-        var v0 = evaluateAndVal(args[0]);
-        if (v0.ctype === "number") {
-            return numOp(v0);
-        }
-        if (v0.ctype === "list") {
-            return listOp(v0);
-        }
-        return nada;
-    };
-};
-
-eval_helper.recursiveGen("im");
-eval_helper.recursiveGen("re");
-eval_helper.recursiveGen("conjugate");
-eval_helper.recursiveGen("round");
-eval_helper.recursiveGen("ceil");
-eval_helper.recursiveGen("floor");
-eval_helper.recursiveGen("abs");
 evaluator.abs_infix = evaluator.abs$1;
 
 ///////////////////////////////

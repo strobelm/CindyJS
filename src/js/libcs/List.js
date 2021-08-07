@@ -1,9 +1,45 @@
 import { nada } from "expose";
 import { CSNumber } from "libcs/CSNumber";
 import { General } from "libcs/General";
-import { eval_helper } from "libcs/Eval_helper";
+//import { eval_helperEquals } from "libcs/Eval_helper";
 import { comp_equals, comp_almostequals } from "libcs/Operators";
-import { evaluateAndVal } from "libcs/Evaluator";
+import { evaluateAndVal, evaluator } from "libcs/Evaluator";
+
+const eval_helperEquals = function (v0, v1) {
+    //Und nochmals un-OO
+    if (v0.ctype === "number" && v1.ctype === "number") {
+        return {
+            ctype: "boolean",
+            value: v0.value.real === v1.value.real && v0.value.imag === v1.value.imag,
+        };
+    }
+    if (v0.ctype === "string" && v1.ctype === "string") {
+        return {
+            ctype: "boolean",
+            value: v0.value === v1.value,
+        };
+    }
+    if (v0.ctype === "boolean" && v1.ctype === "boolean") {
+        return {
+            ctype: "boolean",
+            value: v0.value === v1.value,
+        };
+    }
+    if (v0.ctype === "list" && v1.ctype === "list") {
+        var erg = List.equals(v0, v1);
+        return erg;
+    }
+    if (v0.ctype === "geo" && v1.ctype === "geo") {
+        return {
+            ctype: "boolean",
+            value: v0.value === v1.value,
+        };
+    }
+    return {
+        ctype: "boolean",
+        value: false,
+    };
+};
 
 //==========================================
 //      Lists
@@ -276,7 +312,7 @@ List.contains = function (a, b) {
     var bb = false;
     for (var i = 0; i < a.value.length; i++) {
         var cc = a.value[i];
-        if (eval_helper.equals(cc, b).value) {
+        if (eval_helperEquals(cc, b).value) {
             return {
                 ctype: "boolean",
                 value: true,
@@ -296,7 +332,7 @@ List.common = function (a, b) {
         var bb = false;
         var cc = a.value[i];
         for (var j = 0; j < b.value.length; j++) {
-            bb = bb || eval_helper.equals(cc, b.value[j]).value;
+            bb = bb || eval_helperEquals(cc, b.value[j]).value;
         }
         if (bb) {
             erg[ct] = a.value[i];
@@ -316,7 +352,7 @@ List.remove = function (a, b) {
         var bb = false;
         var cc = a.value[i];
         for (var j = 0; j < b.value.length; j++) {
-            bb = bb || eval_helper.equals(cc, b.value[j]).value;
+            bb = bb || eval_helperEquals(cc, b.value[j]).value;
         }
         if (!bb) {
             erg[ct] = a.value[i];
@@ -2675,5 +2711,28 @@ List._helper.solveCubicHelper = function (a, b, c, d) {
 
     return List.turnIntoCSList([CSNumber.complex(xr, xi), CSNumber.complex(yr, yi), CSNumber.complex(zr, zi)]);
 };
+
+const recursiveGen = function (op) {
+    var numOp = CSNumber[op],
+        listOp = List[op];
+    evaluator[op + "$1"] = function (args, modifs) {
+        var v0 = evaluateAndVal(args[0]);
+        if (v0.ctype === "number") {
+            return numOp(v0);
+        }
+        if (v0.ctype === "list") {
+            return listOp(v0);
+        }
+        return nada;
+    };
+};
+
+recursiveGen("im");
+recursiveGen("re");
+recursiveGen("conjugate");
+recursiveGen("round");
+recursiveGen("ceil");
+recursiveGen("floor");
+recursiveGen("abs");
 
 export { List };
