@@ -7,7 +7,8 @@ import {
 } from "Events";
 import { window, nada, document, instanceInvocationArguments } from "expose";
 import { General } from "libcs/General";
-import { niceprint, evaluator } from "libcs/Essentials";
+import { niceprint } from "libcs/Essentials";
+import { evaluator } from "libcs/Evaluator";
 import { setStatusBar } from "libcs/Operators";
 import { evaluate, analyse, labelCode, usedFunctions } from "libcs/Evaluator";
 import { csport } from "libgeo/GeoState";

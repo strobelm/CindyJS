@@ -206,4 +206,10 @@ function printStackTrace(msg) {
     );
 }
 
-export { evaluate, analyse, labelCode, usedFunctions, evaluateAndVal, evaluateAndHomog, printStackTrace };
+//*******************************************************
+//this function evaluates a concrete function
+//*******************************************************
+var evaluator = {};
+
+
+export { evaluate, analyse, labelCode, usedFunctions, evaluateAndVal, evaluateAndHomog, printStackTrace, evaluator };

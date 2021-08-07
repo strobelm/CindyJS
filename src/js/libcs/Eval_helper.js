@@ -1,4 +1,5 @@
-import { myfunctions, evaluator, evalmyfunctions } from "libcs/Essentials";
+import { myfunctions, evalmyfunctions } from "libcs/Essentials";
+import { evaluator } from "libcs/Evaluator";
 import { nada } from "expose";
 import { csconsole } from "Setup";
 import { List } from "libcs/List";
