@@ -294,7 +294,7 @@ function createCindyNow() {
     if (!c) {
         c = data.canvas;
         if (!c && typeof document !== "undefined") {
-            c = document.getElementById(data.canvasname);
+            if (data && data.canvasname) c = document.getElementById(data.canvasname);
             if (c) c = canvasWithContainingDiv(c);
         }
     }
