@@ -98,5 +98,8 @@
     "lint-staged": {
         "*.{js,css,html,json}": "prettier --write",
         "*.{js,ts}": "eslint"
+    },
+    "dependencies": {
+        "esbuild": "^0.12.18"
     }
 }

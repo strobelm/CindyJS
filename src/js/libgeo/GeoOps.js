@@ -2109,7 +2109,7 @@ geoOps._helper.IntersectConicConic = function (A, B) {
         CDeg2 = B;
     } else {
         // produce two DISTINCT degenerate Conics
-        var sols = CSNumber.solveCubic(c3, c2, c1, c0);
+        var sols = List.solveCubic(c3, c2, c1, c0);
         var d01 = CSNumber.abs2(CSNumber.sub(sols[0], sols[1])).value.real;
         var d02 = CSNumber.abs2(CSNumber.sub(sols[0], sols[2])).value.real;
         var d12 = CSNumber.abs2(CSNumber.sub(sols[1], sols[2])).value.real;

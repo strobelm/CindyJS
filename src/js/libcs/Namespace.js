@@ -1,9 +1,14 @@
+import { CSNumber } from "libcs/CSNumber";
 import { nada } from "expose";
 import { csgeo } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
 import { niceprint } from "libcs/Essentials";
+
+function generateType(typeName, value) {
+    return {
+        ctype: typeName,
+        value,
+    };
+}
 
 //==========================================
 //      Namespace and Vars
@@ -17,12 +22,12 @@ namespace.vars = (function () {
         pi: CSNumber.real(Math.PI),
         π: CSNumber.real(Math.PI),
         i: CSNumber.complex(0, 1),
-        true: General.bool(true),
-        false: General.bool(false),
+        true: generateType("boolean", true),
+        false: generateType("boolean", false),
         "#": nada,
-        nil: List.turnIntoCSList([]),
-        newline: General.string("\n"),
-        tab: General.string("\t"),
+        nil: generateType("list", []),
+        newline: generateType("string", "\n"),
+        tab: generateType("string", "\t"),
     };
     var vars = [];
     for (var name in preset) vars[name] = [preset[name]];
