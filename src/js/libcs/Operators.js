@@ -44,6 +44,9 @@ import { geoOps, geoAliases, geoMacros } from "libgeo/GeoOps";
 import { masses, springs } from "liblab/LabBasics";
 import { labObjects } from "liblab/LabObjects";
 import { PSLQ } from "libcs/PSLQ";
+import {GeneralMult} from 'libcs/General/GeneralMult'
+import {GeneralAdd} from 'libcs/General/GeneralAdd'
+import {GeneralMax, GeneralMin} from 'libcs/General/GeneralCompare'
 
 //*******************************************************
 // and here are the definitions of the operators
@@ -1131,10 +1134,10 @@ const genericListMathGen = function (name, op, emptyval) {
     };
 };
 
-genericListMathGen("product", General.mult, CSNumber.real(1));
-genericListMathGen("sum", General.add, CSNumber.real(0));
-genericListMathGen("max", General.max, nada);
-genericListMathGen("min", General.min, nada);
+genericListMathGen("product", GeneralMult, CSNumber.real(1));
+genericListMathGen("sum", GeneralAdd, CSNumber.real(0));
+genericListMathGen("max", GeneralMax, nada);
+genericListMathGen("min", GeneralMin, nada);
 
 evaluator.max$2 = function (args, modifs) {
     var v1 = evaluateAndVal(args[0]);

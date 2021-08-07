@@ -2,12 +2,11 @@ import { nada } from "expose";
 import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
 import { Dict } from "libcs/Dict";
-import { niceprint } from "libcs/Essentials";
 
 //==========================================
 //      Things that apply to several types
 //==========================================
-var General = {};
+  var General = {};
 General._helper = {};
 
 General.order = {
@@ -40,145 +39,6 @@ General.not = function (v) {
     return General.bool(!v.value);
 };
 
-General.isLessThan = function (a, b) {
-    return General.compare(a, b) === -1;
-};
-
-General.isEqual = function (a, b) {
-    return General.compare(a, b) === 0;
-};
-
-General.compareResults = function (a, b) {
-    return General.compare(a.result, b.result);
-};
-
-General.compare = function (a, b) {
-    if (a.ctype !== b.ctype) {
-        return General.order[a.ctype] - General.order[b.ctype];
-    }
-    if (a.ctype === "number") {
-        return CSNumber._helper.compare(a, b);
-    }
-    if (a.ctype === "list") {
-        return List._helper.compare(a, b);
-    }
-    if (a.ctype === "geo") {
-        if (a.value.name === b.value.name) {
-            return 0;
-        }
-        if (a.value.name < b.value.name) {
-            return -1;
-        }
-        return 1;
-    }
-    if (a.ctype === "string") {
-        if (a.value === b.value) {
-            return 0;
-        }
-        if (a.value < b.value) {
-            return -1;
-        }
-        return 1;
-    }
-    if (a.ctype === "boolean") {
-        if (a.value === b.value) {
-            return 0;
-        }
-        if (a.value === false) {
-            return -1;
-        }
-        return 1;
-    }
-};
-
-General.add = function (v0, v1) {
-    if (v0.ctype === "void" && v1.ctype === "number") {
-        // unary plus
-        return v1;
-    }
-    if (v0.ctype === "void" && v1.ctype === "list") {
-        // unary plus
-        return v1;
-    }
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return CSNumber.add(v0, v1);
-    }
-    if (v0.ctype === "string" || v1.ctype === "string") {
-        return {
-            ctype: "string",
-            value: niceprint(v0) + niceprint(v1),
-        };
-    }
-
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        return List.add(v0, v1);
-    }
-    return nada;
-};
-
-General.sub = function (v0, v1) {
-    if (v0.ctype === "void" && v1.ctype === "number") {
-        // unary minus
-        return CSNumber.neg(v1);
-    }
-    if (v0.ctype === "void" && v1.ctype === "list") {
-        // unary minus
-        return List.neg(v1);
-    }
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return CSNumber.sub(v0, v1);
-    }
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        return List.sub(v0, v1);
-    }
-    return nada;
-};
-
-General.mult = function (v0, v1) {
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return CSNumber.mult(v0, v1);
-    }
-    if (v0.ctype === "number" && v1.ctype === "list") {
-        return List.scalmult(v0, v1);
-    }
-    if (v0.ctype === "list" && v1.ctype === "number") {
-        return List.scalmult(v1, v0);
-    }
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        return List.mult(v0, v1);
-    }
-    return nada;
-};
-
-General.div = function (v0, v1) {
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return CSNumber.div(v0, v1);
-    }
-    if (v0.ctype === "list" && v1.ctype === "number") {
-        return List.scaldiv(v1, v0);
-    }
-    return nada;
-};
-
-General.max = function (v0, v1) {
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return CSNumber.max(v0, v1);
-    }
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        return List.max(v0, v1);
-    }
-    return nada;
-};
-
-General.min = function (v0, v1) {
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return CSNumber.min(v0, v1);
-    }
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        return List.min(v0, v1);
-    }
-    return nada;
-};
 
 General.wrap = function (v) {
     if (typeof v === "number") {
@@ -275,10 +135,5 @@ General.deeplyEqual = function (a, b) {
     for (k in b) --cnt;
     return cnt === 0;
 };
-
-// eval_helper.genericListMathGen("product", General.mult, CSNumber.real(1));
-// eval_helper.genericListMathGen("sum", General.add, CSNumber.real(0));
-// eval_helper.genericListMathGen("max", General.max, nada);
-// eval_helper.genericListMathGen("min", General.min, nada);
 
 export { General };
