@@ -17,7 +17,8 @@ import { stateArrays, stateIn, recalcAll } from "libgeo/Tracing";
 import { noop } from "libgeo/GeoOps";
 import { csinitphys, csPhysicsInited, csresetphys } from "liblab/LabBasics";
 
-var CindyJS = this; // since this will be turned into a method
+var CindyJS = globalThis; // since this will be turned into a method
+CindyJS.instances = [];
 
 var csconsole;
 var cslib;
