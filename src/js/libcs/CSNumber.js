@@ -1,6 +1,5 @@
 import { instanceInvocationArguments, nada } from "expose";
 import { List } from "libcs/List";
-import { General } from "libcs/General";
 
 //==========================================
 //      Complex Numbers
@@ -54,7 +53,7 @@ var angleUnits = {
 
 CSNumber._helper.niceangle = function (a) {
     var unit = angleUnits[angleUnitName];
-    if (!unit) return CSNumber.niceprint(General.withUsage(a, null));
+    if (!unit) return CSNumber.niceprint({ ...a, usage: null });
     if (typeof unit === "function") return unit(a);
     var num = CSNumber.niceprint(
         CSNumber.realmult(unit * PERTWOPI, a),
@@ -376,7 +375,7 @@ CSNumber.arccos = function (a) {
     var tmp = CSNumber.sqrt(CSNumber.add(CSNumber.real(1), t2));
     var tmp1 = CSNumber.add(CSNumber.mult(a, CSNumber.complex(0, 1)), tmp);
     var erg = CSNumber.add(CSNumber.mult(CSNumber.log(tmp1), CSNumber.complex(0, 1)), CSNumber.real(Math.PI * 0.5));
-    return General.withUsage(erg, "Angle");
+    return { ...erg, usage: "Angle" };
 };
 
 CSNumber.arcsin = function (a) {
@@ -385,7 +384,7 @@ CSNumber.arcsin = function (a) {
     var tmp = CSNumber.sqrt(CSNumber.add(CSNumber.real(1), t2));
     var tmp1 = CSNumber.add(CSNumber.mult(a, CSNumber.complex(0, 1)), tmp);
     var erg = CSNumber.mult(CSNumber.log(tmp1), CSNumber.complex(0, -1));
-    return General.withUsage(erg, "Angle");
+    return { ...erg, usage: "Angle" };
 };
 
 CSNumber.arctan = function (a) {
@@ -393,7 +392,7 @@ CSNumber.arctan = function (a) {
     var t1 = CSNumber.log(CSNumber.add(CSNumber.mult(a, CSNumber.complex(0, -1)), CSNumber.real(1)));
     var t2 = CSNumber.log(CSNumber.add(CSNumber.mult(a, CSNumber.complex(0, 1)), CSNumber.real(1)));
     var erg = CSNumber.mult(CSNumber.sub(t1, t2), CSNumber.complex(0, 0.5));
-    return General.withUsage(erg, "Angle");
+    return { ...erg, usage: "Angle" };
 };
 
 CSNumber.arctan2 = function (a, b) {
@@ -406,7 +405,7 @@ CSNumber.arctan2 = function (a, b) {
         var r = CSNumber.sqrt(CSNumber.add(CSNumber.mult(a, a), CSNumber.mult(b, b)));
         erg = CSNumber.mult(CSNumber.complex(0, -1), CSNumber.log(CSNumber.div(z, r)));
     }
-    return General.withUsage(erg, "Angle");
+    return { ...erg, usage: "Angle" };
 };
 
 CSNumber.sqrt = function (a) {
