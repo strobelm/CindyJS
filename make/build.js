@@ -107,7 +107,7 @@ module.exports = function build(settings, task) {
             source_map_format: "V3",
             source_map_location_mapping: ["build/js/|", "src/js/|../../src/js/"],
             output_wrapper_file: "src/js/Cindy.js.wrapper",
-            warning_level: "DEFAULT",
+            warning_level: this.setting("closure_warnings"),
         });
         this.applySourceMap(
             ["build/js/Cindy.plain.js.map", "build/js/Cindy.closure.js.tmp.map"],

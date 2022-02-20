@@ -454,9 +454,7 @@ function loadImage(obj, video) {
             img.preload = "auto";
             img.loop = true; //loop videos as default
 
-            //https://www.npmjs.com/package/iphone-inline-video
             img.setAttribute("playsinline", "");
-            enableInlineVideo(img);
         } else {
             img = new Image();
         }

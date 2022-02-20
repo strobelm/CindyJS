@@ -36,11 +36,7 @@ exports.libgeo = [
 
 exports.liblab = ["src/js/liblab/LabBasics.js", "src/js/liblab/LabObjects.js"];
 
-exports.lib = [
-    "node_modules/iphone-inline-video/dist/iphone-inline-video.min.js",
-    "lib/clipper/clipper.js",
-    "node_modules/es6-shim/es6-shim.min.js",
-];
+exports.lib = ["lib/clipper/clipper_unminified.js", "node_modules/es6-shim/es6-shim.min.js"];
 
 exports.cssrc = [];
 

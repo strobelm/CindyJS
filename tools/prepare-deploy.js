@@ -132,6 +132,7 @@ function map(name, err, content) {
     });
     map.sourcesContent = map.sources.map(function (src) {
         if (!/^build/.test(src)) return null;
+        if (src.includes("google")) return null;
         return fs.readFileSync(src, "utf-8");
     });
     var keys = Object.keys(map);

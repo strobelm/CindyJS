@@ -768,8 +768,8 @@ function updateCindy() {
     csctx.restore();
 }
 
-function keyEvent(e, script) {
-    var evtobj = window.event ? event : e;
+function keyEvent(event, script) {
+    var evtobj = event;
     var unicode = evtobj.charCode ? evtobj.charCode : evtobj.keyCode;
     var actualkey = String.fromCharCode(unicode);
     cskey = actualkey;
