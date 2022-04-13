@@ -1,4 +1,3 @@
-var should = require("chai").should();
 var rewire = require("rewire");
 
 global.navigator = {};
@@ -11,12 +10,12 @@ var cdy = CindyJS({
 });
 
 function itCmd(command, expected) {
-    it(command, function () {
-        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    it(command, () => {
+        expect(String(cdy.niceprint(cdy.evalcs(command)))).toBe(expected);
     });
 }
 
-describe("Operators: format", function () {
+describe("Operators: format", () => {
     itCmd("format(1.23456, 0)", "1");
     itCmd("format(1.23456, 1)", "1.2");
 
@@ -28,12 +27,12 @@ describe("Operators: format", function () {
     itCmd('format(exp(2*pi*i), 2, delimiter->",", truncate->true)', "1");
 });
 
-describe("Reverse", function () {
+describe("Reverse", () => {
     itCmd("reverse([1, 2, 3])", "[3, 2, 1]");
     itCmd('reverse("Hello")', "olleH");
 });
 
-describe("if", function() {
+describe("if", () => {
 	itCmd('isundefined(if(blabla,"a","b"))',"true");
 	itCmd('if(true,"a","b")',"a");
 	itCmd('if(false,"a","b")',"b");

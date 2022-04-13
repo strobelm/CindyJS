@@ -9,7 +9,7 @@ let assert = require("chai").assert;
 
 let eps = 1e-8;
 
-describe("PSLQ Matrix", function () {
+describe("PSLQ Matrix", () => {
     function compArr(arr1, arr2) {
         const containsAll = (arr1, arr2) => arr2.every((arr2Item) => arr1.includes(arr2Item));
 
@@ -18,13 +18,13 @@ describe("PSLQ Matrix", function () {
         return sameMembers(arr1, arr2);
     }
 
-    describe("initialization", function () {
-        it("initialization of PSLQMatrix object - unit matrix", function () {
+    describe("initialization", () => {
+        it("initialization of PSLQMatrix object - unit matrix", () => {
             let pslqMat = new PSLQMatrix();
             assert(compArr(pslqMat._e, [1, 0, 0, 0, 1, 0, 0, 0, 1]));
         });
 
-        it("initialization of PSLQMatrix object - nonunit matrix", function () {
+        it("initialization of PSLQMatrix object - nonunit matrix", () => {
             let init = [
                 [1, 2, 3],
                 [4, 5, 6],
@@ -35,10 +35,10 @@ describe("PSLQ Matrix", function () {
         });
     });
 
-    describe("basic methods", function () {
+    describe("basic methods", () => {
         let pslqMat;
 
-        beforeEach(function () {
+        beforeEach(() => {
             let init = [
                 [1, 2, 3],
                 [4, 5, 6],
@@ -47,46 +47,46 @@ describe("PSLQ Matrix", function () {
             pslqMat = new PSLQMatrix(init);
         });
 
-        it("get", function () {
+        it("get", () => {
             assert(pslqMat.get(0), 1);
             assert(pslqMat.get(1), 4);
             assert(pslqMat.get(8), 9);
         });
 
-        it("exchange", function () {
+        it("exchange", () => {
             pslqMat.exchange(0, 1);
             assert(compArr(pslqMat._e, [4, 1, 7, 2, 5, 8, 3, 6, 9]));
         });
 
-        it("swapRow", function () {
+        it("swapRow", () => {
             pslqMat.swRow(0, 2);
             assert(compArr(pslqMat._e, [3, 6, 9, 2, 5, 8, 4, 1, 7]));
         });
 
-        it("swapCol", function () {
+        it("swapCol", () => {
             pslqMat.swCol(0, 2);
             assert(compArr(pslqMat._e, [3, 2, 1, 6, 5, 4, 9, 8, 7]));
         });
 
-        it("getRow", function () {
+        it("getRow", () => {
             assert(compArr(pslqMat.getRow(0), [1, 2, 3]));
             assert.deepEqual(pslqMat.getRow(0), [1, 2, 3]);
         });
 
-        it("set 1-ary", function () {
+        it("set 1-ary", () => {
             pslqMat.set([5, 5, 5, 5, 5, 5, 5, 5, 5]);
             assert(compArr(pslqMat._e, [5, 5, 5, 5, 5, 5, 5, 5]));
         });
 
-        it("set 2-ary", function () {
+        it("set 2-ary", () => {
             pslqMat.set(0, 10);
             pslqMat.set(8, 10);
             assert(compArr(pslqMat._e, [10, 4, 7, 2, 5, 8, 3, 6, 10]));
         });
     });
 
-    describe("linear algebra", function () {
-        it("invert", function () {
+    describe("linear algebra", () => {
+        it("invert", () => {
             let init = [
                 [1, 0, 0],
                 [0, 5, 0],
@@ -97,7 +97,7 @@ describe("PSLQ Matrix", function () {
             assert(compArr(pslqMat._e, [1, 0, 0, 0.2, 0, 0, 0, 0, 0.125]));
         });
 
-        it("mult", function () {
+        it("mult", () => {
             let initA = [
                 [1, 2, 3],
                 [4, 5, 6],
@@ -116,7 +116,7 @@ describe("PSLQ Matrix", function () {
             assert(compArr(matC._e, [30, 84, 138, 24, 69, 114, 18, 54, 90]));
         });
 
-        it("transpose", function () {
+        it("transpose", () => {
             let init = [
                 [1, 2, 3],
                 [4, 5, 6],
@@ -128,7 +128,7 @@ describe("PSLQ Matrix", function () {
             assert.deepEqual(mat._e, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
         });
 
-        it("VMmult", function () {
+        it("VMmult", () => {
             let init = [
                 [1, 2, 3],
                 [4, 5, 6],
@@ -144,24 +144,24 @@ describe("PSLQ Matrix", function () {
     });
 });
 
-describe("PSLQ", function () {
-    it("dot", function () {
+describe("PSLQ", () => {
+    it("dot", () => {
         assert(PSLQ.dot([1, 2, 3], [3, 2, 1], 10));
     });
-    it("scale", function () {
+    it("scale", () => {
         let v = [1, 2, 3];
         PSLQ.scale(v, 2);
         assert.deepEqual(v, [2, 4, 6]);
     });
-    it("maxIdx", function () {
+    it("maxIdx", () => {
         let v = [1, 8, 3];
         assert.equal(PSLQ.maxIndex(v), 1);
     });
-    it("constants", function () {
+    it("constants", () => {
         assert.equal(PSLQ.MAX_ITER, 20);
         assert.equal(PSLQ.GAMMA, 2 / Math.sqrt(3));
     });
-    it("Hermite Reduction", function () {
+    it("Hermite Reduction", () => {
         let H = [
             [1, 2],
             [3, 4],
@@ -178,7 +178,7 @@ describe("PSLQ", function () {
         assert.deepEqual(H, H2);
     });
 
-    it("PSLQ", function () {
+    it("PSLQ", () => {
         let preci = 10;
         let coeff1 = [1, 2, 3];
         let coeff2 = [-1, 10, 2];
@@ -202,12 +202,12 @@ var cdy = CindyJS({
 });
 
 function itCmd(command, expected) {
-    it(command, function () {
-        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    it(command, () => {
+        expect(String(cdy.niceprint(cdy.evalcs(command)))).toBe(expected);
     });
 }
 
-describe("Operators: guess", function () {
+describe("Operators: guess", () => {
     itCmd("guess(8.125)", "65/8");
     itCmd("guess(0.774596669241483)", "1/5*sqrt(15)");
     itCmd("guess(2.2071067811865475)", "3/2+1/2*sqrt(2)");

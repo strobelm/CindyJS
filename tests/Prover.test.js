@@ -1,4 +1,3 @@
-var should = require("chai").should();
 var rewire = require("rewire");
 
 var CindyJS = require("../build/js/Cindy.plain.js");
@@ -7,7 +6,7 @@ var geoOps = cindyJS.__get__("geoOps");
 
 var cdy;
 
-describe("Prover: test free objects for random moves", function () {
+describe("Prover: test free objects for random moves", () => {
     var frees = Object.keys(geoOps).filter(function (opName) {
         return geoOps[opName].isMovable;
     });
@@ -19,20 +18,20 @@ describe("Prover: test free objects for random moves", function () {
     });
 
     frees.forEach(function (OpName) {
-        it(OpName, function () {
-            geoOps[OpName].should.have.property("getRandomMove");
+        it(OpName, () => {
+            expect(geoOps[OpName]).toHaveProperty("getRandomMove");
         });
     });
 });
 
 function itCmd(command, expected) {
-    it(command, function () {
-        cdy.niceprint(cdy.evalcs(command)).should.equal(expected);
+    it(command, () => {
+        expect(cdy.niceprint(cdy.evalcs(command))).toBe(expected);
     });
 }
 
-describe("Prover: angle bisector test", function () {
-    before(function () {
+describe("Prover: angle bisector test", () => {
+    beforeAll(() => {
         // See examples/141_a_bisectors.html
         cdy = CindyJS({
             isNode: true,
@@ -105,8 +104,8 @@ describe("Prover: angle bisector test", function () {
     itCmd("alllines(D)", "[d, e, f]");
 });
 
-describe("Prover: Pappos", function () {
-    before(function () {
+describe("Prover: Pappos", () => {
+    beforeAll(() => {
         cdy = CindyJS({
             isNode: true,
             csconsole: null,
@@ -174,8 +173,8 @@ describe("Prover: Pappos", function () {
     itCmd("allpoints(k)", "[G, H, K]");
 });
 
-describe("Prover: free points", function () {
-    before(function () {
+describe("Prover: free points", () => {
+    beforeAll(() => {
         // See examples/141_b_false_conjecture_freepoint.html
         cdy = CindyJS({
             isNode: true,
@@ -193,8 +192,8 @@ describe("Prover: free points", function () {
     itCmd("allpoints(a)", "[A, B]");
 });
 
-describe("Prover: free line", function () {
-    before(function () {
+describe("Prover: free line", () => {
+    beforeAll(() => {
         // See examples/141_c_false_conjecture_freeline.html
         cdy = CindyJS({
             isNode: true,
@@ -250,8 +249,8 @@ describe("Prover: free line", function () {
     itCmd("alllines(D)", "[]");
 });
 
-describe("Prover: CircleMR", function () {
-    before(function () {
+describe("Prover: CircleMR", () => {
+    beforeAll(() => {
         // See examples/141_d_false_conjecture_circle.html
         cdy = CindyJS({
             isNode: true,
@@ -283,8 +282,8 @@ describe("Prover: CircleMR", function () {
     itCmd("allelements(C0)", "[]");
 });
 
-describe("Prover: HorizontalLine VerticalLine", function () {
-    before(function () {
+describe("Prover: HorizontalLine VerticalLine", () => {
+    beforeAll(() => {
         // See examples/141_e_horizontal_vertical.html
         cdy = CindyJS({
             isNode: true,
@@ -309,8 +308,8 @@ describe("Prover: HorizontalLine VerticalLine", function () {
     itCmd("alllines(A)", "[]");
 });
 
-describe("Prover: Through", function () {
-    before(function () {
+describe("Prover: Through", () => {
+    beforeAll(() => {
         // See examples/141_f_through.html
         cdy = CindyJS({
             isNode: true,
@@ -334,8 +333,8 @@ describe("Prover: Through", function () {
     itCmd("alllines(A)", "[]");
 });
 
-describe("Prover: points on l_infty", function () {
-    before(function () {
+describe("Prover: points on l_infty", () => {
+    beforeAll(() => {
         // See examples/141_f_through.html
         cdy = CindyJS({
             isNode: true,
@@ -354,8 +353,8 @@ describe("Prover: points on l_infty", function () {
     itCmd("alllines(C)", "[]");
 });
 
-describe("Prover: PointOn*", function () {
-    before(function () {
+describe("Prover: PointOn*", () => {
+    beforeAll(() => {
         // See examples/141_f_through.html
         cdy = CindyJS({
             isNode: true,
@@ -445,8 +444,8 @@ describe("Prover: PointOn*", function () {
     itCmd("allelements(c)", "[]");
 });
 
-describe("RemoveElement: Pappos", function () {
-    before(function () {
+describe("RemoveElement: Pappos", () => {
+    beforeAll(() => {
         cdy = CindyJS({
             isNode: true,
             csconsole: null,

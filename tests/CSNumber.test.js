@@ -35,87 +35,87 @@ var f_a_plus_b = CSNumber.add(f_a, f_b);
 var f_a_mult_f_b = CSNumber.complex(-49.5, 100.25);
 
 // basic operations
-describe("Basic Operations", function () {
-    it("a=a", function () {
+describe("Basic Operations", () => {
+    it("a=a", () => {
         assert(CSNumber._helper.isEqual(a, a));
     });
 
-    it("argmax", function () {
+    it("argmax", () => {
         var max = CSNumber.argmax(f_a, f_b);
         assert(CSNumber._helper.isEqual(max, f_a));
     });
 
-    it("max", function () {
+    it("max", () => {
         var max = CSNumber.complex(f_a.value.real, f_b.value.imag);
         assert(CSNumber._helper.isEqual(max, CSNumber.max(f_a, f_b)));
     });
 
-    it("min", function () {
+    it("min", () => {
         var max = CSNumber.complex(f_b.value.real, f_a.value.imag);
         assert(CSNumber._helper.isEqual(max, CSNumber.min(f_a, f_b)));
     });
 
-    it("add", function () {
+    it("add", () => {
         assert(CSNumber._helper.isEqual(CSNumber.add(a, b), a_plus_b));
     });
 
-    it("sub", function () {
+    it("sub", () => {
         assert(CSNumber._helper.isEqual(CSNumber.sub(a, b), a_minus_b));
     });
 
-    it("neg", function () {
+    it("neg", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(-a_real, -a_imag), CSNumber.neg(a)));
     });
 
-    it("re", function () {
+    it("re", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(a_real, 0), CSNumber.re(a)));
     });
 
-    it("im", function () {
+    it("im", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(a_imag, 0), CSNumber.im(a)));
     });
 
-    it("conjugate", function () {
+    it("conjugate", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(a_real, -a_imag), CSNumber.conjugate(a)));
     });
 
-    it("round", function () {
+    it("round", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(Math.round(a_real), Math.round(a_imag)), CSNumber.round(a)));
     });
 
-    it("ceil", function () {
+    it("ceil", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(Math.ceil(a_real), Math.ceil(a_imag)), CSNumber.ceil(a)));
     });
 
-    it("floor", function () {
+    it("floor", () => {
         assert(CSNumber._helper.isEqual(CSNumber.complex(Math.floor(a_real), Math.floor(a_imag)), CSNumber.floor(a)));
     });
 
-    it("mult", function () {
+    it("mult", () => {
         var mult = CSNumber.mult(f_a, f_b);
         assert(CSNumber._helper.isEqual(f_a_mult_f_b, mult));
     });
 
-    it("abs2", function () {
+    it("abs2", () => {
         var aabs = CSNumber.complex(a_real * a_real + a_imag * a_imag, 0);
         assert(CSNumber._helper.isEqual(aabs, CSNumber.abs2(a)));
         // second argument should not matter? Perhaps a bug
         assert(CSNumber._helper.isEqual(aabs, CSNumber.abs2(a, CSNumber.complex(Math.random(), Math.random()))));
     });
 
-    it("abs", function () {
+    it("abs", () => {
         var aabs = CSNumber.complex(Math.sqrt(a_real * a_real + a_imag * a_imag), 0);
         assert(CSNumber._helper.isEqual(aabs, CSNumber.abs(a)));
     });
 
-    it("inv", function () {
+    it("inv", () => {
         var f_a_inv = CSNumber.complex(0.009999750006249844, 4.9998750031249224 * 1e-5);
         var f_b_inv = CSNumber.complex(-0.4, -0.8);
         assert(CSNumber._helper.isAlmostEqual(f_a_inv, CSNumber.inv(f_a)));
         assert(CSNumber._helper.isAlmostEqual(f_b_inv, CSNumber.inv(f_b)));
     });
 
-    it("snap", function () {
+    it("snap", () => {
         var eps = 1e-20;
         var num = CSNumber.complex(1, 1);
         var c_eps = CSNumber.complex(-eps, -eps);
@@ -126,8 +126,8 @@ describe("Basic Operations", function () {
     });
 }); // END basic operations
 
-describe("Trigonometry", function () {
-    it("exp", function () {
+describe("Trigonometry", () => {
+    it("exp", () => {
         // not testing a because numbers are too large
 
         var exp_f_b = CSNumber.complex(0.32770991402245986, 0.51037795154457277);
@@ -135,28 +135,28 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(exp_f_b, cs_exp_b, 1e-8));
     });
 
-    it("cos", function () {
+    it("cos", () => {
         var cos_f_a = CSNumber.complex(0.97237315067907726, -0.26386475844562701);
         var cos_f_b = CSNumber.complex(1.3541806567045842, 0.5634214652309818);
         assert(CSNumber._helper.isAlmostEqual(cos_f_a, CSNumber.cos(f_a)));
         assert(CSNumber._helper.isAlmostEqual(cos_f_b, CSNumber.cos(f_b)));
     });
 
-    it("sin", function () {
+    it("sin", () => {
         var sin_f_a = CSNumber.complex(-0.57099104480373952, -0.44935031618777438);
         var sin_f_b = CSNumber.complex(-0.73979226445601376, 1.0313360742545512);
         assert(CSNumber._helper.isAlmostEqual(sin_f_a, CSNumber.sin(f_a)));
         assert(CSNumber._helper.isAlmostEqual(sin_f_b, CSNumber.sin(f_b)));
     });
 
-    it("tan", function () {
+    it("tan", () => {
         var tan_f_a = CSNumber.complex(-0.43013886045950833, -0.57884033748558616);
         var tan_f_b = CSNumber.complex(-0.19557731006593401, 0.84296620484578333);
         assert(CSNumber._helper.isAlmostEqual(tan_f_a, CSNumber.tan(f_a)));
         assert(CSNumber._helper.isAlmostEqual(tan_f_b, CSNumber.tan(f_b)));
     });
 
-    it("arccos", function () {
+    it("arccos", () => {
         var arccos_f_a = CSNumber.complex(0.0050002083402176838, 5.2983048673281212);
         var arccos_f_b = CSNumber.complex(1.9202353896521098, -0.92613303135018255);
 
@@ -164,7 +164,7 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(arccos_f_b, CSNumber.arccos(f_b)));
     });
 
-    it("arcsin", function () {
+    it("arcsin", () => {
         var arcsin_f_a = CSNumber.complex(1.5657961184546887, -5.298304867329394);
         var arcsin_f_b = CSNumber.complex(-0.34943906285721327, 0.92613303135018232);
 
@@ -172,7 +172,7 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(arcsin_f_b, CSNumber.arcsin(f_b)));
     });
 
-    it("arctan", function () {
+    it("arctan", () => {
         var arctan_f_a = CSNumber.complex(1.5607969100519921, -4.9993750947774925e-5);
         var arctan_f_b = CSNumber.complex(-0.90788749496088039, 0.70830333601405404);
 
@@ -180,7 +180,7 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(arctan_f_b, CSNumber.arctan(f_b)));
     });
 
-    it("arctan2", function () {
+    it("arctan2", () => {
         var f_x = CSNumber.real(4);
         var f_y = CSNumber.real(3);
         // CSNumber.arctan2 uses the following formula for complex arguments
@@ -206,7 +206,7 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(erg1, erg2));
     });
 
-    it("sqrt", function () {
+    it("sqrt", () => {
         var sqrt_f_a = CSNumber.complex(10.000031249755862, -0.024999921875854481);
         var sqrt_f_b = CSNumber.complex(0.55589297025142115, 0.89945371997393364);
 
@@ -214,7 +214,7 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(sqrt_f_b, CSNumber.sqrt(f_b)));
     });
 
-    it("log", function () {
+    it("log", () => {
         var log_f_a = CSNumber.complex(4.6051826858318439, -0.0049999583339583225);
         var log_f_b = CSNumber.complex(0.11157177565710488, 2.0344439357957027);
 
@@ -222,13 +222,13 @@ describe("Trigonometry", function () {
         assert(CSNumber._helper.isAlmostEqual(log_f_b, CSNumber.log(f_b)));
     });
 
-    it("pow", function () {
+    it("pow", () => {
         var erg = CSNumber.complex(-0.010503832039336254, -0.099950208042515698);
 
         assert(CSNumber._helper.isAlmostEqual(erg, CSNumber.pow(f_a, f_b)));
     });
 
-    it("mod", function () {
+    it("mod", () => {
         var a1 = CSNumber.complex(10, 5);
         var a2 = CSNumber.complex(3, 3);
         var erg = CSNumber.complex(1, 2);

@@ -1,4 +1,3 @@
-var should = require("chai").should();
 var rewire = require("rewire");
 
 global.navigator = {};
@@ -7,13 +6,13 @@ var CindyJS = require("../build/js/Cindy.plain.js");
 var cdy;
 
 function itCmd(command, expected) {
-    it(command, function () {
-        String(cdy.niceprint(cdy.evalcs(command))).should.equal(expected);
+    it(command, () => {
+        expect(String(cdy.niceprint(cdy.evalcs(command)))).toBe(expected);
     });
 }
 
-describe("all* operations", function () {
-    before(function () {
+describe("all* operations", () => {
+    beforeAll(() => {
         // See examples/114_allops.html
         cdy = CindyJS({
             isNode: true,
@@ -208,8 +207,8 @@ describe("all* operations", function () {
     itCmd("K = [1,2,3]; alllines(K)", "[]");
 });
 
-describe("toString as a name", function () {
-    before(function () {
+describe("toString as a name", () => {
+    beforeAll(() => {
         cdy = CindyJS({
             isNode: true,
             csconsole: null,
@@ -222,8 +221,8 @@ describe("toString as a name", function () {
     itCmd("toString = 1; toString", "1");
 });
 
-describe("==", function () {
-    before(function () {
+describe("==", () => {
+    beforeAll(() => {
         cdy = CindyJS({
             isNode: true,
             csconsole: null,
@@ -237,8 +236,8 @@ describe("==", function () {
     itCmd("A == [0, 0]", "false");
 });
 
-describe("element(‹string›)", function () {
-    before(function () {
+describe("element(‹string›)", () => {
+    beforeAll(() => {
         cdy = CindyJS({
             isNode: true,
             csconsole: null,
@@ -257,8 +256,8 @@ describe("element(‹string›)", function () {
     itCmd('isgeometric(element("toString"))', "false");
 });
 
-describe("algorithm(‹string›)", function () {
-    before(function () {
+describe("algorithm(‹string›)", () => {
+    beforeAll(() => {
         cdy = CindyJS({
             isNode: true,
             csconsole: null,
