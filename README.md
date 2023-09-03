@@ -75,6 +75,8 @@ If you are confident that your work is done, call `make alltests`
 after you did `git add` to stage your changes.
 That will ensure that your modifications pass all kinds of tests.
 The same tests will be run automatically on pull requests.
+After all tests pass please run `make prettier` to format all changes
+according to our source code formatting convention.
 Once your modifications satisfy your expectations, pass these tests
 and are accompanied by a suitable test case or demonstrating example
 (where appropriate), you may file a pull request for your changes.

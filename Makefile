@@ -127,7 +127,8 @@ fwdtargets = \
 	symbolic \
 	tests \
 	textattr \
-	unittests
+	unittests \
+	prettier	
 
 $(fwdtargets): js_make
 	$(JS_MAKE) $@
