@@ -3554,39 +3554,42 @@ evaluator.parse$1 = function (args, modifs) {
     return nada;
 };
 
+eval_helper.importcache = {};
 evaluator.import$1 = async function (args, modifs) {
-    let fullCode = "";
-    let library = evaluate(args[0]);
+    const library = evaluate(args[0]);
     if (library.ctype !== "string") return nada;
-    library = library.value;
 
-    console.log("Loading " + library + " ...");
+    const libraryName = library.value;
+    console.log(`Loading ${libraryName} ...`);
 
-    let query = library.search(/.+\.cjs$/) == -1 ? library + ".cjs" : library;
+    const query = libraryName.endsWith(".cjs") ? libraryName : `${libraryName}.cjs`;
+
+    if (evaluator._helper.importcache[query]) {
+        console.log(`${libraryName} loaded from cache!`);
+        return evaluator.parse$1([{ ctype: "string", value: evaluator._helper.importcache[query] }], {});
+    }
 
     try {
-        let response = await fetch(query);
+        const response = await fetch(query);
 
-        if (response.status === 200) {
-            let code = await response.text();
-            let safety = code[code.length - 1] == ";" ? "" : ";";
-            fullCode = code + safety;
-            console.log(library + " loaded!");
-            return evaluator.parse$1([{ ctype: "string", value: fullCode }], {});
-        } else {
-            console.log("CAUTION! Import of " + library + " failed.");
+        if (!response.ok) {
+            console.warn(`CAUTION! Import of ${libraryName} failed.`);
+            return nada;
         }
+
+        let code = await response.text();
+        if (!code.endsWith(";")) {
+            code += ";";
+        }
+
+        evaluator._helper.importcache[query] = code;
+
+        console.log(`${libraryName} loaded!`);
+        return evaluator.parse$1([{ ctype: "string", value: code }], {});
     } catch (e) {
-        if (e.message === "Failed to fetch") {
-            console.log("CAUTION! Import of " + library + " failed.");
-            console.log(
-                "This website seems to not run on a web server. CindyJS will continue without importing " +
-                    library +
-                    "."
-            );
-        } else {
-            throw e;
-        }
+        console.warn(
+            `CAUTION! Import of ${libraryName} failed. This website seems to not run on a web server. CindyJS will continue without importing ${libraryName}.`
+        );
     }
 
     return nada;
