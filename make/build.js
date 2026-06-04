@@ -205,6 +205,7 @@ module.exports = function build(settings, task) {
     task("benchmark", ["exposed"], function () {
         this.node("benchmarks/list_matrix.js", "build/js/exposed.js", "current");
         this.node("benchmarks/eig.js", "build/js/exposed.js", "current");
+        this.node("benchmarks/eigvec.js", "build/js/exposed.js", "current");
     });
 
     //////////////////////////////////////////////////////////////////////

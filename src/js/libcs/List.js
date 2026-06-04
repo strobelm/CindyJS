@@ -1927,8 +1927,9 @@ List._helper.inverseIteration = function (A, lambda, against) {
         }
     anorm = Math.sqrt(anorm) || 1;
 
-    // perturb the shift so (A - shift*I) stays near-singular yet safely factorable
-    const shift = CSNumber.add(lambda, CSNumber.real(1e-10 * anorm));
+    // perturb the shift so (A - shift*I) stays near-singular yet safely factorable;
+    // a tiny perturbation keeps the recovered eigenvector accurate
+    const shift = CSNumber.add(lambda, CSNumber.real(1e-12 * anorm));
     const LUP = List.LUdecomp(List.sub(A, List.scalmult(shift, List.idMatrix(CSNumber.real(n)))));
 
     const deflate = function (vec) {
@@ -1964,7 +1965,7 @@ List._helper.inverseIteration = function (A, lambda, against) {
         x = deflate(List._helper.LUsolve(LUP, x));
         if (List.abs(x).value.real > 1e-300) x = List.scaldiv(List.abs(x), x);
         res = List.abs(List.sub(List.productMV(A, x), List.scalmult(lambda, x))).value.real;
-        if (res <= 1e-9 * anorm) break;
+        if (res <= 1e-11 * anorm) break;
     }
     // if it never converged the eigenvector does not exist (defective eigenspace
     // exhausted by the cluster) -- report a zero vector rather than a spurious one
