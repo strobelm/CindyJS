@@ -242,6 +242,40 @@ describe("List.eig", function () {
                 1e-5
             );
         });
+
+        it("complex eigenvalues (2x2 rotation)", function () {
+            assertEigenpairs(
+                List.realMatrix([
+                    [0, -1],
+                    [1, 0],
+                ])
+            );
+        });
+
+        it("repeated eigenvalue yields independent (orthonormal) eigenvectors", function () {
+            // symmetric, spectrum {2, 2, 5}; the cluster deflation must return two
+            // distinct unit eigenvectors for the eigenvalue 2
+            const A = List.realMatrix([
+                [3, 1, 1],
+                [1, 3, 1],
+                [1, 1, 3],
+            ]);
+            assertEigenpairs(A);
+            // the two eigenvectors for the repeated eigenvalue 2 must be orthonormal
+            const res = List.eig(A);
+            const vals = res.value[0].value;
+            const V = res.value[1];
+            const cluster = [];
+            for (let k = 0; k < 3; k++) {
+                if (Math.abs(vals[k].value.real - 2) < 1e-6) {
+                    cluster.push(List.turnIntoCSList(V.value.map((row) => row.value[k])));
+                }
+            }
+            assert.equal(cluster.length, 2, "two eigenvectors for eigenvalue 2");
+            const ip = List.sesquilinearproduct(cluster[0], cluster[1]);
+            assert.closeTo(Math.hypot(ip.value.real, ip.value.imag), 0, 1e-6, "orthogonal");
+            for (const v of cluster) assert.closeTo(List.abs(v).value.real, 1, 1e-6, "unit norm");
+        });
     });
 
     describe("spectral identities on a dense matrix", function () {

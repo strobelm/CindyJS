@@ -232,6 +232,67 @@ describe("eig eigenvalue engine (fast-check)", function () {
     });
 
     //------------------------------------------------------------------
+    // Hermitian matrices: real spectrum and orthonormal eigenvectors
+    // (the latter is what the cluster-deflation in inverse iteration buys)
+    //------------------------------------------------------------------
+    describe("Hermitian eigendecomposition", function () {
+        const columnK = (V, k) => List.turnIntoCSList(V.value.map((row) => row.value[k]));
+        const cConj = (a) => ({ re: a.re, im: -a.im });
+        // <u, v> = sum conj(u_i) v_i
+        const inner = (u, v) => {
+            let s = { re: 0, im: 0 };
+            for (let i = 0; i < u.length; i++) s = cAdd(s, cMul(cConj(u[i]), v[i]));
+            return s;
+        };
+
+        it("real eigenvalues and orthonormal eigenvectors (n = 2..6)", function () {
+            fc.assert(
+                fc.property(
+                    fc.integer({ min: 2, max: 6 }),
+                    (n) =>
+                        fc.assert(
+                            fc.property(arbMat(n), (B) => {
+                                // Hermitianize: A = (B + B^H) / 2
+                                const Araw = B.map((row, i) =>
+                                    row.map((e, j) => ({
+                                        re: (B[i][j].re + B[j][i].re) / 2,
+                                        im: (B[i][j].im - B[j][i].im) / 2,
+                                    }))
+                                );
+                                const A = toMat(Araw);
+                                const res = List.eig(A);
+                                const vals = res.value[0].value.map(numOf);
+                                const V = res.value[1];
+                                const cols = [];
+                                for (let k = 0; k < n; k++) cols.push(columnK(V, k).value.map(numOf));
+
+                                // eigenvalues real
+                                for (const lam of vals) if (Math.abs(lam.im) > 1e-6) return false;
+                                // A v = lambda v
+                                for (let k = 0; k < n; k++) {
+                                    const v = cols[k];
+                                    const Av = List.mult(A, List.turnIntoCSList(v.map(toNum))).value.map(numOf);
+                                    for (let i = 0; i < n; i++)
+                                        if (!closeR(Av[i], cMul(vals[k], v[i]), 1e-5)) return false;
+                                }
+                                // V^H V = I  (orthonormal)
+                                for (let a = 0; a < n; a++)
+                                    for (let b = 0; b < n; b++) {
+                                        const ip = inner(cols[a], cols[b]);
+                                        const target = { re: a === b ? 1 : 0, im: 0 };
+                                        if (!closeR(ip, target, 1e-5)) return false;
+                                    }
+                                return true;
+                            }),
+                            { numRuns: 20 }
+                        ) === undefined
+                ),
+                { numRuns: 10 }
+            );
+        });
+    });
+
+    //------------------------------------------------------------------
     // Transpose invariance of the spectrum
     //------------------------------------------------------------------
     describe("spectrum invariants", function () {

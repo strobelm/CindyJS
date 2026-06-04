@@ -1571,82 +1571,32 @@ List.eig2 = function (AA) {
 };
 
 List.eig = function (A, getEigenvectors) {
-    const getEv = getEigenvectors || true;
+    const getEv = getEigenvectors === undefined ? true : getEigenvectors;
+    const n = A.value.length;
 
-    let i, j;
-    let AA = A;
-    const cslen = CSNumber.real(AA.value.length);
-    const len = cslen.value.real;
-    const zero = CSNumber.real(0);
+    const eigvals = List.sort1(List.getDiag(List._helper.QRIteration(A)[0]));
 
-    const QRRes = List._helper.QRIteration(AA);
-    AA = QRRes[0];
-
-    const QQ = QRRes[1];
-
-    let eigvals = List.getDiag(AA);
-    eigvals = List.sort1(eigvals);
-
-    const ID = List.idMatrix(cslen, cslen);
-
-    let eigenvecs = new Array(len);
-    eigenvecs = List.turnIntoCSList(eigenvecs);
+    let eigenvecs = List.turnIntoCSList([]);
     if (getEv) {
-        // calc eigenvecs
-        //
-        // if we have a normal matrix QQ holds already the eigenvecs
-        //    if( false && List._helper.isNormalMatrix(AA)){
-        //        console.log("is normal matrix return QQ");
-        //        var QQQ = List.transpose(QQ);
-        //        for(i = 0; i < len; i++)
-        //        eigenvecs.value[i] = QQQ.value[i];
-        //    }
-        //    else{
-        const useInverseIteration = false; // inverse iteration or nullspace method to obtain eigenvecs
-
-        let MM, xx, nullS, qq;
-        if (useInverseIteration) {
-            for (qq = 0; qq < len; qq++) {
-                xx = List._helper.inverseIteration(AA, eigvals.value[qq]);
-                xx = General.mult(QQ, xx);
-                eigenvecs.value[qq] = xx;
-            }
-        } else {
-            let ceigval, oeigval, lastevec;
-            let count = 0;
-            let sameEigVal = false;
-            for (qq = 0; qq < len; qq++) {
-                if (sameEigVal) {
-                    xx = nullS.value[count];
-                } else {
-                    ceigval = eigvals.value[qq];
-                    MM = List.sub(A, List.scalmult(ceigval, ID));
-                    nullS = List.nullSpace(MM);
-                    xx = nullS.value[0];
-                    if (xx !== undefined) lastevec = xx; // if we found a eigenvector != [0...0] may need it again
-                }
-
-                // check if we got nothing from nullspace
-                if (xx === undefined) {
-                    xx = lastevec;
-                }
-                if (List.abs(xx).value.real < 1e-8 && count === 0) {
-                    // couldnt find a vector in nullspace -- should not happen
-                    xx = List._helper.inverseIteration(A, eigvals.value[qq]);
-                }
-                eigenvecs.value[qq] = List._helper.isAlmostZeroVec(xx) ? xx : List.scaldiv(List.abs(xx), xx);
-
-                if (qq < len - 1) {
-                    sameEigVal = CSNumber.abs(CSNumber.sub(eigvals.value[qq], eigvals.value[qq + 1])).value.real < 1e-6;
-                    if (sameEigVal) count++;
-                    else count = 0;
-                }
-            }
+        // Eigenvectors by inverse iteration, seeded with the computed eigenvalues.
+        // Consecutive (near-)equal eigenvalues share a cluster; each vector is
+        // deflated against the cluster's earlier vectors so a repeated eigenvalue
+        // yields an independent basis of its eigenspace.
+        const cols = new Array(n);
+        let cluster = [];
+        for (let q = 0; q < n; q++) {
+            const lam = eigvals.value[q];
+            const sameCluster =
+                q > 0 &&
+                CSNumber.abs(CSNumber.sub(lam, eigvals.value[q - 1])).value.real <
+                    1e-6 * (1 + CSNumber.abs(lam).value.real);
+            if (!sameCluster) cluster = [];
+            const v = List._helper.inverseIteration(A, lam, cluster);
+            cols[q] = v;
+            cluster.push(v);
         }
-
-        //} // end else from normal matrices
-        eigenvecs = List.transpose(eigenvecs);
-    } // end getEv
+        eigenvecs = List.transpose(List.turnIntoCSList(cols)); // eigenvectors as columns
+    }
 
     return List.turnIntoCSList([eigvals, eigenvecs]);
 };
@@ -1962,28 +1912,63 @@ List._helper.isAlmostDiagonal = function (AA) {
     return true;
 };
 
-List._helper.inverseIteration = function (A, shiftinit) {
-    console.log("warning: code untested");
-    const len = A.value.length;
+// Unit eigenvector of A for eigenvalue lambda, by safeguarded inverse iteration.
+// `against` (optional) is a list of unit eigenvectors of the same eigenvalue
+// cluster; the iterate is deflated against them so repeated eigenvalues produce
+// an independent (orthonormal) basis of their eigenspace.
+List._helper.inverseIteration = function (A, lambda, against) {
+    const n = A.value.length;
 
-    // random vector
-    let xx = new Array(len);
-    for (let i = 0; i < len; i++) {
-        xx[i] = 2 * Math.random() - 0.5;
+    let anorm = 0;
+    for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++) {
+            const v = A.value[i].value[j].value;
+            anorm += v.real * v.real + v.imag * v.imag;
+        }
+    anorm = Math.sqrt(anorm) || 1;
+
+    // perturb the shift so (A - shift*I) stays near-singular yet safely factorable
+    const shift = CSNumber.add(lambda, CSNumber.real(1e-10 * anorm));
+    const LUP = List.LUdecomp(List.sub(A, List.scalmult(shift, List.idMatrix(CSNumber.real(n)))));
+
+    const deflate = function (vec) {
+        if (against)
+            for (let k = 0; k < against.length; k++)
+                vec = List.sub(vec, List.scalmult(List.sesquilinearproduct(against[k], vec), against[k]));
+        return vec;
+    };
+
+    // start vector orthogonal to the already-found cluster vectors: try a varied
+    // vector first, then standard basis vectors (needed for degenerate eigenspaces,
+    // e.g. a multiple of the identity, where a fixed start collapses under deflation)
+    const seeds = [];
+    const varied = new Array(n);
+    for (let i = 0; i < n; i++) varied[i] = CSNumber.real(1 + (i % 3));
+    seeds.push(varied);
+    for (let e = 0; e < n; e++) {
+        const ev = new Array(n);
+        for (let i = 0; i < n; i++) ev[i] = CSNumber.real(i === e ? 1 : 0);
+        seeds.push(ev);
     }
-    xx = List.realVector(xx);
-
-    let qk = xx;
-    const ID = List.idMatrix(CSNumber.real(len), CSNumber.real(len));
-
-    let shift = shiftinit;
-    shift = CSNumber.add(shift, CSNumber.real(0.1 * Math.random() - 0.5)); // add rand to make get a full rank matrix
-    for (let ii = 0; ii < 100; ii++) {
-        qk = List.scaldiv(List.abs(xx), xx);
-        xx = List.LUsolve(List.sub(A, List.scalmult(shift, ID)), qk); // TODO Use triangular form
+    let x = null;
+    for (let s = 0; s < seeds.length && x === null; s++) {
+        const cand = deflate(List.turnIntoCSList(seeds[s]));
+        if (List.abs(cand).value.real > 1e-8) x = List.scaldiv(List.abs(cand), cand);
     }
+    if (x === null) return List.zerovector(CSNumber.real(n)); // eigenspace exhausted (defective)
 
-    return List.scaldiv(List.abs(xx), xx);
+    // iterate until A x = lambda x (a deficient start may need a few solves before
+    // the near-null direction dominates); deflate each step to keep vectors distinct
+    let res = Infinity;
+    for (let it = 0; it < 6; it++) {
+        x = deflate(List._helper.LUsolve(LUP, x));
+        if (List.abs(x).value.real > 1e-300) x = List.scaldiv(List.abs(x), x);
+        res = List.abs(List.sub(List.productMV(A, x), List.scalmult(lambda, x))).value.real;
+        if (res <= 1e-9 * anorm) break;
+    }
+    // if it never converged the eigenvector does not exist (defective eigenspace
+    // exhausted by the cluster) -- report a zero vector rather than a spurious one
+    return res <= 1e-6 * anorm ? x : List.zerovector(CSNumber.real(n));
 };
 
 // swap an element in js or cs array
