@@ -1655,78 +1655,239 @@ List._helper.isNormalMatrix = function (A) {
     return List.abs(List.sub(A, List.transjugate(A))).value.real < 1e-10;
 };
 
+List._helper.diagMatrix = function (values) {
+    const n = values.length;
+    const M = List.zeromatrix(CSNumber.real(n), CSNumber.real(n));
+    for (let i = 0; i < n; i++) M.value[i].value[i] = values[i];
+    return M;
+};
+
+List._helper.isFiniteCS = function (z) {
+    return Number.isFinite(z.value.real) && Number.isFinite(z.value.imag);
+};
+
+// Eigenvalues of a 3x3 matrix as the roots of its characteristic cubic
+// lambda^3 - tr lambda^2 + (sum of principal 2x2 minors) lambda - det.
+// Returns null when the closed form is unreliable (non-finite or large
+// characteristic-polynomial residual, e.g. for repeated roots) so the caller
+// can fall back to the iterative path.
+List._helper.eig3 = function (A) {
+    const r0 = A.value[0].value,
+        r1 = A.value[1].value,
+        r2 = A.value[2].value;
+    const a00 = r0[0],
+        a01 = r0[1],
+        a02 = r0[2];
+    const a10 = r1[0],
+        a11 = r1[1],
+        a12 = r1[2];
+    const a20 = r2[0],
+        a21 = r2[1],
+        a22 = r2[2];
+
+    const trace = CSNumber.add(CSNumber.add(a00, a11), a22);
+    const m0 = CSNumber.sub(CSNumber.mult(a11, a22), CSNumber.mult(a12, a21));
+    const m1 = CSNumber.sub(CSNumber.mult(a00, a22), CSNumber.mult(a02, a20));
+    const m2 = CSNumber.sub(CSNumber.mult(a00, a11), CSNumber.mult(a01, a10));
+    const c = CSNumber.add(CSNumber.add(m0, m1), m2);
+    const det = List.det(A);
+
+    const roots = CSNumber.solveCubic(CSNumber.one, CSNumber.neg(trace), c, CSNumber.neg(det));
+
+    const cabs = CSNumber.abs(c).value.real;
+    const coeffScale = 1 + CSNumber.abs(trace).value.real + cabs + CSNumber.abs(det).value.real;
+    for (let k = 0; k < 3; k++) {
+        const lam = roots[k];
+        if (!List._helper.isFiniteCS(lam)) return null;
+        // residual of the monic cubic at lam, via Horner: ((lam - tr) lam + c) lam - det
+        let p = CSNumber.sub(lam, trace);
+        p = CSNumber.add(CSNumber.mult(p, lam), c);
+        p = CSNumber.sub(CSNumber.mult(p, lam), det);
+        const labs = CSNumber.abs(lam).value.real;
+        const scale = coeffScale * (1 + labs * labs * labs);
+        if (CSNumber.abs(p).value.real > 1e-7 * scale) return null;
+    }
+    return roots;
+};
+
+// Complex Givens rotation zeroing b in [a; b]: G = [[c, s], [-conj(s), c]],
+// returned as {cr, sr, si} with c = cr real and s = sr + i*si.
+List._helper.givensCS = function (a, b) {
+    const ar = a.value.real,
+        ai = a.value.imag,
+        br = b.value.real,
+        bi = b.value.imag;
+    const babs = Math.sqrt(br * br + bi * bi);
+    if (babs === 0) return { cr: 1, sr: 0, si: 0 };
+    const aabs = Math.sqrt(ar * ar + ai * ai);
+    if (aabs === 0) {
+        const inv = 1 / babs;
+        return { cr: 0, sr: br * inv, si: -bi * inv };
+    }
+    const denom = Math.sqrt(aabs * aabs + babs * babs);
+    const uar = ar / aabs,
+        uai = ai / aabs;
+    return {
+        cr: aabs / denom,
+        sr: (uar * br + uai * bi) / denom,
+        si: (-uar * bi + uai * br) / denom,
+    };
+};
+
+// Apply G to rows k, k+1 over columns [c0, c1).
+List._helper.applyGivensLeft = function (H, k, g, c0, c1) {
+    const cr = g.cr,
+        sr = g.sr,
+        si = g.si;
+    const rowk = H.value[k].value,
+        rowk1 = H.value[k + 1].value;
+    for (let j = c0; j < c1; j++) {
+        const a = rowk[j].value,
+            b = rowk1[j].value;
+        const ar = a.real,
+            ai = a.imag,
+            br = b.real,
+            bi = b.imag;
+        rowk[j] = { ctype: "number", value: { real: cr * ar + sr * br - si * bi, imag: cr * ai + sr * bi + si * br } };
+        rowk1[j] = {
+            ctype: "number",
+            value: { real: -sr * ar - si * ai + cr * br, imag: -sr * ai + si * ar + cr * bi },
+        };
+    }
+};
+
+// Apply G* (M -> M G*) to columns k, k+1 over rows [r0, r1).
+List._helper.applyGivensRight = function (M, k, g, r0, r1) {
+    const cr = g.cr,
+        sr = g.sr,
+        si = g.si;
+    for (let i = r0; i < r1; i++) {
+        const row = M.value[i].value;
+        const a = row[k].value,
+            b = row[k + 1].value;
+        const ar = a.real,
+            ai = a.imag,
+            br = b.real,
+            bi = b.imag;
+        row[k] = { ctype: "number", value: { real: cr * ar + sr * br + si * bi, imag: cr * ai + sr * bi - si * br } };
+        row[k + 1] = {
+            ctype: "number",
+            value: { real: -sr * ar + si * ai + cr * br, imag: -sr * ai - si * ar + cr * bi },
+        };
+    }
+};
+
+// Reduce A to an upper-Hessenberg matrix with the same spectrum, by unitary
+// similarity using Householder reflectors.
+List._helper.hessenberg = function (A) {
+    const n = A.value.length;
+    let H = List._helper.copyMatrix(A);
+    for (let k = 0; k < n - 2; k++) {
+        const xv = new Array(n - k - 1);
+        for (let i = k + 1; i < n; i++) xv[i - k - 1] = H.value[i].value[k];
+        const x = List.turnIntoCSList(xv);
+        if (List.abs2(x).value.real < 1e-300) continue;
+        const R = List._helper.getHouseHolder(x);
+        const P = List._helper.buildBlockMatrix(List.idMatrix(CSNumber.real(k + 1)), R);
+        H = General.mult(P, General.mult(H, List.transjugate(P)));
+    }
+    return H;
+};
+
+// One shifted QR sweep on the leading m x m block of upper-Hessenberg H:
+// H - mu*I = QR via left Givens rotations, then H <- RQ + mu*I via the
+// transposed rotations, preserving Hessenberg structure.
+List._helper.qrStepHessenberg = function (H, m, mu) {
+    for (let i = 0; i < m; i++) H.value[i].value[i] = CSNumber.sub(H.value[i].value[i], mu);
+    const gs = new Array(m - 1);
+    for (let k = 0; k < m - 1; k++) {
+        gs[k] = List._helper.givensCS(H.value[k].value[k], H.value[k + 1].value[k]);
+        List._helper.applyGivensLeft(H, k, gs[k], k, m);
+    }
+    for (let k = 0; k < m - 1; k++) {
+        List._helper.applyGivensRight(H, k, gs[k], 0, Math.min(k + 2, m));
+    }
+    for (let i = 0; i < m; i++) H.value[i].value[i] = CSNumber.add(H.value[i].value[i], mu);
+};
+
+// Eigenvalues of A, returned as [D, null] where the diagonal of D holds the
+// eigenvalues (the contract List.eig consumes via getDiag). Closed forms for
+// n <= 3; Hessenberg reduction + shifted Givens-QR for n >= 4. The 3x3 closed
+// form falls back to the iterative path when it is unreliable (see eig3).
 List._helper.QRIteration = function (A, maxIter) {
-    let i;
-    let AA = A;
-    const cslen = CSNumber.real(AA.value.length);
-    const Alen = cslen.value.real; // does not change
-    let len = cslen.value.real; // changes
-    const zero = CSNumber.real(0);
-    let Id = List.idMatrix(cslen, cslen);
-    const erg = List.zeromatrix(cslen, cslen);
-    let QQ = List.idMatrix(cslen, cslen);
-    const mIter = maxIter ? maxIter : 2500;
+    const n = A.value.length;
+    if (n === 0) return [A, null];
+    if (n === 1) return [A, null];
+    if (n === 2) return [List._helper.diagMatrix(List.eig2(A).value), null];
+    if (n === 3) {
+        const ev = List._helper.eig3(A);
+        if (ev !== null) return [List._helper.diagMatrix(ev), null];
+    }
 
-    let QR, kap, shiftId, block, L1, L2, blockeigs, ann, dist1, dist2;
-    let numDeflations = 0;
-    const eigvals = new Array(len);
-    for (i = 0; i < mIter; i++) {
-        block = List._helper.getBlock(AA, [len - 2, len - 1], [len - 2, len - 1]);
-        blockeigs = List.eig2(block);
-        L1 = blockeigs.value[0];
-        L2 = blockeigs.value[1];
+    const H = List._helper.hessenberg(A);
 
-        ann = AA.value[len - 1].value[len - 1];
-        dist1 = CSNumber.abs(CSNumber.sub(ann, L1)).value.real;
-        dist2 = CSNumber.abs(CSNumber.sub(ann, L2)).value.real;
-        kap = dist1 < dist2 ? L1 : L2;
+    let anorm = 0;
+    for (let i = 0; i < n; i++)
+        for (let j = Math.max(0, i - 1); j < n; j++) {
+            const v = H.value[i].value[j].value;
+            anorm += v.real * v.real + v.imag * v.imag;
+        }
+    anorm = Math.sqrt(anorm);
+    const eps = 1e-14;
+    const tol = eps * (anorm > 0 ? anorm : 1);
 
-        Id = List.idMatrix(CSNumber.real(len), CSNumber.real(len));
-        shiftId = List.scalmult(kap, Id);
+    const evs = new Array(n);
+    let m = n;
+    let iter = 0;
+    let total = 0;
+    const totalCap = (maxIter ? maxIter : 100 * n) * n;
 
-        QR = List.QRdecomp(List.sub(AA, shiftId)); // shift
-
-        AA = General.mult(QR.R, QR.Q);
-        AA = List.add(AA, shiftId);
-
-        QR.Q = List._helper.buildBlockMatrix(
-            QR.Q,
-            List.idMatrix(CSNumber.real(numDeflations), CSNumber.real(numDeflations))
-        );
-        QQ = General.mult(QQ, QR.Q);
-        if (
-            CSNumber.abs2(AA.value[AA.value.length - 1].value[AA.value[0].value.length - 2]).value.real < 1e-48 &&
-            len > 1
-        ) {
-            eigvals[Alen - numDeflations - 1] = AA.value[len - 1].value[len - 1]; // get Eigenvalue
-
-            // copy shortening to erg
-            for (i = 0; i < len; i++) {
-                erg.value[len - 1].value[i] = AA.value[len - 1].value[i];
-                erg.value[i].value[len - 1] = AA.value[i].value[len - 1];
-            }
-
-            // shorten Matrix AA
-            AA = List._helper.getBlock(AA, [0, len - 2], [0, len - 2]);
-
-            numDeflations++;
-            len--;
+    while (m > 2) {
+        const subN = H.value[m - 1].value[m - 2].value;
+        const sub = Math.sqrt(subN.real * subN.real + subN.imag * subN.imag);
+        const dA = H.value[m - 1].value[m - 1].value;
+        const dB = H.value[m - 2].value[m - 2].value;
+        const scale =
+            Math.sqrt(dA.real * dA.real + dA.imag * dA.imag) + Math.sqrt(dB.real * dB.real + dB.imag * dB.imag);
+        if (sub <= tol + eps * scale) {
+            evs[m - 1] = H.value[m - 1].value[m - 1];
+            H.value[m - 1].value[m - 2] = CSNumber.real(0);
+            m--;
+            iter = 0;
+            continue;
         }
 
-        // break if we have only 1x1 matrix
-        if (len === 1) {
-            erg.value[0].value[0] = AA.value[0].value[0];
-            break;
+        const block = List._helper.getBlock(H, [m - 2, m - 1], [m - 2, m - 1]);
+        const ev2 = List.eig2(block).value;
+        const ann = H.value[m - 1].value[m - 1];
+        const dist0 = CSNumber.abs(CSNumber.sub(ann, ev2[0])).value.real;
+        const dist1 = CSNumber.abs(CSNumber.sub(ann, ev2[1])).value.real;
+        let mu = dist0 < dist1 ? ev2[0] : ev2[1];
+
+        if (iter > 0 && iter % 15 === 0) {
+            mu = CSNumber.add(ann, CSNumber.real(0.75 * (sub || 1))); // break rare stagnation
         }
 
-        if (List._helper.isUpperTriangular(AA)) {
-            for (i = 0; i < len; i++) {
-                erg.value[i].value[i] = AA.value[i].value[i];
-            }
+        List._helper.qrStepHessenberg(H, m, mu);
+        iter++;
+        if (++total > totalCap) {
+            console.log("Warning: eigenvalue iteration did not converge!");
             break;
         }
     }
-    return [erg, QQ];
+
+    if (m === 2) {
+        const block = List._helper.getBlock(H, [0, 1], [0, 1]);
+        const ev2 = List.eig2(block).value;
+        evs[0] = ev2[0];
+        evs[1] = ev2[1];
+    } else if (m === 1) {
+        evs[0] = H.value[0].value[0];
+    } else {
+        for (let i = 0; i < m; i++) evs[i] = H.value[i].value[i];
+    }
+
+    return [List._helper.diagMatrix(evs), List.idMatrix(CSNumber.real(n))];
 };
 
 // return rank of a square matrix
@@ -1929,7 +2090,7 @@ List.RRQRdecomp = function (A, precision) {
 
 List._helper.getHouseHolder = function (xx) {
     const cslen = CSNumber.real(xx.value.length);
-    if (List.abs2(xx) < 1e-16) return List.idMatrix(cslen, cslen);
+    if (List.abs2(xx).value.real < 1e-16) return List.idMatrix(cslen, cslen);
 
     let alpha, uu, vv, ww, Qk;
     const one = CSNumber.real(1);

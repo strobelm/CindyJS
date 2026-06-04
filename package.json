@@ -7,7 +7,6 @@
         "test": "tests"
     },
     "devDependencies": {
-        "sass": "^1.89.0",
         "@babel/core": "^7.14.8",
         "@babel/preset-env": "^7.14.8",
         "@jscad/csg": "^0.7.0",
@@ -23,6 +22,7 @@
         "concat-with-sourcemaps": "^1.1.0",
         "es6-shim": "^0.35.6",
         "eslint": "^7.32.0",
+        "fast-check": "^4.8.0",
         "gl-matrix": "^2.8.1",
         "glob": "^7.1.7",
         "http-proxy": "^1.18.1",
@@ -39,6 +39,7 @@
         "request": "2.88.0",
         "rewire": "^5.0.0",
         "rimraf": "^3.0.2",
+        "sass": "^1.89.0",
         "source-map": "^0.7.4",
         "source-map-dummy": "^1.0.0",
         "st": "^3.0.0",
