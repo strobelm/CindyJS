@@ -199,11 +199,12 @@ module.exports = function build(settings, task) {
     });
 
     //////////////////////////////////////////////////////////////////////
-    // Run the List matrix microbenchmark
+    // Run the microbenchmarks
     //////////////////////////////////////////////////////////////////////
 
     task("benchmark", ["exposed"], function () {
         this.node("benchmarks/list_matrix.js", "build/js/exposed.js", "current");
+        this.node("benchmarks/eig.js", "build/js/exposed.js", "current");
     });
 
     //////////////////////////////////////////////////////////////////////
