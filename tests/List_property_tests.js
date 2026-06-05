@@ -1,20 +1,19 @@
 /*
- * Property-based tests (fast-check) for the matrix/vector optimizations on the
- * `optimize-list-clean` branch.
+ * Property-based tests (fast-check) for the matrix/vector hot paths in
+ * src/js/libcs/List.js.
  *
- * These cover the rewritten hot paths in src/js/libcs/List.js:
+ * These cover:
  *   - scalproduct / productMV / productVM / productMM (inlined complex arithmetic)
- *   - List.mult dispatch (structural, no longer using isNumber{Vector,Matrix})
- *   - det / LUdecomp / LUsolve / getBlock / setBlock / copyMatrix
- *     (JSON.parse(JSON.stringify(...)) clones replaced by structural copies)
- *   - isUpperTriangular (rewritten without transpose)
- * and the CSNumber.ts change that turns zero/one/infinity/nan/z3a/z3b/cub*
- * from fresh-object getters into shared singletons (mutation hazard).
+ *   - List.mult dispatch (structural, not via isNumber{Vector,Matrix})
+ *   - det / LUdecomp / LUsolve / getBlock / setBlock / copyMatrix (structural copies)
+ *   - isUpperTriangular (transpose-free)
+ * and the CSNumber shared singletons (zero/one/infinity/nan/z3a/z3b/cub*),
+ * which are returned by reference and must never be mutated in place.
  *
  * Strategy: generate random complex matrices/vectors, compute the expected
  * result with an INDEPENDENT plain-JS reference, and compare against the
- * optimized library output. Plus algebraic identities and aggressive
- * non-mutation / global-constant-integrity checks.
+ * library output. Plus algebraic identities and aggressive non-mutation /
+ * global-constant-integrity checks.
  */
 
 const assert = require("chai").assert;

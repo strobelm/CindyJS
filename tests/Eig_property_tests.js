@@ -1,7 +1,7 @@
 /*
- * Property-based tests (fast-check) for the upgraded eigenvalue engine
- * (Hessenberg + shifted Givens-QR for n>=4, closed forms for n<=3) on the
- * `eig-implicit-qr` branch.
+ * Property-based tests (fast-check) for List.eig: the eigenvalue/eigenvector
+ * engine in src/js/libcs/List.js (Hessenberg + shifted Givens-QR for n>=4,
+ * closed forms for n<=3; eigenvectors by safeguarded inverse iteration).
  *
  * Correctness is checked oracle-free, via invariants that pin the eigenvalues:
  *   - triangular matrix  => eigenvalue multiset == diagonal  (complete, any n)
@@ -11,7 +11,6 @@
  *   - each eigenvector v from eig() satisfies A v == lambda v
  */
 
-const assert = require("chai").assert;
 const fc = require("fast-check");
 const rewire = require("rewire");
 
