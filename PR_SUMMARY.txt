@@ -1,0 +1,70 @@
+## Faster, more robust eigenvalue & eigenvector engine
+
+Replaces the naive eigenvalue solver (full-matrix explicit shifted QR, up to 2500
+iterations) and the eigenvector solver (per-eigenvalue null space) with a
+size-dispatched engine tuned for the low dimensions CindyJS actually uses.
+
+### Eigenvalues
+
+- **n ≤ 2** — trivial / `eig2` closed form
+- **n = 3** — characteristic cubic (`CSNumber.solveCubic`), with a residual check
+  that falls back to the iterative path on unreliable (repeated/clustered) roots
+- **n ≥ 4** — Householder reduction to upper-Hessenberg, then shifted Givens-QR
+  sweeps (O(n²)/sweep) with Wilkinson shift, scale-aware deflation, and an
+  exceptional-shift fallback
+
+Low dimensions — the common case for CindyJS — skip the O(n³) preconditioning
+entirely.
+
+### Eigenvectors
+
+Computed by safeguarded inverse iteration seeded from the eigenvalues, with
+cluster deflation (Gram-Schmidt against already-found vectors, basis-vector
+restarts for degenerate eigenspaces) and a defective-case zero-out. Replaces the
+null-space-via-rank-revealing-QR method, which made a binary rank decision that
+could return an empty eigenvector when an eigenvalue was slightly off.
+
+Because shifting does not move eigenvectors, the iteration is run to a tight
+tolerance (it converges geometrically in ~2-3 reused-LU solves), recovering
+eigenvectors to eigenvalue-accuracy (~1e-13) — matching the old method's
+precision while being several times faster.
+
+### Why
+
+It's faster **and** fixes a correctness bug. The old eigenvalue solver silently
+returned wrong eigenvalues on harder spectra (e.g. clustered 16×16, where it
+failed to converge within its iteration cap).
+
+### Benchmarks (`make benchmark`, old vs new, same build)
+
+Eigenvalues — each engine checked against Σλ = trace:
+
+| size      | speedup | correctness           |
+| --------- | ------- | --------------------- |
+| 3×3       | ~45×    | both ok               |
+| 4×4–8×8   | 7–13×   | both ok               |
+| 16×16     | ~1000×  | **old WRONG**, new ok |
+
+Eigenvectors — residual ‖A·v − λ·v‖, old / new:
+
+| size       | speedup | residual (old / new)  |
+| ---------- | ------- | --------------------- |
+| 3×3        | ~1.9×   | 4.9e-15 / 6.3e-15     |
+| 4×4–8×8    | 3–8×    | ~1e-13 / ~1e-13       |
+| 16×16 real | ~6.3×   | 4.1e-13 / 1.4e-13     |
+| 16×16 cplx | ~11.4×  | 1.5e-13 / 8.0e-14     |
+
+### Also
+
+- Fixes a latent bug in `getHouseHolder` (a `CSNumber` object was compared to a
+  number, so the zero-vector guard never fired) now reachable via the Hessenberg
+  path.
+- `List.eig` now honors `getEigenvectors === false` (the old `|| true` always
+  computed them).
+- Adds classical + property-based tests for `eig` and for the List matrix hot
+  paths (`fast-check`).
+- Adds `benchmarks/eig.js` and `benchmarks/eigvec.js`, wired into `make benchmark`.
+
+### Testing
+
+Full suite green (583 passing). Adds `fast-check` as a devDependency.

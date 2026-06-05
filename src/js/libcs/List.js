@@ -1959,13 +1959,17 @@ List._helper.inverseIteration = function (A, lambda, against) {
     if (x === null) return List.zerovector(CSNumber.real(n)); // eigenspace exhausted (defective)
 
     // iterate until A x = lambda x (a deficient start may need a few solves before
-    // the near-null direction dominates); deflate each step to keep vectors distinct
+    // the near-null direction dominates); deflate each step to keep vectors distinct.
+    // Shifting does not move eigenvectors, so iterating to a tight tolerance recovers
+    // the eigenvector to eigenvalue-accuracy (~1e-13) -- the shift perturbation does
+    // not bound the residual. Convergence is geometric, so this typically breaks in
+    // 2-3 solves; the LU is reused, making each extra step a cheap O(n^2) solve.
     let res = Infinity;
-    for (let it = 0; it < 6; it++) {
+    for (let it = 0; it < 10; it++) {
         x = deflate(List._helper.LUsolve(LUP, x));
         if (List.abs(x).value.real > 1e-300) x = List.scaldiv(List.abs(x), x);
         res = List.abs(List.sub(List.productMV(A, x), List.scalmult(lambda, x))).value.real;
-        if (res <= 1e-11 * anorm) break;
+        if (res <= 1e-13 * anorm) break;
     }
     // if it never converged the eigenvector does not exist (defective eigenspace
     // exhausted by the cluster) -- report a zero vector rather than a spurious one
