@@ -313,6 +313,11 @@ describe("List property-based tests (fast-check)", function () {
                     (n) =>
                         fc.assert(
                             fc.property(arbMat(n, n), (A) => {
+                                // LUdet is LU-based and returns a non-finite value on
+                                // singular matrices (a zero pivot); skip those, as the
+                                // other determinant tests do. The cofactor det and the
+                                // dedicated singular-matrix test cover that case.
+                                if (Math.hypot(refDet(A).re, refDet(A).im) < 1e-6) return true;
                                 const M = toMat(A);
                                 return cClose(numOf(List.LUdet(M)), numOf(List.det(M)));
                             }),
