@@ -35,7 +35,7 @@ Ref-manual doctests: `node make nodetest` runs the CindyScript snippets embedded
 
 ## Architecture
 
-**Cindy.js is built by concatenation, not modules.** Core sources under `src/js/` contain no import/export; they share one scope inside an IIFE formed by `src/js/Head.js` … `src/js/Tail.js`. The exact file order is defined in `make/sources.js` — new source files must be registered there or they won't be built. TypeScript sources (e.g. `libcs/CSNumber.ts`, `libcs/Json.ts`) are compiled to `build/ts/` first and the compiled output is concatenated in place of the `.js` file. Several bundle flavors exist: `Cindy.plain.js` (dev), `Cindy.closure.js` (release), `ours.js` (lint target), and `exposed.js` (test target, with internals exported via `expose.ts`).
+**Cindy.js is built by concatenation, not modules.** Core sources under `src/js/` carry `import`/`export` annotations (paths resolved via `src/js/jsconfig.json`), but the build strips them (`babel-plugin-remove-import-export` in `tools/cat.js`) and concatenates everything into one shared scope inside an IIFE formed by `src/js/Head.js` … `src/js/Tail.js` — so imports are documentation of the dependency graph, not yet load-bearing. The exact file order is defined in `make/sources.js` — new source files must be registered there or they won't be built. TypeScript sources (e.g. `libcs/CSNumber.ts`, `libcs/Json.ts`) are compiled to `build/ts/` first and the compiled output is concatenated in place of the `.js` file. Several bundle flavors exist: `Cindy.plain.js` (dev), `Cindy.closure.js` (release), `ours.js` (lint target), and `exposed.js` (test target, with internals exported via `expose.ts`).
 
 Main layers, in the order they are concatenated:
 

@@ -57,8 +57,40 @@ dependency direction stays acyclic. Converting a layer mechanically surfaces
 every implicit cross-file global as an unresolved identifier — that is the
 point; resolve each with an explicit import, never with a new global.
 
+**Head start:** the core sources are already ESM-annotated — every file except
+`Parser.js`/`GeoScripts.js` carries `import`/`export` statements (resolved via
+`src/js/jsconfig.json` baseUrl) which the concat build strips with
+`babel-plugin-remove-import-export` in `tools/cat.js`. Phase 1 is therefore
+mostly: make those imports real, complete the missing ones, and break the
+init-time cycles below.
+
 **Circular dependencies** (hit in an earlier rollup attempt): the concat scope
 allows free mutual calling, so cycles are expected — they are not a blocker.
+
+Analysis results (2026-07-29, scope-aware AST pass over the annotated
+imports): 33 files, 215 import edges, 401 call-time-only imported bindings;
+madge reports 75 elementary cycles but only **two init-time SCCs** need
+structural work, and no dynamic-import workarounds are acceptable:
+
+1. `Essentials ↔ Operators`: `Essentials` builds `infixmap` at top level from
+   ~36 operator functions imported from `Operators`, while `Operators` (plus
+   `OpDrawing`/`OpImageDrawing`/`OpSound`, those one-directional) registers
+   ~300 entries into the `evaluator`/`eval_helper` objects owned by
+   `Essentials` at top level. Fix: move the `evaluator` registry (and
+   `eval_helper`) into a new leaf module; registrars import the registry,
+   `Essentials` imports `Operators` only for `infixmap`. Cycle gone with
+   static imports only.
+2. `Setup ↔ GeoOps ↔ Tracing`: `Tracing`/`StateIO`/`RenderBackends` init-read
+   mutable instance state (`globalInstance`, `shutdownHooks`, …) exported by
+   `Setup`; `GeoOps` init-reads `tracing2.stateSize` etc. from `Tracing` for
+   its top-level op tables; `Setup` init-uses `noop` from `GeoOps`. Fix:
+   extract the per-instance mutable state from `Setup` into a small leaf
+   state module (sibling of `expose.ts`'s env shims). All init-time edges
+   into `Setup` disappear.
+
+With both extractions the init-time graph is acyclic. Two missing imports to
+add (`window` in `Parser.js` L780, `niceprint` in `types.ts`); the remaining
+call-time cycles are legal ESM live-binding usage and stay as-is.
 
 - First map them: `madge --circular` (or eslint `import/no-cycle`) on the
   converted tree, and classify each cycle as _call-time_ (an imported function
@@ -74,6 +106,51 @@ allows free mutual calling, so cycles are expected — they are not a blocker.
   definition tables (`Accessors`, `GeoOps` ↔ `Tracing`).
 - Configure the bundler to fail CI on _new_ cycles once the initial set is
   inventoried, so the count only goes down.
+
+### Restructuring steps (minimal, in order; every step lands with alltests green)
+
+1. **Extract the evaluator registry.** New leaf module
+   `src/js/libcs/Registry.js` exporting the (initially empty) `evaluator` and
+   `eval_helper` objects. `Essentials` imports them from there and keeps
+   defining its own helpers on them; `Operators`, `OpDrawing`,
+   `OpImageDrawing`, `OpSound` re-point their imports to the registry. No
+   other code moves. Breaks SCC 1 (`Essentials ↔ Operators`).
+2. **Extract instance state.** New leaf module `src/js/Instance.js` owning
+   the mutable per-widget state init-read outside `Setup`: `globalInstance`,
+   `shutdownHooks` (move `csgeo`/`cscompiled` too only if they turn out to be
+   plain mutable containers — cohesion beats minimality there). `Setup`,
+   `Tracing`, `StateIO`, `RenderBackends` import from it. Breaks SCC 2
+   (`Setup ↔ GeoOps ↔ Tracing`).
+3. **Complete the annotations.** Add the two missing imports (`window` in
+   `Parser.js`, `niceprint` in `types.ts`). This makes every cross-file
+   reference in the core explicit.
+4. **Normalize import specifiers.** Mechanical codemod: bare
+   `"libcs/CSNumber"` → relative `"./CSNumber.js"` (with extension), so node,
+   browsers, and every bundler resolve the graph without alias config; drop
+   the `baseUrl` crutch from `src/js/jsconfig.json`/`tsconfig.json`
+   (`moduleResolution` set accordingly for the TS files). Bare specifiers are
+   for npm packages; relative paths are the standard for internal modules.
+5. **Add the entry module.** `src/js/index.js` imports every side-effectful
+   module explicitly in the current `make/sources.js` order (pinning
+   registration order — ESM evaluation order follows the entry's import
+   list) and exports the public API. `Head.js`/`Tail.js` and the concat
+   build stay canonical for now; `cat.js` keeps stripping imports, and the
+   entry file simply isn't in `sources.js`.
+6. **Add the graph gate to CI.** Promote the dependency analysis into
+   `tools/check-esm-graph.js` and a make task wired into `alltests`,
+   asserting: zero unresolved specifiers, zero missing imports, zero
+   init-time cycles (call-time cycles are reported but allowed — the count
+   may only go down). Plus an esbuild bundle smoke check (`esbuild` devDep —
+   it's Phase 2's tool anyway): the entry must bundle and evaluate under
+   node. From this step on, the ESM graph cannot silently rot while the
+   concat build is still the shipping path.
+7. **Flip the switch (exit of Phase 1).** Only after 1–6 are green: the
+   bundle replaces the concat artifact, `Head.js`/`Tail.js`/`expose.ts`/
+   `rewire` die, tests import modules directly. One commit, revertable.
+
+Explicitly out of scope for these steps: renames, TypeScript conversion,
+tsconfig strictness, build-system replacement, and any dynamic `import()` —
+cycles are broken by the two extractions alone, statically.
 
 Supporting changes in the same phase:
 
@@ -113,6 +190,15 @@ lands, then is switched off in one commit.
   exist as the template.
 - Tighten `tsconfig` incrementally (`strictNullChecks` etc. are currently
   off); enable per-flag once the codebase passes.
+- When `List.js` is converted: move its ~10 interpreter-dependent call sites
+  (`evaluateAndVal`, `comp_equals`/`comp_almostequals`, `eval_helper.equals`
+  in the set-like ops) up into the operator layer, making
+  `CSNumber`/`List`/`General`/`Dict` a pure, independently testable data
+  layer with no dependency on the interpreter. Deliberately NOT done in
+  Phase 1: those are harmless call-time cycles, and the fast-check property
+  suite plus TS types make Phase 3 the safe moment for it. `General` stays
+  as-is — it is the polymorphic dispatch layer over the value union (280
+  lines, coherent), and becomes the home of the typed `CSValue` union.
 - Emit `.d.ts` for the public API: `CindyJS(...)`, the plugin registration
   API, and the data types plugins consume (`CSNumber`, `List`, modifiers).
   These types are also the executable specification of the legacy-plugin
