@@ -2,12 +2,12 @@
 
 // Loads a core source file (src/js/**) as a CommonJS module.
 //
-// The core sources carry ES module import/export annotations which the concat
-// build strips (see tools/cat.js). Node's CommonJS loader chokes on that
+// The core sources are ES modules. Node's CommonJS loader chokes on that
 // syntax, so the few build/test consumers that pull a single core file
-// directly (Parser.js) go through this helper, which applies the very same
-// babel transform before evaluating the file. Temporary bridge: it disappears
-// once the core is consumed as real ES modules.
+// directly (Parser.js, in tests/Parser_tests.js and the `excomp` task) go
+// through this helper, which strips the import/export annotations with babel
+// before evaluating the file. Temporary bridge: it disappears once those
+// consumers load the module graph instead.
 
 const fs = require("fs");
 const babel = require("@babel/core");

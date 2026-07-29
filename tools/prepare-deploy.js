@@ -11,15 +11,10 @@ var outDir = "build/deploy";
 var head = null;
 
 var handlers = {
-    "Cindy.closure.js": false,
-    "Cindy.closure.js.map": false,
-    "Cindy.closure.js.tmp.map": false,
     // Smoke-check artifact of the ESM entry (make esmbundle), never shipped.
     "Cindy.esm-check.js": false,
     "Cindy.js": subst,
     "Cindy.js.map": map,
-    "Cindy.plain.js": false,
-    "Cindy.plain.js.map": false,
     "Cindy3D.js": true,
     "Cindy3D.js.map": map,
     "CindyGL.js": true,
@@ -42,15 +37,14 @@ var handlers = {
     "ComplexCurves.js": true,
     "ComplexCurves.js.map": false,
     "ComplexCurves.plugin.js": false,
-    "Version.js": false,
-    // Same value as Version.js, consumed by tools/build-cindy.js as an
-    // esbuild `define`; a build input, never shipped.
+    // Consumed by the esbuild builds as a `define`; a build input, never
+    // shipped.
     "Version.json": false,
     "WEB-INF": false,
     "c3dres.js": false,
     "cglres.js": false,
-    "exposed.js": false,
-    "exposed.js.map": false,
+    // The unit-test bundle (make exposed), never shipped.
+    "exposed.cjs": false,
     "ifs.js": true,
     "ifs.js.map": true,
     images: true,
@@ -58,8 +52,6 @@ var handlers = {
     "katex-plugin.js": true,
     midi: true,
     "midi-plugin.js": true,
-    "ours.js": false,
-    "ours.js.map": false,
     "pako.min.js": true,
     quickhull3d: true,
     soundfonts: true,

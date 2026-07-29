@@ -347,4 +347,4 @@ class PSLQ {
     }
 }
 
-export { PSLQ };
+export { PSLQ, PSLQMatrix };

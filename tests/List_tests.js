@@ -1,14 +1,7 @@
 const assert = require("chai").assert;
-const rewire = require("rewire");
 
 global.navigator = {};
-const cindyJS = rewire("../build/js/exposed.js");
-
-const List = cindyJS.__get__("List");
-const CSNumber = cindyJS.__get__("CSNumber");
-const General = cindyJS.__get__("General");
-const nada = cindyJS.__get__("nada");
-const niceprint = cindyJS.__get__("niceprint");
+const { List, CSNumber, General, nada, niceprint } = require("../build/js/exposed.cjs");
 
 describe("List", function () {
     describe("#det()", function () {

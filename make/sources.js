@@ -1,60 +1,25 @@
 "use strict";
 
-exports.libcs = [
-    "src/js/libcs/Registry.js", // must precede every file registering into evaluator/eval_helper
-    "build/ts/libcs/CSNumber.js", // now handled by typescript compiler
-    "src/js/libcs/List.js",
-    "build/ts/libcs/Json.js",
-    "src/js/libcs/Dict.js",
-    "src/js/libcs/General.js",
-    "src/js/libcs/Essentials.js",
-    "src/js/libcs/Namespace.js",
-    "build/js/Compiled.js",
-    "src/js/libcs/Accessors.js",
-    "src/js/libcs/Operators.js",
-    "src/js/libcs/OpDrawing.js",
-    "src/js/libcs/OpImageDrawing.js",
-    "src/js/libcs/Parser.js",
-    "src/js/libcs/Evaluator.js",
-    "src/js/libcs/OpSound.js",
-    "src/js/libcs/CSad.js",
-    "src/js/libcs/Render2D.js",
-    "src/js/libcs/RenderBackends.js",
-    "src/js/libcs/Tools.js",
-    "src/js/libcs/PSLQ.js",
-];
+// Source lists for the tasks in make/build.js that still concatenate files.
+//
+// Until Phase 1 step 7b this file also held the concatenation order of the core
+// (`libcs`/`libgeo`/`liblab`/`inclosure`/`ours`/`srcs`) - that order WAS the
+// dependency graph. It now lives in src/js/index.js as a real import list, and
+// the core artifacts are esbuild bundles, so only the non-module inputs remain
+// here.
 
-exports.libgeo = [
-    "src/js/libgeo/TracingSizes.js", // constants read at definition time by both Tracing.js and GeoOps.js
-    "src/js/libgeo/GeoState.js",
-    "src/js/libgeo/GeoBasics.js",
-    "src/js/libgeo/GeoRender.js",
-    "src/js/libgeo/Tracing.js",
-    "src/js/libgeo/Prover.js",
-    "src/js/libgeo/GeoOps.js",
-    "src/js/libgeo/GeoScripts.js",
-    "src/js/libgeo/StateIO.js",
-];
-
-exports.liblab = ["src/js/liblab/LabBasics.js", "src/js/liblab/LabObjects.js"];
-
+// Vendored third-party scripts. They are not part of the module graph: they
+// publish globals (ClipperLib, enableInlineVideo) that the core reads without
+// importing, so tools/build-cindy.js prepends them to build/js/Cindy.js
+// verbatim, outside the bundle wrapper.
 exports.lib = [
     "node_modules/iphone-inline-video/dist/iphone-inline-video.min.js",
     "lib/clipper/clipper.js",
     "node_modules/es6-shim/es6-shim.min.js",
 ];
 
+// CindyScript sources compiled to JavaScript by tools/cs2js.js (task "cs2js").
 exports.cssrc = [];
-
-exports.inclosure = ["src/js/Instance.js", "src/js/Setup.js", "src/js/Events.js", "build/js/Version.js"].concat(
-    exports.libcs,
-    exports.libgeo,
-    exports.liblab
-);
-
-exports.ours = ["src/js/Head.js"].concat(exports.inclosure, "src/js/Tail.js");
-
-exports.srcs = exports.lib.concat(exports.ours);
 
 exports.scss = ["src/scss/CindyJS.scss"];
 

@@ -1,7 +1,8 @@
 // The once-evaluated half of the CindyJS bundle (Phase 1, step 7a of
 // MODERNIZATION.md).
 //
-// This is a straight port of src/js/Head.js's once-only content: everything
+// This is a straight port of the old concatenation head's once-only content:
+// everything
 // that used to live in the enclosing `var CindyJS = (function () { ... })()`
 // IIFE *outside* of `CindyJS.newInstance`. It runs exactly once per page load
 // and owns the page-global state:
@@ -26,7 +27,7 @@
 // the instance bundle across the factory boundary instead (see
 // src/js/expose.browser.js and tools/build-cindy.js).
 
-// The environment. Head.js referenced the real `window`/`document` globals
+// The environment. The concatenated build referenced the real DOM globals
 // directly; capturing them here keeps that meaning while making the names
 // bound identifiers, so the graph gate does not mistake them for the stubs
 // that expose.js hands to the instance graph.
@@ -208,7 +209,7 @@ CindyJS.dumpState = function (index) {
     console.log(JSON.stringify(state));
 };
 
-// The unused `index` parameter is Head.js's signature, kept verbatim.
+// The unused `index` parameter is the original signature, kept verbatim.
 CindyJS.debugState = function (index) {
     // Call this to test how a widget handles a save & reload.
     // You can paste javascript:CindyJS.debugState() into the

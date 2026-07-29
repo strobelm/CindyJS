@@ -16,8 +16,8 @@
 // `CindyJS.newInstance` wrapper that tools/build-cindy.js writes around this
 // bundle:
 //
-//   __cindyApi   - the page-global CindyJS function object (Head.js's
-//                  `CindyJS`; Setup.js used to reach it as `this`).
+//   __cindyApi   - the page-global CindyJS function object (Setup.js used to
+//                  reach it as `this`).
 //   __cindyArgs  - the `instanceInvocationArguments` parameter of newInstance,
 //                  i.e. the configuration object the caller passed to
 //                  `CindyJS({...})`.

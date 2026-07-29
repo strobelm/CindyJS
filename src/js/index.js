@@ -1,17 +1,17 @@
 // ES module entry point for the CindyJS core (Phase 1, step 5 of
 // MODERNIZATION.md).
 //
-// This file is deliberately NOT listed in make/sources.js. Since step 7a the
-// shipping build/js/Cindy.js is produced from this graph by tools/build-cindy.js
-// (through src/js/instance-main.js, which adds the value newInstance returns);
-// the concatenation build (Head.js + inclosure + Tail.js, imports stripped by
-// tools/cat.js) survives only for the unit tests and `make eslint`, which step
-// 7b retires. This module is the single root of the graph for node, esbuild and
-// every other ESM consumer, and what tools/check-esm-graph.js anchors the
-// reachability and the evaluation order of the whole core on.
+// Since step 7a the shipping build/js/Cindy.js is produced from this graph by
+// tools/build-cindy.js (through src/js/instance-main.js, which adds the value
+// newInstance returns), and since step 7b the unit tests get their internals
+// from src/js/test-exports.js, which pulls in the same graph. This module is
+// the single root of the graph for node, esbuild and every other ESM consumer,
+// and what tools/check-esm-graph.js anchors the reachability and the
+// evaluation order of the whole core on.
 //
-// The import list is the `inclosure` order of make/sources.js with one
-// deliberate difference: Instance/Setup/Events move from the front to the back.
+// The import list is the concatenation order the build used before step 7a,
+// with one deliberate difference: Instance/Setup/Events move from the front to
+// the back.
 // In the concatenation those three are simply the first fragments of the shared
 // closure and nothing about them runs before libcs; in ESM an entry's import
 // order is a depth-first traversal, so listing Setup.js first would drag its
@@ -27,8 +27,8 @@
 // insists on an acyclic init-time graph, and why tools/bundle-esm.js actually
 // evaluates the bundle.
 //
-// Two entries of `inclosure` are missing here because they are build artifacts
-// rather than sources:
+// Two entries of the old concatenation list are missing here because they are
+// build artifacts rather than sources:
 //   * build/js/Version.js  - between Events.js and libcs below; defines the
 //     `version` global. At the flip it becomes an esbuild `define`
 //     (see tools/bundle-esm.js for the check bundle's stand-in).

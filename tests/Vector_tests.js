@@ -1,10 +1,6 @@
-var rewire = require("rewire");
+require("chai").should();
 
-var cindyJS = rewire("../build/js/exposed.js");
-
-var VOps = rewire("../plugins/QuickHull3D/src/js/Vector.js");
-var Vector = VOps.__get__("Vector");
-var VO = VOps.__get__("VectorOperations");
+var { Vector, VectorOperations: VO } = require("./quickhull.cjs");
 
 describe("Vector operations", function () {
     var v1, v2, result, expected, s;

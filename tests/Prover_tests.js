@@ -1,9 +1,7 @@
 var should = require("chai").should();
-var rewire = require("rewire");
 
-var CindyJS = require("../build/js/Cindy.plain.js");
-var cindyJS = rewire("../build/js/exposed.js");
-var geoOps = cindyJS.__get__("geoOps");
+var CindyJS = require("../build/js/Cindy.js");
+var { geoOps } = require("../build/js/exposed.cjs");
 
 var cdy;
 

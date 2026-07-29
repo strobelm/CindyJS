@@ -13,8 +13,9 @@
 import "./index.js";
 
 // Instance.js owns the (mutable, per-evaluation) widget object that Setup.js
-// fills in; Tail.js's `return globalInstance;` becomes a read of this export.
+// fills in; the old concatenation's `return globalInstance;` becomes a read of
+// this export.
 // The named export is compiled by esbuild into a getter on the bundle's export
 // object, so the read happens after Setup.js has populated it - live bindings
-// give us Tail.js's semantics for free.
+// give us the old footer's semantics for free.
 export { globalInstance } from "./Instance.js";

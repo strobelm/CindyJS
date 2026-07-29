@@ -195,9 +195,22 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
         output rather than Closure's ES5. Retiring Closure for the core was
         always the plan; dropping IE is the visible part of it.
 
-    - 7b: unit tests drop `rewire`/`exposed.js` for an esbuild-built CJS
-      test bundle re-exporting the internals; `Head.js`/`Tail.js` and
-      `tools/cat.js`'s import-stripping die.
+    - 7b: unit tests drop `rewire` for an esbuild-built CJS test bundle
+      re-exporting the internals; `Head.js`/`Tail.js` and `tools/cat.js`'s
+      import-stripping die. **Landed.** `src/js/test-exports.js` is the
+      explicit test surface (9 names) and `tools/build-test-bundle.js`
+      turns it into `build/js/exposed.cjs` (format `cjs`, node platform,
+      the `expose.ts` seam deliberately _not_ substituted). Deleted with
+      it: `Head.js`, `Tail.js`, `Cindy.js.wrapper`,
+      `tools/eslint-reporter.js`, the make tasks `plain`/`closure`/`ours`,
+      the core file lists in `make/sources.js`, `cat.js`'s babel pass, and
+      the `rewire` devDependency. `make eslint` is now the source lint
+      alone - the cross-file-undefined class it used to catch on
+      `ours.js` is covered by `tools/check-esm-graph.js`. The
+      QuickHull3D unit tests, which used `rewire` on that legacy plugin's
+      scope-sharing sources, load them through `tests/quickhull.cjs`
+      instead, which concatenates them into one scope the way the
+      shipping plugin build does.
 8. **Shrink the factory (the path to true single-evaluation ESM).**
    After the flip, hoist provably stateless modules OUT of the
    per-instance factory one subsystem at a time, sharing them across

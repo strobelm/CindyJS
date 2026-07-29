@@ -23,10 +23,6 @@ import { csinitphys, csPhysicsInited, csresetphys } from "./liblab/LabBasics.js"
 // crosses the factory boundary through the environment seam: expose.browser.js
 // binds it to the real object in the shipping bundle, expose.ts to a stub for
 // node/tests. Nothing else about its use here changes.
-//
-// In the (still canonical for the unit tests) concatenated build the import
-// above is stripped by tools/cat.js, so the name resolves to Head.js's
-// `CindyJS` in the enclosing IIFE scope - the very object `this` used to be.
 
 let csconsole;
 let cslib;

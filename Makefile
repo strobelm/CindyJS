@@ -77,23 +77,11 @@ js_make: $(NPM_DEP)
 .PHONY: js_make
 
 ######################################################################
-## Build different flavors of Cindy.js
+## Build Cindy.js and the unit-test bundle
 ######################################################################
 
-# Specify build=release on the command line to run closure compiler
-build=release
-
-build/js/Cindy.plain.js: js_make
-	$(JS_MAKE) plain
-
-build/js/ours.js: js_make
-	$(JS_MAKE) ours
-
-build/js/exposed.js: js_make
+build/js/exposed.cjs: js_make
 	$(JS_MAKE) exposed
-
-build/js/Cindy.closure.js: js_make
-	$(JS_MAKE) closure
 
 build/js/Cindy.js: js_make
 	$(JS_MAKE) Cindy.js

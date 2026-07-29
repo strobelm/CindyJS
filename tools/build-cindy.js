@@ -2,8 +2,7 @@
 
 // Builds the shipping artifact build/js/Cindy.js from real ES modules
 // (Phase 1, step 7a of MODERNIZATION.md). Replaces what the concatenation of
-// Head.js + make/sources.js `inclosure` + Tail.js used to do, and is what the
-// "Cindy.js" make task now runs.
+// the core sources used to do, and is what the "Cindy.js" make task runs.
 //
 // Run: node tools/build-cindy.js
 //
@@ -37,7 +36,8 @@
 // the wrapper's function scope and a fresh evaluation of every module body.
 // The wrapper then returns `__cindyInstance.globalInstance` - esbuild compiles
 // named exports into getters, so this reads the live binding after Setup.js has
-// populated it, which is precisely Tail.js's `return globalInstance;`.
+// populated it, which is precisely what the old concatenation's footer did
+// with its `return globalInstance;`.
 //
 // The alternatives were considered and rejected: `format: "cjs"` would need a
 // `new Function` at runtime (the task forbids runtime eval beyond this textual
@@ -68,32 +68,19 @@ const esbuild = require("esbuild");
 const Concat = require("concat-with-sourcemaps");
 const createDummySourceMap = require("source-map-dummy");
 
-const { repoRoot, srcRoot, tsExtensionResolve, substituteModule, commonOptions } = require("./esbuild-common");
+const {
+    repoRoot,
+    srcRoot,
+    tsExtensionResolve,
+    substituteModule,
+    commonOptions,
+    readVersion,
+} = require("./esbuild-common");
 const sources = require("../make/sources");
 
 const outDir = path.join(repoRoot, "build", "js");
 const outfile = path.join(outDir, "Cindy.js");
 const mapfile = outfile + ".map";
-
-//////////////////////////////////////////////////////////////////////
-// The version constant.
-//
-// make/getversion.js writes build/js/Version.json for us (the same generator
-// that still writes build/js/Version.js for the concat build). Running this
-// script standalone, without make, falls back to the same "unknown" value
-// getversion uses when git is unavailable.
-
-function readVersion() {
-    const json = path.join(outDir, "Version.json");
-    if (fs.existsSync(json)) return JSON.parse(fs.readFileSync(json, "utf-8"));
-    const js = path.join(outDir, "Version.js");
-    if (fs.existsSync(js)) {
-        const m = /=\s*(\[[^\]]*\])\s*;/.exec(fs.readFileSync(js, "utf-8"));
-        if (m) return JSON.parse(m[1]);
-    }
-    console.warn("no build/js/Version.json - falling back to an unknown version");
-    return [0, 0, 0, -1, "?!"];
-}
 
 //////////////////////////////////////////////////////////////////////
 // esbuild passes. `write: false` keeps the intermediate bundles out of
@@ -176,7 +163,7 @@ async function main() {
     // globals the core reads without importing (ClipperLib, enableInlineVideo).
     //
     // Everything of ours goes inside one IIFE and reaches the page through
-    // globalThis, which is Tail.js's footer - `var CindyJS = ...` at the top
+    // globalThis, which is what the old footer did - `var CindyJS = ...` at the top
     // level of a classic script is a property of the global object, and the
     // deprecated `createCindy` alias plus the node `module.exports` are kept
     // verbatim. Wrapping is what keeps `generateId`, `nada` and the bundle
@@ -221,11 +208,10 @@ async function main() {
     // Source map decision.
     //
     // Composing two esbuild maps plus the vendored scripts is exactly what
-    // concat-with-sourcemaps does (and what tools/cat.js already uses for the
-    // concat build), so a real, complete map is cheap here: esbuild's maps for
-    // the two bundles are consumed as-is, the vendored files get the same
-    // identity maps cat.js gives them, and only the ~20 lines of glue above
-    // carry no mapping. No offset arithmetic of our own is involved.
+    // concat-with-sourcemaps does, so a real, complete map is cheap here:
+    // esbuild's maps for the two bundles are consumed as-is, the vendored files
+    // get identity maps, and only the ~20 lines of glue above carry no mapping.
+    // No offset arithmetic of our own is involved.
 
     const concat = new Concat(true, path.basename(outfile), "\n");
     const addSource = (file) => {

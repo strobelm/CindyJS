@@ -1,10 +1,4 @@
-let rewire = require("rewire");
-let cindyJS = rewire("../build/js/exposed.js");
-
-let List = cindyJS.__get__("List");
-let CSNumber = cindyJS.__get__("CSNumber");
-let PSLQMatrix = cindyJS.__get__("PSLQMatrix");
-let PSLQ = cindyJS.__get__("PSLQ");
+let { List, CSNumber, PSLQMatrix, PSLQ } = require("../build/js/exposed.cjs");
 let assert = require("chai").assert;
 
 let eps = 1e-8;
@@ -92,7 +86,7 @@ describe("PSLQ Matrix", function () {
                 [0, 5, 0],
                 [0, 0, 8],
             ];
-            pslqMat = new PSLQMatrix(init);
+            let pslqMat = new PSLQMatrix(init);
             pslqMat.inverse();
             assert(compArr(pslqMat._e, [1, 0, 0, 0.2, 0, 0, 0, 0, 0.125]));
         });
@@ -194,7 +188,7 @@ describe("PSLQ", function () {
     });
 });
 
-var CindyJS = require("../build/js/Cindy.plain.js");
+var CindyJS = require("../build/js/Cindy.js");
 var cdy = CindyJS({
     isNode: true,
     csconsole: null,

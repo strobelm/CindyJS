@@ -1,11 +1,7 @@
 var should = require("chai").should();
-var rewire = require("rewire");
 
 global.navigator = {};
-var cindyJS = rewire("../build/js/exposed.js");
-
-var List = cindyJS.__get__("List");
-var CSNumber = cindyJS.__get__("CSNumber");
+var { List, CSNumber } = require("../build/js/exposed.cjs");
 
 describe("projectiveDistMinScal", function () {
     it("should match very similar vectors", function () {

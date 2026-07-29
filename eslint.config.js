@@ -15,8 +15,6 @@ module.exports = tseslint.config(
         ignores: [
             // vendored third-party code
             "lib/**",
-            "src/js/Head.js",
-            "src/js/Tail.js",
             "src/js/ifs/ifs.asm.js",
             "lib/katex/katex.min.js",
             "plugins/katex/src/js/katex-plugin.js",

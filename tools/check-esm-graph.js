@@ -2,14 +2,16 @@
 
 // ESM graph gate for the core sources (Phase 1, step 6 of MODERNIZATION.md).
 //
-// The concat build in make/sources.js is still the shipping path, so nothing
-// here influences the artifacts; this script only keeps the ES module graph
-// from rotting while both worlds coexist. It asserts, over src/js/**/*.{js,ts}:
+// Nothing here influences the artifacts; this script is the static gate that
+// keeps the module graph the artifacts are bundled from honest. It asserts,
+// over src/js/**/*.{js,ts}:
 //
 //   (a) every import specifier resolves to a file that exists, and every named
 //       import is actually exported by the file it resolves to,
 //   (b) no file references a global that a sibling module exports
-//       (that is a missing import which only the concat scope hides),
+//       (that is a missing import; before step 7a the shared concat scope
+//       hid this class of bug, and `make eslint` on the concatenation was
+//       what caught it),
 //   (c) no init-time cycles: an imported binding read outside any function
 //       body creates an init-time edge, and those edges must be acyclic,
 //   (d) call-time-only cycles are reported, not failed - the count is the
@@ -32,14 +34,13 @@ const srcRoot = path.join(repoRoot, "src", "js");
 const verbose = process.argv.includes("--verbose");
 
 // Not part of the module graph:
-//   Head.js / Tail.js  - concat-only scaffolding, deleted in step 7b
-//   ifs/, includes/    - web worker / asm.js payloads built separately
+//   ifs/, includes/  - web worker / asm.js payloads built separately
 //
 // expose.browser.js IS checked: it is a real module (the shipping variant of
 // the environment seam), it just gets substituted for expose.js at build time
 // rather than imported by name.
 const skipDirs = new Set(["ifs", "includes"]);
-const skipFiles = new Set(["Head.js", "Tail.js"]);
+const skipFiles = new Set();
 
 // Escape hatch for check (b): names that are unbound in some core file *and*
 // exported by another core file, but where the free reference is a legitimate
@@ -56,8 +57,7 @@ const skipFiles = new Set(["Head.js", "Tail.js"]);
 // counter and is evaluated ONCE per page, while the instance graph is
 // re-evaluated per widget (see tools/build-cindy.js). Importing it would make
 // esbuild inline a second counter into every widget, so libgeo/GeoOps.js reads
-// it as a free identifier that the newInstance wrapper binds - the same way the
-// concatenated build resolved it into Head.js's scope.
+// it as a free identifier that the newInstance wrapper binds.
 const externalAllowlist = new Set(["generateId"]);
 
 // Free globals that every browser/node file may use without an import. Only
@@ -181,8 +181,7 @@ for (const [file, ast] of asts) {
             unresolved.push({ file, spec: src.value, line });
             continue;
         }
-        // Named imports must exist on the other side. The concat build hides
-        // this (everything shares one scope), a bundler does not.
+        // Named imports must exist on the other side.
         const targetExports = exportsByFile.get(target);
         if (!targetExports) continue; // outside the checked tree
         for (const s of node.specifiers || []) {
@@ -487,7 +486,7 @@ for (const tos of initEdges.values()) initEdgeCount += tos.size;
 // Report
 
 const problems = [];
-console.log("ESM graph check (src/js, excluding Head.js/Tail.js/ifs/includes)");
+console.log("ESM graph check (src/js, excluding ifs/includes)");
 console.log(
     `  files ${asts.size}  import edges ${edgeCount}  ` +
         `imported bindings: ${initBindings} init-time / ${callOnlyBindings} call-time-only`

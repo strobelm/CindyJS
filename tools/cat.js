@@ -1,13 +1,18 @@
 "use strict";
 
+// Concatenates files into one output with a composed source map.
+//
+// Since Phase 1 step 7b the core is no longer concatenated (esbuild bundles it
+// from real modules), so this is a plain concatenation tool again: the only
+// remaining consumers are the "ifs" task (web worker + asm.js payload) and the
+// ComplexCurves plugin library.
+
 var fs = require("fs");
 var util = require("util");
 var stream = require("stream");
 var path = require("path");
 var createDummySourceMap = require("source-map-dummy");
 var Concat = require("concat-with-sourcemaps");
-
-const babel = require("@babel/core");
 
 function relative(from, to) {
     if (typeof from !== "string") return to;
@@ -67,8 +72,7 @@ function inputRead(i, name, err, data) {
     writeOutput();
 }
 
-function addInput(name, inputSrc) {
-    let src = removeImportExport(name, inputSrc);
+function addInput(name, src) {
     name = relative(map, name);
 
     if (!/\r?\n$/.test(src)) src += "\n";
@@ -92,20 +96,4 @@ function writeOutput() {
 
 function reportError(err) {
     if (err) throw err;
-}
-
-function removeImportExport(name, inputSrc) {
-    const doNotTransformFiles = ["src/js/Head.js", "src/js/Tail.js"];
-
-    const skip = doNotTransformFiles.includes(name) || (!name.includes("src/js") && !name.includes("build/ts"));
-
-    function applyBabel(inputSrc) {
-        return babel.transformSync(inputSrc, {
-            plugins: ["remove-import-export"],
-            retainLines: true,
-        }).code;
-    }
-
-    const src = skip ? inputSrc : applyBabel(inputSrc);
-    return src;
 }

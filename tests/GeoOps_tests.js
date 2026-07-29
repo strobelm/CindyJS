@@ -1,14 +1,8 @@
 var should = require("chai").should();
-var rewire = require("rewire");
 
 global.navigator = {};
-var CindyJS = require("../build/js/Cindy.plain.js");
-var cindyJS = rewire("../build/js/exposed.js");
-
-var List = cindyJS.__get__("List");
-var CSNumber = cindyJS.__get__("CSNumber");
-var geoOps = cindyJS.__get__("geoOps");
-var niceprint = cindyJS.__get__("niceprint");
+var CindyJS = require("../build/js/Cindy.js");
+var { List, CSNumber, geoOps, niceprint } = require("../build/js/exposed.cjs");
 
 function almostEqualVector(a, b) {
     return List._helper.isAlmostZero(a) == List._helper.isAlmostZero(b) && List.projectiveDistMinScal(a, b) < 1e-8;

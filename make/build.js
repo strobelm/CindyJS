@@ -42,10 +42,21 @@ module.exports = function build(settings, task) {
     // Build different flavors of Cindy.js
     //////////////////////////////////////////////////////////////////////
 
-    var version = getversion.factory("build/js/Version.js", "var version");
-    // Same value, plain JSON, for the module build: tools/build-cindy.js turns
-    // it into an esbuild `define` instead of a concatenated global.
+    // The version, as plain JSON: the module builds turn it into an esbuild
+    // `define` (see tools/esbuild-common.js `readVersion`).
     var versionJson = getversion.factory("build/js/Version.json", null);
+
+    // Every source that can end up in one of the esbuild bundles. Both the
+    // shipping build and the unit-test bundle read the same graph, so they
+    // declare the same inputs.
+    function coreSources() {
+        this.input("tools/esbuild-common.js");
+        this.input(
+            glob.sync("src/js/**/*.@(js|ts)", {
+                ignore: ["src/js/ifs/**", "src/js/includes/**", "src/js/**/*.d.ts"],
+            })
+        );
+    }
 
     task("cs2js", [], function () {
         this.input("tools/cs2js.js");
@@ -58,11 +69,6 @@ module.exports = function build(settings, task) {
                     return fsp.writeFile(dst, jscode);
                 });
         });
-    });
-
-    task("plain", ["cs2js", "typescript"], function () {
-        version(this);
-        this.concat(src.srcs, "build/js/Cindy.plain.js");
     });
 
     task("ifs", emDep("em.ifs"), function () {
@@ -90,55 +96,29 @@ module.exports = function build(settings, task) {
         this.cmd("em++", args);
     });
 
-    task("ours", ["cs2js", "typescript"], function () {
-        version(this);
-        this.concat(src.ours, "build/js/ours.js");
-    });
-
-    task("exposed", ["cs2js", "typescript"], function () {
-        version(this);
-        this.concat(src.lib.concat("build/ts/expose.js", src.inclosure), "build/js/exposed.js");
-    });
-
-    task("closure", ["plain", "closure-jar"], function () {
-        this.setting("closure_version");
-        this.closureCompiler(closure_jar, {
-            language_in: this.setting("closure_language_in"),
-            language_out: this.setting("closure_language_out"),
-            compilation_level: this.setting("closure_level"),
-            js_output_file: "build/js/Cindy.closure.js",
-            js: ["build/js/Cindy.plain.js"],
-            create_source_map: "build/js/Cindy.closure.js.tmp.map",
-            source_map_format: "V3",
-            source_map_location_mapping: ["build/js/|", "src/js/|../../src/js/"],
-            output_wrapper_file: "src/js/Cindy.js.wrapper",
-            warning_level: "DEFAULT",
-        });
-        this.applySourceMap(
-            ["build/js/Cindy.plain.js.map", "build/js/Cindy.closure.js.tmp.map"],
-            "build/js/Cindy.closure.js"
-        );
+    // The unit-test bundle: the core internals the mocha suites and the
+    // microbenchmarks name, re-exported by src/js/test-exports.js and bundled
+    // as CommonJS with the node environment seam. See tools/build-test-bundle.js
+    // for why it is a bundle of its own rather than a mode of the shipping one.
+    task("exposed", [], function () {
+        versionJson(this);
+        coreSources.call(this);
+        this.output("build/js/exposed.cjs");
+        this.node("tools/build-test-bundle.js");
     });
 
     // The shipping artifact is built from the ES module graph by esbuild
     // (Phase 1, step 7a of MODERNIZATION.md); see tools/build-cindy.js for the
     // factory composition that preserves the per-widget re-evaluation
-    // semantics. The concat flavors above ("plain"/"closure"/"ours") stay for
-    // now because the unit tests and `make eslint` still consume them; step 7b
-    // retires them.
+    // semantics.
     //
     // Consequently the `build=release` switch no longer selects a compiler for
     // the core: there is one Cindy.js, minification moves to esbuild in Phase 2.
     task("Cindy.js", [], function () {
         versionJson(this);
-        this.input("tools/esbuild-common.js");
+        coreSources.call(this);
         this.input("make/sources.js");
         this.input(src.lib);
-        this.input(
-            glob.sync("src/js/**/*.@(js|ts)", {
-                ignore: ["src/js/ifs/**", "src/js/includes/**", "src/js/**/*.d.ts"],
-            })
-        );
         this.output("build/js/Cindy.js");
         this.output("build/js/Cindy.js.map");
         this.node("tools/build-cindy.js");
@@ -152,12 +132,23 @@ module.exports = function build(settings, task) {
     // Run eslint to detect syntax problems
     //////////////////////////////////////////////////////////////////////
 
-    task("eslint", ["ours"], callEslint);
-    task("jshint", ["ours"], callEslint);
+    // Until step 7b this task also linted the concatenated core with a
+    // source-map-aware reporter, to catch identifiers that no single file
+    // declared - the class of bug the shared concat scope hid. There is no
+    // concatenation any more, and tools/check-esm-graph.js (make esmgraph)
+    // covers that class better: it resolves every import and fails on a global
+    // reference that a sibling module exports.
+    //
+    // What remains is the source lint, the same glob `npm run lint` uses.
+    // Widening it to tools/, tests/ and make/ was tried and rejected for now:
+    // those trees have pre-existing violations (no-redeclare, no-undef) and the
+    // .mjs Playwright files do not parse under the config's ecmaVersion, so it
+    // would be a lint cleanup rather than part of retiring the concat build.
+    task("eslint", [], callEslint);
+    task("jshint", [], callEslint);
 
     function callEslint() {
         this.cmdscript("eslint", "src/js/**/*.[jt]s");
-        this.cmdscript("eslint", "-f", "tools/eslint-reporter.js", "build/js/ours.js");
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -182,9 +173,9 @@ module.exports = function build(settings, task) {
     // Run test suite from reference manual using node
     //////////////////////////////////////////////////////////////////////
 
-    // The reference doctests run against the SHIPPING artifact (they used to
-    // load build/js/Cindy.plain.js). Since step 7a that is the esbuild factory
-    // bundle, which makes ~1400 doctests the main equivalence gate for it.
+    // The reference doctests run against the SHIPPING artifact, which since
+    // step 7a is the esbuild factory bundle - that makes them the main
+    // equivalence gate for it.
     task("nodetest", ["Cindy.js"], function () {
         if (process.version > "v21.2") {
             this.node("--no-experimental-global-navigator", "ref/js/runtests.js");
@@ -193,13 +184,16 @@ module.exports = function build(settings, task) {
         }
     });
 
-    task("tests", ["closure", "nodetest", "unittests", "excomp"]);
+    task("tests", ["Cindy.js", "nodetest", "unittests", "excomp"]);
 
     //////////////////////////////////////////////////////////////////////
     // Run separate unit tests to test various interna
     //////////////////////////////////////////////////////////////////////
 
-    task("unittests", ["exposed", "plain"], function () {
+    // "exposed" is build/js/exposed.cjs (core internals); "Cindy.js" is the
+    // shipping artifact, which the suites that drive the public CindyJS(...)
+    // API require directly.
+    task("unittests", ["exposed", "Cindy.js"], function () {
         if (process.version > "v21.2") {
             this.cmdscript("mocha", "tests", "--no-experimental-global-navigator");
         } else {
@@ -232,11 +226,10 @@ module.exports = function build(settings, task) {
     //////////////////////////////////////////////////////////////////////
     // ES module graph gate (phase 1 of MODERNIZATION.md)
     //
-    // The concat build stays canonical, so these two tasks guard the parallel
-    // ESM view of the same sources: the static graph must stay resolvable,
-    // import-complete and free of init-time cycles, and src/js/index.js must
-    // bundle and evaluate. esbuild reads the .ts sources directly, so neither
-    // task depends on "typescript".
+    // These two tasks guard the module graph the artifacts are built from: it
+    // must stay resolvable, import-complete and free of init-time cycles, and
+    // src/js/index.js must bundle and evaluate. esbuild reads the .ts sources
+    // directly, so neither task depends on "typescript".
     //////////////////////////////////////////////////////////////////////
 
     task("esmgraph", [], function () {
@@ -940,7 +933,7 @@ module.exports = function build(settings, task) {
     // Copy things which constitute a release
     //////////////////////////////////////////////////////////////////////
 
-    task("deploy", ["all", "ComplexCurves", "soundfonts", "closure"], function () {
+    task("deploy", ["all", "ComplexCurves", "soundfonts"], function () {
         this.delete("build/deploy");
         this.mkdir("build/deploy");
         this.node("tools/prepare-deploy.js", {

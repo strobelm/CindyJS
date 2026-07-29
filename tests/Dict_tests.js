@@ -1,11 +1,6 @@
 var assert = require("chai").assert;
-var rewire = require("rewire");
 
-var cindyJS = rewire("../build/js/exposed.js");
-
-var nada = cindyJS.__get__("nada");
-var Dict = cindyJS.__get__("Dict");
-var General = cindyJS.__get__("General");
+var { nada, Dict, General } = require("../build/js/exposed.cjs");
 
 describe("Dictionary", function () {
     it("can hold a value", function () {
