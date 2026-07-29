@@ -1,7 +1,8 @@
 "use strict";
 
 var expect = require("chai").expect;
-var Parser = require("../src/js/libcs/Parser");
+var requireSrc = require("../tools/requireSrc.js");
+var Parser = requireSrc(require("path").join(__dirname, "../src/js/libcs/Parser.js"));
 var Tokenizer = Parser.Tokenizer;
 var parse = Parser.parse;
 

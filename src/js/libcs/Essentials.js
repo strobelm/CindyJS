@@ -5,6 +5,7 @@ import { List } from "libcs/List";
 import { Json } from "libcs/Json";
 import { Dict } from "libcs/Dict";
 import { namespace } from "libcs/Namespace";
+import { evaluator, eval_helper } from "libcs/Registry";
 import {
     postfix_numb_degree,
     infix_take,
@@ -260,9 +261,6 @@ function evalmyfunctions(name, args, modifs) {
 //*******************************************************
 //this function evaluates a concrete function
 //*******************************************************
-const evaluator = {};
-const eval_helper = {};
-
 eval_helper.evaluate = function (name, args, modifs) {
     if (myfunctions.hasOwnProperty(name)) return evalmyfunctions(name, args, modifs);
     let f = evaluator[name];

@@ -3,7 +3,8 @@
 "use strict";
 
 var fsp = require("fs/promises");
-var parse = require("../src/js/libcs/Parser.js").parse;
+var requireSrc = require("./requireSrc.js");
+var parse = requireSrc(require("path").join(__dirname, "../src/js/libcs/Parser.js")).parse;
 
 if (!String.prototype.startsWith) {
     // ES6 compatibility

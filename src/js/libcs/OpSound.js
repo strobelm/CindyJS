@@ -1,7 +1,8 @@
 import { window, nada } from "expose";
 import { CSNumber } from "libcs/CSNumber";
 import { General } from "libcs/General";
-import { niceprint, evaluator } from "libcs/Essentials";
+import { niceprint } from "libcs/Essentials";
+import { evaluator } from "libcs/Registry";
 import { namespace } from "libcs/Namespace";
 import { evaluate } from "libcs/Evaluator";
 

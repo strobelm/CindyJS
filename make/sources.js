@@ -1,6 +1,7 @@
 "use strict";
 
 exports.libcs = [
+    "src/js/libcs/Registry.js", // must precede every file registering into evaluator/eval_helper
     "build/ts/libcs/CSNumber.js", // now handled by typescript compiler
     "src/js/libcs/List.js",
     "build/ts/libcs/Json.js",
@@ -44,7 +45,7 @@ exports.lib = [
 
 exports.cssrc = [];
 
-exports.inclosure = ["src/js/Setup.js", "src/js/Events.js", "build/js/Version.js"].concat(
+exports.inclosure = ["src/js/Instance.js", "src/js/Setup.js", "src/js/Events.js", "build/js/Version.js"].concat(
     exports.libcs,
     exports.libgeo,
     exports.liblab

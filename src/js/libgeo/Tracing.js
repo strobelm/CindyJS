@@ -1,4 +1,5 @@
-import { shutdown, cscompiled, csgeo, globalInstance } from "Setup";
+import { shutdown, cscompiled, csgeo } from "Setup";
+import { globalInstance } from "Instance";
 import { move, mouse } from "Events";
 import { instanceInvocationArguments, document, window, nada } from "expose";
 import { CSNumber } from "libcs/CSNumber";

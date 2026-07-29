@@ -1,4 +1,5 @@
-import { csgeo, globalInstance } from "Setup";
+import { csgeo } from "Setup";
+import { globalInstance } from "Instance";
 import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
 import { General } from "libcs/General";

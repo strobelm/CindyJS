@@ -13,6 +13,7 @@ var touch = require("touch");
 var WholeLineStream = require("whole-line-stream");
 
 var BuildError = require("./BuildError");
+var requireSrc = require("../tools/requireSrc.js");
 var util = require("./util");
 
 var globAsync = nodeUtil.promisify(glob);
@@ -287,11 +288,8 @@ exports.excomp = function (filesPattern, parserFile, checkfunc) {
     var task = this;
     this.addJob(function () {
         // load parser without caching
-        var parser = fsp.readFile(parserFile, "utf-8").then(function (body) {
-            var exports = {};
-            var module = { exports: {} };
-            new Function("module", "exports", "require", body)(module, module.exports);
-            return module.exports;
+        var parser = Promise.resolve().then(function () {
+            return requireSrc(parserFile);
         });
         return Promise.all([globAsync(filesPattern, { nodir: true }), parser]).then(function (results) {
             var files = results[0],

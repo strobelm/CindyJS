@@ -2,7 +2,7 @@ import { move, mouse } from "Events";
 import { csgeo, setSimAccuracy, setSpeed } from "Setup";
 import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
-import { eval_helper } from "libcs/Essentials";
+import { eval_helper } from "libcs/Registry";
 import { movepointscr } from "libgeo/Tracing";
 import { masses } from "liblab/LabBasics";
 

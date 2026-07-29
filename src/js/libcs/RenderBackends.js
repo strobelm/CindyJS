@@ -1,5 +1,6 @@
 import { window, document } from "expose";
-import { globalInstance, images, shutdownHooks, csctx, setCsctx, csw, csh, CindyJS } from "Setup";
+import { images, csctx, setCsctx, csw, csh, CindyJS } from "Setup";
+import { globalInstance, shutdownHooks } from "Instance";
 import { updateCindy } from "Events";
 
 // SVG Writer creates a string representation, as opposed to DOM manipulation.

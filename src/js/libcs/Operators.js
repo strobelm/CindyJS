@@ -27,7 +27,8 @@ import { List } from "libcs/List";
 import { Json } from "libcs/Json";
 import { Dict } from "libcs/Dict";
 import { General } from "libcs/General";
-import { evaluator, niceprint, eval_helper, myfunctions } from "libcs/Essentials";
+import { niceprint, myfunctions } from "libcs/Essentials";
+import { evaluator, eval_helper } from "libcs/Registry";
 import { namespace } from "libcs/Namespace";
 import { Accessor } from "libcs/Accessors";
 import {

@@ -143,7 +143,7 @@ interface JSONHelper {
             iterator?: CSJsonIterator;
         }
     ): CSJsonValue | undefined;
-    niceprint(a: CSJsonValue, modifs: { maxDepth: number }, options: CSJsonNicePrintOptions): string;
+    niceprint: (a: CSJsonValue, modifs: { maxDepth: number }, options: CSJsonNicePrintOptions) => string;
     handlePrintException(e: Error): void;
 }
 
@@ -156,5 +156,5 @@ export interface CSJson {
         key: CSJsonValue;
         value: CSJsonValue;
     }): Nada | { key: Nada | CSJsonValue; val: Nada | CSType };
-    niceprint(el: CSJsonValue, modifs: any, options: CSJsonNicePrintOptions): string;
+    niceprint: (el: CSJsonValue, modifs: any, options: CSJsonNicePrintOptions) => string;
 }

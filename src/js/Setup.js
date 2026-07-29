@@ -6,8 +6,10 @@ import {
     cs_simulationstop,
 } from "Events";
 import { window, nada, document, instanceInvocationArguments } from "expose";
+import { globalInstance, shutdownHooks } from "Instance";
 import { General } from "libcs/General";
-import { niceprint, evaluator } from "libcs/Essentials";
+import { niceprint } from "libcs/Essentials";
+import { evaluator } from "libcs/Registry";
 import { setStatusBar } from "libcs/Operators";
 import { evaluate, analyse, labelCode, usedFunctions } from "libcs/Evaluator";
 import { csport } from "libgeo/GeoState";
@@ -1015,7 +1017,6 @@ function csstop() {
     }
 }
 
-const shutdownHooks = [];
 let isShutDown = false;
 
 function shutdown() {
@@ -1043,25 +1044,24 @@ function shutdown() {
     }
 }
 
-// The following object will be returned from the public CindyJS function.
-// Its startup method will be called automatically unless specified otherwise.
-var globalInstance = {
-    config: instanceInvocationArguments,
-    startup: createCindyNow,
-    shutdown,
-    evokeCS,
-    play: csplay,
-    pause: cspause,
-    stop: csstop,
-    evalcs: function (code) {
-        return evaluate(analyse(code, false));
-    },
-    parse: function (code) {
-        return analyse(code);
-    },
-    niceprint,
-    canvas: null, // will be set during startup
+// globalInstance (owned by Instance.js) will be returned from the public
+// CindyJS function. Its startup method will be called automatically unless
+// specified otherwise.
+globalInstance.config = instanceInvocationArguments;
+globalInstance.startup = createCindyNow;
+globalInstance.shutdown = shutdown;
+globalInstance.evokeCS = evokeCS;
+globalInstance.play = csplay;
+globalInstance.pause = cspause;
+globalInstance.stop = csstop;
+globalInstance.evalcs = function (code) {
+    return evaluate(analyse(code, false));
 };
+globalInstance.parse = function (code) {
+    return analyse(code);
+};
+globalInstance.niceprint = niceprint;
+globalInstance.canvas = null; // will be set during startup
 
 var startupCalled = false;
 var waitForPlugins = 0;

@@ -1,6 +1,6 @@
 import { csctx, csw, csh } from "Setup";
 import { List } from "libcs/List";
-import { eval_helper } from "libcs/Essentials";
+import { eval_helper } from "libcs/Registry";
 import { evaluate } from "libcs/Evaluator";
 import { csport } from "libgeo/GeoState";
 

@@ -8,16 +8,17 @@ import {
     cscompiled,
     CindyJS,
     isShutDown,
-    shutdownHooks,
     csw,
     csh,
 } from "Setup";
+import { shutdownHooks } from "Instance";
 import { nada, document, instanceInvocationArguments } from "expose";
 import { scheduleUpdate, cs_keydown, cs_keyup, cs_keytyped } from "Events";
 import { CSNumber, TWOPI } from "libcs/CSNumber";
 import { List } from "libcs/List";
 import { General } from "libcs/General";
-import { eval_helper, niceprint } from "libcs/Essentials";
+import { niceprint } from "libcs/Essentials";
+import { eval_helper } from "libcs/Registry";
 import { analyse, evaluate } from "libcs/Evaluator";
 import { Render2D } from "libcs/Render2D";
 import { csport } from "libgeo/GeoState";

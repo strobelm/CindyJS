@@ -3,7 +3,7 @@ import { nada, document } from "expose";
 import { CSNumber } from "libcs/CSNumber";
 import { List } from "libcs/List";
 import { General } from "libcs/General";
-import { evaluator, eval_helper } from "libcs/Essentials";
+import { evaluator, eval_helper } from "libcs/Registry";
 import { evaluateAndVal, evaluate, evaluateAndHomog } from "libcs/Evaluator";
 import { csport } from "libgeo/GeoState";
 
