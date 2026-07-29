@@ -14,6 +14,8 @@ var handlers = {
     "Cindy.closure.js": false,
     "Cindy.closure.js.map": false,
     "Cindy.closure.js.tmp.map": false,
+    // Smoke-check artifact of the ESM entry (make esmbundle), never shipped.
+    "Cindy.esm-check.js": false,
     "Cindy.js": subst,
     "Cindy.js.map": map,
     "Cindy.plain.js": false,

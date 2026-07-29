@@ -219,7 +219,25 @@ module.exports = function build(settings, task) {
         ]);
     });
 
-    task("alltests", ["tests", "eslint", "deploy", "textattr", "forbidden", "ref"]);
+    //////////////////////////////////////////////////////////////////////
+    // ES module graph gate (phase 1 of MODERNIZATION.md)
+    //
+    // The concat build stays canonical, so these two tasks guard the parallel
+    // ESM view of the same sources: the static graph must stay resolvable,
+    // import-complete and free of init-time cycles, and src/js/index.js must
+    // bundle and evaluate. esbuild reads the .ts sources directly, so neither
+    // task depends on "typescript".
+    //////////////////////////////////////////////////////////////////////
+
+    task("esmgraph", [], function () {
+        this.node("tools/check-esm-graph.js");
+    });
+
+    task("esmbundle", [], function () {
+        this.node("tools/bundle-esm.js");
+    });
+
+    task("alltests", ["tests", "eslint", "deploy", "textattr", "forbidden", "ref", "esmgraph", "esmbundle"]);
 
     //////////////////////////////////////////////////////////////////////
     // Check that the text property is set for all files

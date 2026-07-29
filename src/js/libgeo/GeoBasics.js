@@ -579,6 +579,7 @@ export {
     setupTraceDrawing,
     defaultAppearance,
     addElement,
+    addElementNoProof,
     removeElement,
     onSegment,
     pointDefault,

@@ -102,9 +102,32 @@ List.ez = List.realVector([0, 0, 1]);
 
 List.linfty = List.realVector([0, 0, 1]);
 
-List.ii = List.turnIntoCSList([CSNumber.complex(1, 0), CSNumber.complex(0, 1), CSNumber.complex(0, 0)]);
+// The circular points at infinity. Built on first access rather than at module
+// scope: CSNumber sits in the same import cycle as this module, so it need not
+// be evaluated yet while this file's body runs. The values are unchanged, and
+// every consumer only reads them.
+function lazyListConstant(name, build) {
+    let value = null;
+    Object.defineProperty(List, name, {
+        configurable: true,
+        enumerable: true,
+        get: function () {
+            if (value === null) value = build();
+            return value;
+        },
+        set: function (replacement) {
+            value = replacement;
+        },
+    });
+}
 
-List.jj = List.turnIntoCSList([CSNumber.complex(1, 0), CSNumber.complex(0, -1), CSNumber.complex(0, 0)]);
+lazyListConstant("ii", function () {
+    return List.turnIntoCSList([CSNumber.complex(1, 0), CSNumber.complex(0, 1), CSNumber.complex(0, 0)]);
+});
+
+lazyListConstant("jj", function () {
+    return List.turnIntoCSList([CSNumber.complex(1, 0), CSNumber.complex(0, -1), CSNumber.complex(0, 0)]);
+});
 
 List.fundDual = List.realMatrix([
     [1, 0, 0],

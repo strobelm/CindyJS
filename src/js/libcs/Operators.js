@@ -1265,8 +1265,21 @@ function infix_sequence(args, modifs) {
     return nada;
 }
 
-eval_helper.genericListMathGen = function (name, op, emptyval) {
+// `op` and `emptyval` arrive as thunks rather than values: General and
+// CSNumber are in the same import cycle as this module, so they need not be
+// evaluated yet while this file's module body runs. Resolving on first call
+// keeps the values identical and costs one branch per invocation.
+eval_helper.genericListMathGen = function (name, opThunk, emptyvalThunk) {
+    let op = null;
+    let emptyval = null;
+    const resolve = function () {
+        if (op === null) {
+            op = opThunk();
+            emptyval = emptyvalThunk();
+        }
+    };
     evaluator[name + "$1"] = function (args, modifs) {
+        resolve();
         const v0 = evaluate(args[0]);
         if (v0.ctype !== "list") {
             return nada;
@@ -1287,6 +1300,7 @@ eval_helper.genericListMathGen = function (name, op, emptyval) {
         return evaluator[name$3]([args[0], null, args[1]]);
     };
     evaluator[name$3] = function (args, modifs) {
+        resolve();
         const v0 = evaluateAndVal(args[0]);
         if (v0.ctype !== "list") {
             return nada;
@@ -1318,8 +1332,24 @@ eval_helper.genericListMathGen = function (name, op, emptyval) {
     };
 };
 
-eval_helper.genericListMathGen("product", General.mult, CSNumber.real(1));
-eval_helper.genericListMathGen("sum", General.add, CSNumber.real(0));
+eval_helper.genericListMathGen(
+    "product",
+    function () {
+        return General.mult;
+    },
+    function () {
+        return CSNumber.real(1);
+    }
+);
+eval_helper.genericListMathGen(
+    "sum",
+    function () {
+        return General.add;
+    },
+    function () {
+        return CSNumber.real(0);
+    }
+);
 
 evaluator.max$1 = function (args, modifs) {
     const v0 = evaluate(args[0]);
@@ -1870,9 +1900,16 @@ evaluator.log$1 = function (args, modifs) {
 };
 
 eval_helper.recursiveGen = function (op) {
-    const numOp = CSNumber[op],
-        listOp = List[op];
+    // Looked up on first call, not here: this helper is invoked from module
+    // scope, and CSNumber/List are in the same import cycle as this file, so
+    // they need not be evaluated yet.
+    let numOp = null,
+        listOp = null;
     evaluator[op + "$1"] = function (args, modifs) {
+        if (numOp === null) {
+            numOp = CSNumber[op];
+            listOp = List[op];
+        }
         const v0 = evaluateAndVal(args[0]);
         if (v0.ctype === "number") {
             return numOp(v0);
@@ -4851,7 +4888,9 @@ evaluator.create$2 = function (args, modifs) {
 //   JSON Object extensions  //
 ///////////////////////////////
 
-Json._helper.self = nada;
+// Json._helper.self is initialized in Json.ts itself; assigning it here would
+// require Json to be evaluated before this module, which the import cycle
+// between the two does not guarantee.
 
 evaluator.self$0 = function (args, modifs) {
     return Json._helper.self;

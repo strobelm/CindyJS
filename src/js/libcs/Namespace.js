@@ -11,23 +11,41 @@ import { niceprint } from "./Essentials.js";
 
 const namespace = {};
 
-// Initialize preset variables
-namespace.vars = (function () {
-    const preset = {
-        pi: CSNumber.real(Math.PI),
-        π: CSNumber.real(Math.PI),
-        i: CSNumber.complex(0, 1),
-        true: General.bool(true),
-        false: General.bool(false),
-        "#": nada,
-        nil: List.turnIntoCSList([]),
-        newline: General.string("\n"),
-        tab: General.string("\t"),
-    };
-    const vars = [];
-    for (const name in preset) vars[name] = [preset[name]];
-    return vars;
-})();
+// Initialize preset variables.
+//
+// Built on first access instead of at module scope: CSNumber, General and List
+// sit in the same import cycle as this module, so under ESM they may not be
+// evaluated yet while this file is. The concatenated build never noticed
+// (there the whole closure is one scope), a module graph does. The values and
+// the resulting `vars` object are identical either way - the first access
+// still happens long before any CindyScript runs.
+let presetVars = null;
+
+Object.defineProperty(namespace, "vars", {
+    configurable: true,
+    enumerable: true,
+    get: function () {
+        if (presetVars === null) {
+            const preset = {
+                pi: CSNumber.real(Math.PI),
+                π: CSNumber.real(Math.PI),
+                i: CSNumber.complex(0, 1),
+                true: General.bool(true),
+                false: General.bool(false),
+                "#": nada,
+                nil: List.turnIntoCSList([]),
+                newline: General.string("\n"),
+                tab: General.string("\t"),
+            };
+            presetVars = [];
+            for (const name in preset) presetVars[name] = [preset[name]];
+        }
+        return presetVars;
+    },
+    set: function (value) {
+        presetVars = value;
+    },
+});
 
 namespace.isVariable = function (name) {
     return this.vars.hasOwnProperty(name);

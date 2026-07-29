@@ -11,6 +11,11 @@ import { CSJsonValue, CSJsonKey, Nada, CSJson, CSType, CSJsonIterator } from "..
 
 const Json: CSJson = {
     _helper: {
+        // Initialized here rather than in Operators.js (which used to do
+        // `Json._helper.self = nada` at module scope): Operators and Json sit
+        // in the same import cycle, so Operators can run first and would then
+        // dereference an unevaluated Json.
+        self: nada,
         GenJSONAtom(key: string, val: CSType) {
             return {
                 ctype: "JSON",
@@ -145,3 +150,5 @@ const Json: CSJson = {
         return jsonString;
     },
 };
+
+export { Json };

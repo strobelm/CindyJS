@@ -134,6 +134,9 @@ type CSJsonIteratorPrimitive = "key" | "value" | "pair";
 export type CSJsonIterator = CSString & { value: CSJsonIteratorPrimitive };
 
 interface JSONHelper {
+    // The receiver of the CindyScript `self()` function; swapped in and out by
+    // Evaluator.js around member accesses.
+    self: CSType;
     GenJSONAtom(key: string, val: CSType): CSJsonValue;
     forall(
         li: Record<string, CSType>,
