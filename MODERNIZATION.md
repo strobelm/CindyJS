@@ -144,9 +144,42 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
    it's Phase 2's tool anyway): the entry must bundle and evaluate under
    node. From this step on, the ESM graph cannot silently rot while the
    concat build is still the shipping path.
-7. **Flip the switch (exit of Phase 1).** Only after 1–6 are green: the
-   bundle replaces the concat artifact, `Head.js`/`Tail.js`/`expose.ts`/
-   `rewire` die, tests import modules directly. One commit, revertable.
+7. **Flip the switch (exit of Phase 1) — factory bundle.** Finding
+   (2026-07-29): the whole core is concatenated INSIDE
+   `CindyJS.newInstance`, so the interpreter re-evaluates per widget —
+   that is the multi-instance mechanism. A state inventory counts 94
+   runtime-stateful top-level bindings (73 rebound, 21 mutated) vs 307
+   init-only, clustered in Setup (36), Tracing (13), Events (8), plus
+   `csport`/`Render2D` drawing state; 16 of 34 modules are fully
+   stateless, including the whole data layer. Naive once-evaluated ESM
+   would share interpreter state across widgets. Therefore the flip
+   preserves semantics by construction:
+    - `Head.js`'s once-only logic (CindyJS callable, plugin registry,
+      script loader, waitFor, dumpState) becomes a real module evaluated
+      once.
+    - The instance graph (current `index.js` content) is esbuild-bundled
+      as the BODY of `newInstance`, re-evaluated per call — exactly
+      today's per-instance closure semantics, produced from real modules.
+    - `expose.ts` becomes the environment seam: a browser variant
+      (real `window`/`document`, `instanceInvocationArguments` from the
+      `newInstance` parameter, injected via esbuild module substitution —
+      a standard build-time seam, not a runtime hack) and the existing
+      node/test variant.
+    - 7a: the factory bundle ships as `build/js/Cindy.js` (concat +
+      Closure retired for the core; still used by legacy plugins).
+    - 7b: unit tests drop `rewire`/`exposed.js` for an esbuild-built CJS
+      test bundle re-exporting the internals; `Head.js`/`Tail.js` and
+      `tools/cat.js`'s import-stripping die.
+8. **Shrink the factory (the path to true single-evaluation ESM).**
+   After the flip, hoist provably stateless modules OUT of the
+   per-instance factory one subsystem at a time, sharing them across
+   instances; the graph gate enforces that hoisted modules never import
+   factory modules. First candidate: the data layer (8 stateless files),
+   unblocked by the Phase 3 List-purity cleanup. Each hoist is small and
+   independently testable. The full instance-context refactor (option B)
+   thereby becomes a ratchet, not a big-bang phase; the async-capture
+   risk (callbacks re-binding the current instance) is confined to the
+   last, smallest steps.
 
 Explicitly out of scope for these steps: renames, TypeScript conversion,
 tsconfig strictness, build-system replacement, and any dynamic `import()` —
