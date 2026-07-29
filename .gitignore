@@ -13,4 +13,8 @@
 .package-lock.json
 package-lock.json
 /.eslintcache
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
 .DS_Store

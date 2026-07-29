@@ -19,6 +19,7 @@
 *.js            text
 *.ts            text
 *.md            text
+*.mjs           text
 *.mp4           -text
 *.pages         -text
 *.pl            text
