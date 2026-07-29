@@ -6,3 +6,4 @@ download/**/*
 build/**/*
 
 plugins/**/*
+examples/162_sunflower_crlf.html
