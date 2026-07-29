@@ -1,10 +1,10 @@
-import { window, nada } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
-import { evaluator } from "libcs/Registry";
-import { namespace } from "libcs/Namespace";
-import { evaluate } from "libcs/Evaluator";
+import { window, nada } from "../expose.js";
+import { CSNumber } from "./CSNumber.js";
+import { General } from "./General.js";
+import { niceprint } from "./Essentials.js";
+import { evaluator } from "./Registry.js";
+import { namespace } from "./Namespace.js";
+import { evaluate } from "./Evaluator.js";
 
 const OpSound = {
     lines: {},

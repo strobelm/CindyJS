@@ -1,9 +1,9 @@
-import { nada } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { General } from "libcs/General";
-import { eval_helper } from "libcs/Registry";
-import { comp_equals, comp_almostequals } from "libcs/Operators";
-import { evaluateAndVal } from "libcs/Evaluator";
+import { nada } from "../expose.js";
+import { CSNumber } from "./CSNumber.js";
+import { General } from "./General.js";
+import { eval_helper } from "./Registry.js";
+import { comp_equals, comp_almostequals } from "./Operators.js";
+import { evaluateAndVal } from "./Evaluator.js";
 
 //==========================================
 //      Lists

@@ -1,6 +1,6 @@
-import { csgeo, simaccuracy, simtime, setSimTime } from "Setup";
-import { cs_simulationstep } from "Events";
-import { labObjects } from "liblab/LabObjects";
+import { csgeo, simaccuracy, simtime, setSimTime } from "../Setup.js";
+import { cs_simulationstep } from "../Events.js";
+import { labObjects } from "./LabObjects.js";
 
 const lab = {};
 

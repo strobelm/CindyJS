@@ -10,19 +10,19 @@ import {
     isShutDown,
     csw,
     csh,
-} from "Setup";
-import { shutdownHooks } from "Instance";
-import { nada, document, instanceInvocationArguments } from "expose";
-import { scheduleUpdate, cs_keydown, cs_keyup, cs_keytyped } from "Events";
-import { CSNumber, TWOPI } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
-import { eval_helper } from "libcs/Registry";
-import { analyse, evaluate } from "libcs/Evaluator";
-import { Render2D } from "libcs/Render2D";
-import { csport } from "libgeo/GeoState";
-import { onSegment } from "libgeo/GeoBasics";
+} from "../Setup.js";
+import { shutdownHooks } from "../Instance.js";
+import { nada, document, instanceInvocationArguments } from "../expose.js";
+import { scheduleUpdate, cs_keydown, cs_keyup, cs_keytyped } from "../Events.js";
+import { CSNumber, TWOPI } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { General } from "../libcs/General.js";
+import { niceprint } from "../libcs/Essentials.js";
+import { eval_helper } from "../libcs/Registry.js";
+import { analyse, evaluate } from "../libcs/Evaluator.js";
+import { Render2D } from "../libcs/Render2D.js";
+import { csport } from "./GeoState.js";
+import { onSegment } from "./GeoBasics.js";
 import {
     putStateComplexVector,
     getStateComplexVector,
@@ -43,7 +43,7 @@ import {
     setStateIn,
     setStateInIdx,
     setTracingInitial,
-} from "libgeo/Tracing";
+} from "./Tracing.js";
 
 const geoOps = {};
 geoOps._helper = {};

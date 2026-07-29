@@ -1,8 +1,8 @@
-import { nada } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { Dict } from "libcs/Dict";
-import { niceprint } from "libcs/Essentials";
+import { nada } from "../expose.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { Dict } from "./Dict.js";
+import { niceprint } from "./Essentials.js";
 
 //==========================================
 //      Things that apply to several types

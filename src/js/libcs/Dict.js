@@ -1,5 +1,5 @@
-import { csconsole } from "Setup";
-import { niceprint } from "libcs/Essentials";
+import { csconsole } from "../Setup.js";
+import { niceprint } from "./Essentials.js";
 
 /*
  * Dictionaries map CindyScript values to CindyScript values.

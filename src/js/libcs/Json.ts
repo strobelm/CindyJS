@@ -1,13 +1,13 @@
-import { nada } from "expose";
+import { nada } from "../expose.js";
 // @ts-expect-error: Not yet typed
-import { General } from "libcs/General";
+import { General } from "./General.js";
 // @ts-expect-error: Not yet typed
-import { niceprint, defaultNiceprintOptions } from "libcs/Essentials";
+import { niceprint, defaultNiceprintOptions } from "./Essentials.js";
 // @ts-expect-error: Not yet typed
-import { namespace } from "libcs/Namespace";
+import { namespace } from "./Namespace.js";
 // @ts-expect-error: Not yet typed
-import { evaluate } from "libcs/Evaluator";
-import { CSJsonValue, CSJsonKey, Nada, CSJson, CSType, CSJsonIterator } from "types";
+import { evaluate } from "./Evaluator.js";
+import { CSJsonValue, CSJsonKey, Nada, CSJson, CSType, CSJsonIterator } from "../types.js";
 
 const Json: CSJson = {
     _helper: {

@@ -22,17 +22,17 @@ import {
     setSimTime,
     setDropped,
     setDropPoint,
-} from "Setup";
-import { document, nada, window, instanceInvocationArguments } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { evaluate } from "libcs/Evaluator";
-import { manage } from "libcs/Tools";
-import { csport } from "libgeo/GeoState";
-import { draw_traces, render } from "libgeo/GeoRender";
-import { traceMouseAndScripts } from "libgeo/Tracing";
-import { csPhysicsInited, lab } from "liblab/LabBasics";
+} from "./Setup.js";
+import { document, nada, window, instanceInvocationArguments } from "./expose.js";
+import { CSNumber } from "./libcs/CSNumber.js";
+import { List } from "./libcs/List.js";
+import { General } from "./libcs/General.js";
+import { evaluate } from "./libcs/Evaluator.js";
+import { manage } from "./libcs/Tools.js";
+import { csport } from "./libgeo/GeoState.js";
+import { draw_traces, render } from "./libgeo/GeoRender.js";
+import { traceMouseAndScripts } from "./libgeo/Tracing.js";
+import { csPhysicsInited, lab } from "./liblab/LabBasics.js";
 
 const mouse = {};
 let move;

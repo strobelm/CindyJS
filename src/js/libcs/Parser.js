@@ -1,6 +1,6 @@
 "use strict"; // So this file can be used as a stand-alone node module
 
-import { window } from "expose";
+import { window } from "../expose.js";
 
 // All operators, sorted by precedence level
 const operatorLevels = [

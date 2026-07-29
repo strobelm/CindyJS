@@ -1,12 +1,12 @@
-import { csgeo } from "Setup";
-import { nada } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
-import { setupTraceDrawing } from "libgeo/GeoBasics";
-import { movepointscr } from "libgeo/Tracing";
-import { geoOps } from "libgeo/GeoOps";
+import { csgeo } from "../Setup.js";
+import { nada } from "../expose.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { General } from "./General.js";
+import { niceprint } from "./Essentials.js";
+import { setupTraceDrawing } from "../libgeo/GeoBasics.js";
+import { movepointscr } from "../libgeo/Tracing.js";
+import { geoOps } from "../libgeo/GeoOps.js";
 
 //*************************************************************
 // and here are the accessors for properties and elements

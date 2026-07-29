@@ -1,15 +1,15 @@
-import { csgeo, vscale, csctx, csw, csh } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
-import { eval_helper, evaluator } from "libcs/Registry";
-import { Accessor } from "libcs/Accessors";
-import { textRendererHtml } from "libcs/OpDrawing";
-import { Render2D } from "libcs/Render2D";
-import { csport } from "libgeo/GeoState";
-import { defaultAppearance } from "libgeo/GeoBasics";
-import { geoOps, ifs } from "libgeo/GeoOps";
+import { csgeo, vscale, csctx, csw, csh } from "../Setup.js";
+import { CSNumber } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { General } from "../libcs/General.js";
+import { niceprint } from "../libcs/Essentials.js";
+import { eval_helper, evaluator } from "../libcs/Registry.js";
+import { Accessor } from "../libcs/Accessors.js";
+import { textRendererHtml } from "../libcs/OpDrawing.js";
+import { Render2D } from "../libcs/Render2D.js";
+import { csport } from "./GeoState.js";
+import { defaultAppearance } from "./GeoBasics.js";
+import { geoOps, ifs } from "./GeoOps.js";
 
 function drawlabel(el, lbl, pos, lpos, color) {
     const textsize = el.textsize || defaultAppearance.textsize;

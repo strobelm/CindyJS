@@ -1,5 +1,5 @@
-import { vscale, csw, csh } from "Setup";
-import { List } from "libcs/List";
+import { vscale, csw, csh } from "../Setup.js";
+import { List } from "../libcs/List.js";
 
 const csgstorage = {};
 

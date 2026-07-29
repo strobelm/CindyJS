@@ -1,19 +1,31 @@
-import { nada, document } from "expose";
-import { csctx, setCsctx, csw, csh, CindyJS, loadExtraPlugin, csscale, canvas, images, loadImage, vscale } from "Setup";
-import { scheduleUpdate } from "Events";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
-import { eval_helper, evaluator } from "libcs/Registry";
-import { namespace } from "libcs/Namespace";
-import { Accessor } from "libcs/Accessors";
-import { imageFromValue } from "libcs/OpImageDrawing";
-import { evaluateAndVal, evaluateAndHomog, evaluate } from "libcs/Evaluator";
-import { Render2D } from "libcs/Render2D";
-import { csport } from "libgeo/GeoState";
-import { defaultAppearance } from "libgeo/GeoBasics";
-import { geoOps } from "libgeo/GeoOps";
+import { nada, document } from "../expose.js";
+import {
+    csctx,
+    setCsctx,
+    csw,
+    csh,
+    CindyJS,
+    loadExtraPlugin,
+    csscale,
+    canvas,
+    images,
+    loadImage,
+    vscale,
+} from "../Setup.js";
+import { scheduleUpdate } from "../Events.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { General } from "./General.js";
+import { niceprint } from "./Essentials.js";
+import { eval_helper, evaluator } from "./Registry.js";
+import { namespace } from "./Namespace.js";
+import { Accessor } from "./Accessors.js";
+import { imageFromValue } from "./OpImageDrawing.js";
+import { evaluateAndVal, evaluateAndHomog, evaluate } from "./Evaluator.js";
+import { Render2D } from "./Render2D.js";
+import { csport } from "../libgeo/GeoState.js";
+import { defaultAppearance } from "../libgeo/GeoBasics.js";
+import { geoOps } from "../libgeo/GeoOps.js";
 
 //*******************************************************
 // and here are the definitions of the drawing operators

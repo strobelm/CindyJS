@@ -1,4 +1,4 @@
-import { Nada } from "types";
+import { Nada } from "./types.js";
 
 /* eslint no-var: off */
 var instanceInvocationArguments = { angleUnit: undefined };

@@ -1,11 +1,11 @@
-import { nada } from "expose";
-import { csconsole } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { Json } from "libcs/Json";
-import { Dict } from "libcs/Dict";
-import { namespace } from "libcs/Namespace";
-import { evaluator, eval_helper } from "libcs/Registry";
+import { nada } from "../expose.js";
+import { csconsole } from "../Setup.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { Json } from "./Json.js";
+import { Dict } from "./Dict.js";
+import { namespace } from "./Namespace.js";
+import { evaluator, eval_helper } from "./Registry.js";
 import {
     postfix_numb_degree,
     infix_take,
@@ -43,8 +43,8 @@ import {
     infix_define,
     postfix_undefine,
     infix_semicolon,
-} from "libcs/Operators";
-import { evaluate } from "libcs/Evaluator";
+} from "./Operators.js";
+import { evaluate } from "./Evaluator.js";
 
 const myfunctions = {};
 
@@ -321,4 +321,4 @@ eval_helper.equals = function (v0, v1) {
     };
 };
 
-export { niceprint, evaluator, eval_helper, infixmap, myfunctions };
+export { niceprint, defaultNiceprintOptions, evaluator, eval_helper, infixmap, myfunctions };

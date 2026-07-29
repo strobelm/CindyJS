@@ -1,8 +1,8 @@
-import { instanceInvocationArguments, nada } from "expose";
+import { instanceInvocationArguments, nada } from "../expose.js";
 // @ts-expect-error: Not yet typed
-import { List } from "libcs/List";
+import { List } from "./List.js";
 
-import { CSNum, Nada, CSMath, CSList } from "types";
+import { CSNum, Nada, CSMath, CSList } from "../types.js";
 
 const angleUnit = instanceInvocationArguments.angleUnit || "°";
 const TWOPI = Math.PI * 2;

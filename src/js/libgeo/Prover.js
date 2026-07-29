@@ -1,9 +1,9 @@
-import { csgeo } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { stateArrays, stateIn, movepointscr, recalcAll } from "libgeo/Tracing";
-import { geoOps } from "libgeo/GeoOps";
+import { csgeo } from "../Setup.js";
+import { CSNumber } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { General } from "../libcs/General.js";
+import { stateArrays, stateIn, movepointscr, recalcAll } from "./Tracing.js";
+import { geoOps } from "./GeoOps.js";
 
 let conjectures = [];
 

@@ -1,9 +1,9 @@
-import { nada } from "expose";
-import { csgeo } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
+import { nada } from "../expose.js";
+import { csgeo } from "../Setup.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { General } from "./General.js";
+import { niceprint } from "./Essentials.js";
 
 //==========================================
 //      Namespace and Vars

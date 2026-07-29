@@ -4,19 +4,19 @@ import {
     setuplisteners,
     cs_simulationstart,
     cs_simulationstop,
-} from "Events";
-import { window, nada, document, instanceInvocationArguments } from "expose";
-import { globalInstance, shutdownHooks } from "Instance";
-import { General } from "libcs/General";
-import { niceprint } from "libcs/Essentials";
-import { evaluator } from "libcs/Registry";
-import { setStatusBar } from "libcs/Operators";
-import { evaluate, analyse, labelCode, usedFunctions } from "libcs/Evaluator";
-import { csport } from "libgeo/GeoState";
-import { csinit } from "libgeo/GeoBasics";
-import { stateArrays, stateIn, recalcAll } from "libgeo/Tracing";
-import { noop } from "libgeo/GeoOps";
-import { csinitphys, csPhysicsInited, csresetphys } from "liblab/LabBasics";
+} from "./Events.js";
+import { window, nada, document, instanceInvocationArguments } from "./expose.js";
+import { globalInstance, shutdownHooks } from "./Instance.js";
+import { General } from "./libcs/General.js";
+import { niceprint } from "./libcs/Essentials.js";
+import { evaluator } from "./libcs/Registry.js";
+import { setStatusBar } from "./libcs/Operators.js";
+import { evaluate, analyse, labelCode, usedFunctions } from "./libcs/Evaluator.js";
+import { csport } from "./libgeo/GeoState.js";
+import { csinit } from "./libgeo/GeoBasics.js";
+import { stateArrays, stateIn, recalcAll } from "./libgeo/Tracing.js";
+import { noop } from "./libgeo/GeoOps.js";
+import { csinitphys, csPhysicsInited, csresetphys } from "./liblab/LabBasics.js";
 
 const CindyJS = this; // since this will be turned into a method
 

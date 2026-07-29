@@ -1,8 +1,8 @@
-import { instanceInvocationArguments, nada, window } from "expose";
-import { csgeo } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
+import { instanceInvocationArguments, nada, window } from "../expose.js";
+import { csgeo } from "../Setup.js";
+import { CSNumber } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { General } from "../libcs/General.js";
 import {
     assert,
     movepointscr,
@@ -19,9 +19,9 @@ import {
     setStateOut,
     setStateInIdx,
     setStateOutIdx,
-} from "libgeo/Tracing";
-import { checkConjectures, guessDuplicate, guessIncidences } from "libgeo/Prover";
-import { geoOps, geoAliases, geoMacros } from "libgeo/GeoOps";
+} from "./Tracing.js";
+import { checkConjectures, guessDuplicate, guessIncidences } from "./Prover.js";
+import { geoOps, geoAliases, geoMacros } from "./GeoOps.js";
 
 const defaultAppearance = {};
 defaultAppearance.clip = "none";

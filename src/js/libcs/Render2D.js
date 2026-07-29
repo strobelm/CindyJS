@@ -1,8 +1,8 @@
-import { csctx, csw, csh } from "Setup";
-import { List } from "libcs/List";
-import { eval_helper } from "libcs/Registry";
-import { evaluate } from "libcs/Evaluator";
-import { csport } from "libgeo/GeoState";
+import { csctx, csw, csh } from "../Setup.js";
+import { List } from "./List.js";
+import { eval_helper } from "./Registry.js";
+import { evaluate } from "./Evaluator.js";
+import { csport } from "../libgeo/GeoState.js";
 
 const Render2D = {};
 

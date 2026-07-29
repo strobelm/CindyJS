@@ -1,7 +1,12 @@
 {
+    // Editor-only project scope for the plain-JS core sources (the .ts sources are
+    // covered by the repository-root tsconfig.json). Import specifiers are relative
+    // with an explicit ".js" extension, so no baseUrl / path aliases are needed.
     "compilerOptions": {
-        "module": "commonjs",
-        "target": "es6",
-        "baseUrl": "."
-    }
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "target": "ES2018",
+        "checkJs": false
+    },
+    "include": ["**/*.js"]
 }

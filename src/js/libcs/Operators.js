@@ -19,36 +19,36 @@ import {
     canvas,
     dropped,
     dropPoint,
-} from "Setup";
-import { nada, instanceInvocationArguments, window, document } from "expose";
-import { cskey, cskeycode, multipos, move, multiid, addAutoCleaningEventListener, scheduleUpdate } from "Events";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { Json } from "libcs/Json";
-import { Dict } from "libcs/Dict";
-import { General } from "libcs/General";
-import { niceprint, myfunctions } from "libcs/Essentials";
-import { evaluator, eval_helper } from "libcs/Registry";
-import { namespace } from "libcs/Namespace";
-import { Accessor } from "libcs/Accessors";
+} from "../Setup.js";
+import { nada, instanceInvocationArguments, window, document } from "../expose.js";
+import { cskey, cskeycode, multipos, move, multiid, addAutoCleaningEventListener, scheduleUpdate } from "../Events.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { Json } from "./Json.js";
+import { Dict } from "./Dict.js";
+import { General } from "./General.js";
+import { niceprint, myfunctions } from "./Essentials.js";
+import { evaluator, eval_helper } from "./Registry.js";
+import { namespace } from "./Namespace.js";
+import { Accessor } from "./Accessors.js";
 import {
     textRendererCanvas,
     setTextRendererCanvas,
     setMeasureNoRendererCanvas,
     textRendererHtml,
     setTextRendererHtml,
-} from "libcs/OpDrawing";
-import { imageFromValue } from "libcs/OpImageDrawing";
-import { evaluate, printStackTrace, evaluateAndVal, evaluateAndHomog, analyse } from "libcs/Evaluator";
-import { CSad } from "libcs/CSad";
-import { tools, setActiveTool } from "libcs/Tools";
-import { csport, csgstorage } from "libgeo/GeoState";
-import { addElement, removeElement, addElementNoProof } from "libgeo/GeoBasics";
-import { stateContinueFromHere } from "libgeo/Tracing";
-import { geoOps, geoAliases, geoMacros } from "libgeo/GeoOps";
-import { masses, springs } from "liblab/LabBasics";
-import { labObjects } from "liblab/LabObjects";
-import { PSLQ } from "libcs/PSLQ";
+} from "./OpDrawing.js";
+import { imageFromValue } from "./OpImageDrawing.js";
+import { evaluate, printStackTrace, evaluateAndVal, evaluateAndHomog, analyse } from "./Evaluator.js";
+import { CSad } from "./CSad.js";
+import { tools, setActiveTool } from "./Tools.js";
+import { csport, csgstorage } from "../libgeo/GeoState.js";
+import { addElement, removeElement, addElementNoProof } from "../libgeo/GeoBasics.js";
+import { stateContinueFromHere } from "../libgeo/Tracing.js";
+import { geoOps, geoAliases, geoMacros } from "../libgeo/GeoOps.js";
+import { masses, springs } from "../liblab/LabBasics.js";
+import { labObjects } from "../liblab/LabObjects.js";
+import { PSLQ } from "./PSLQ.js";
 
 //*******************************************************
 // and here are the definitions of the operators

@@ -1,10 +1,10 @@
-import { move, mouse } from "Events";
-import { csgeo, setSimAccuracy, setSpeed } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { eval_helper } from "libcs/Registry";
-import { movepointscr } from "libgeo/Tracing";
-import { masses } from "liblab/LabBasics";
+import { move, mouse } from "../Events.js";
+import { csgeo, setSimAccuracy, setSpeed } from "../Setup.js";
+import { CSNumber } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { eval_helper } from "../libcs/Registry.js";
+import { movepointscr } from "../libgeo/Tracing.js";
+import { masses } from "./LabBasics.js";
 
 const labObjects = {};
 

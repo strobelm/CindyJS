@@ -1,10 +1,10 @@
-import { csgeo, csmouse } from "Setup";
-import { scheduleUpdate, move, mouse, getmover, setMove } from "Events";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { statusbar } from "libcs/Operators";
-import { csport } from "libgeo/GeoState";
-import { removeElement, addElement } from "libgeo/GeoBasics";
+import { csgeo, csmouse } from "../Setup.js";
+import { scheduleUpdate, move, mouse, getmover, setMove } from "../Events.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { statusbar } from "./Operators.js";
+import { csport } from "../libgeo/GeoState.js";
+import { removeElement, addElement } from "../libgeo/GeoBasics.js";
 
 let activeTool = "Move"; // Current selected tool
 let element; // The constructed element

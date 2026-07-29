@@ -1,14 +1,14 @@
-import { shutdown, cscompiled, csgeo } from "Setup";
-import { globalInstance } from "Instance";
-import { move, mouse } from "Events";
-import { instanceInvocationArguments, document, window, nada } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { minCostMatching } from "libcs/Operators";
-import { evaluate } from "libcs/Evaluator";
-import { getGeoDependants, isShowing } from "libgeo/GeoBasics";
-import { geoOps } from "libgeo/GeoOps";
+import { shutdown, cscompiled, csgeo } from "../Setup.js";
+import { globalInstance } from "../Instance.js";
+import { move, mouse } from "../Events.js";
+import { instanceInvocationArguments, document, window, nada } from "../expose.js";
+import { CSNumber } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { General } from "../libcs/General.js";
+import { minCostMatching } from "../libcs/Operators.js";
+import { evaluate } from "../libcs/Evaluator.js";
+import { getGeoDependants, isShowing } from "./GeoBasics.js";
+import { geoOps } from "./GeoOps.js";
 
 function assert(condition, message) {
     const msg = "Assertion failed: " + message;

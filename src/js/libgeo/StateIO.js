@@ -1,8 +1,8 @@
-import { csgeo } from "Setup";
-import { globalInstance } from "Instance";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
+import { csgeo } from "../Setup.js";
+import { globalInstance } from "../Instance.js";
+import { CSNumber } from "../libcs/CSNumber.js";
+import { List } from "../libcs/List.js";
+import { General } from "../libcs/General.js";
 import {
     pointDefault,
     lineDefault,
@@ -10,8 +10,8 @@ import {
     textDefault,
     polygonDefault,
     defaultAppearance,
-} from "libgeo/GeoBasics";
-import { geoOps } from "libgeo/GeoOps";
+} from "./GeoBasics.js";
+import { geoOps } from "./GeoOps.js";
 
 // Functions to save and restore geometric state
 

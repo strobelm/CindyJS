@@ -1,7 +1,7 @@
-import { nada } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { evaluate } from "libcs/Evaluator";
+import { nada } from "../expose.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { evaluate } from "./Evaluator.js";
 
 const CSad = {};
 

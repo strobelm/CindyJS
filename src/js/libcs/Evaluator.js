@@ -1,14 +1,14 @@
-import { nada } from "expose";
-import { csconsole } from "Setup";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { Json } from "libcs/Json";
-import { General } from "libcs/General";
-import { niceprint, infixmap } from "libcs/Essentials";
-import { eval_helper } from "libcs/Registry";
-import { namespace } from "libcs/Namespace";
-import { Accessor } from "libcs/Accessors";
-import { Parser } from "libcs/Parser";
+import { nada } from "../expose.js";
+import { csconsole } from "../Setup.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { Json } from "./Json.js";
+import { General } from "./General.js";
+import { niceprint, infixmap } from "./Essentials.js";
+import { eval_helper } from "./Registry.js";
+import { namespace } from "./Namespace.js";
+import { Accessor } from "./Accessors.js";
+import { Parser } from "./Parser.js";
 
 //*******************************************
 // this function evaluates an expression tree

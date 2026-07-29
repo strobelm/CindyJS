@@ -1,11 +1,11 @@
-import { images, csctx, loadImage, csplay, isFiniteNumber } from "Setup";
-import { nada, document } from "expose";
-import { CSNumber } from "libcs/CSNumber";
-import { List } from "libcs/List";
-import { General } from "libcs/General";
-import { evaluator, eval_helper } from "libcs/Registry";
-import { evaluateAndVal, evaluate, evaluateAndHomog } from "libcs/Evaluator";
-import { csport } from "libgeo/GeoState";
+import { images, csctx, loadImage, csplay, isFiniteNumber } from "../Setup.js";
+import { nada, document } from "../expose.js";
+import { CSNumber } from "./CSNumber.js";
+import { List } from "./List.js";
+import { General } from "./General.js";
+import { evaluator, eval_helper } from "./Registry.js";
+import { evaluateAndVal, evaluate, evaluateAndHomog } from "./Evaluator.js";
+import { csport } from "../libgeo/GeoState.js";
 
 //*******************************************************
 // and here are the definitions of the image operators
