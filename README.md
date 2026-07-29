@@ -58,9 +58,9 @@ So a standard release build would be `node make build=release`.
 
 Note that you should have the following software installed:
 
--   A recent Java Runtime Environment (JRE)
--   Node.js with the `node` command added to the PATH
--   Git for Windows with the `git` command usable from the Windows Command Prompt
+- A recent Java Runtime Environment (JRE)
+- Node.js with the `node` command added to the PATH
+- Git for Windows with the `git` command usable from the Windows Command Prompt
 
 ## Contributing
 
