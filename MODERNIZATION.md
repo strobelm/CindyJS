@@ -167,6 +167,34 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
       node/test variant.
     - 7a: the factory bundle ships as `build/js/Cindy.js` (concat +
       Closure retired for the core; still used by legacy plugins).
+      **Landed.** `tools/build-cindy.js` composes two esbuild bundles:
+      `src/js/CindyJS.js` (once) and `src/js/instance-main.js`
+      (`format: "iife"`, `globalName`), the latter spliced textually into
+      the `newInstance` wrapper, which binds `CindyJS`,
+      `instanceInvocationArguments`, `nada` and `generateId` as locals
+      that `src/js/expose.browser.js` picks up as free identifiers.
+      `version` is an esbuild `define`. `tools/esbuild-common.js` holds
+      the config both the shipping build and the `esmbundle` check use.
+      The ref doctests now load the shipping artifact, and a fifth
+      Playwright case (`tests/browser/fixtures/two-widgets.html`) asserts
+      that two widgets on one page keep separate interpreter state - the
+      regression test for the factory semantics and for step 8.
+
+        Two order bugs surfaced that the concatenation had hidden, both in
+        the 25-file call-time cycle where ESM, not `make/sources.js`,
+        decides the evaluation order: `GeoOps` read `tracing2.stateSize`
+        off `Tracing` at definition time (fixed by the leaf module
+        `libgeo/TracingSizes.js`), and `Tracing` built its trace-log labels
+        with `General.wrap` at module scope (now built on first use).
+        `tools/check-esm-graph.js` gained check (d3), which replays the
+        actual depth-first evaluation order and fails on any init-time edge
+        that comes out inverted - the class of bug that costs a doctest run
+        to find otherwise.
+
+        Consequence to note: the core artifact is now ES2018 + `globalThis`
+        output rather than Closure's ES5. Retiring Closure for the core was
+        always the plan; dropping IE is the visible part of it.
+
     - 7b: unit tests drop `rewire`/`exposed.js` for an esbuild-built CJS
       test bundle re-exporting the internals; `Head.js`/`Tail.js` and
       `tools/cat.js`'s import-stripping die.

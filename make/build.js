@@ -11,11 +11,6 @@ var src = require("./sources");
 var soundfonts = require("./soundfonts");
 
 module.exports = function build(settings, task) {
-    function jsCompiler() {
-        if (/release/i.test(settings.get("build"))) return "closure";
-        return "plain";
-    }
-
     function emDep() {
         if (settings.get("em")) return Array.prototype.slice.call(arguments);
         return [];
@@ -48,6 +43,9 @@ module.exports = function build(settings, task) {
     //////////////////////////////////////////////////////////////////////
 
     var version = getversion.factory("build/js/Version.js", "var version");
+    // Same value, plain JSON, for the module build: tools/build-cindy.js turns
+    // it into an esbuild `define` instead of a concatenated global.
+    var versionJson = getversion.factory("build/js/Version.json", null);
 
     task("cs2js", [], function () {
         this.input("tools/cs2js.js");
@@ -122,23 +120,32 @@ module.exports = function build(settings, task) {
         );
     });
 
-    task("Cindy.js", [jsCompiler()], function () {
-        this.setting("build");
-        var base = "Cindy." + jsCompiler() + ".js";
-        var js = base.replace(/\./g, "\\.");
-        var map = (base + ".map").replace(/\./g, "\\.");
-        this.replace("build/js/" + base, "build/js/Cindy.js", [
-            {
-                search: new RegExp("sourceMappingURL=" + map),
-                replace: "sourceMappingURL=Cindy.js.map",
-            },
-        ]);
-        this.replace("build/js/" + base + ".map", "build/js/Cindy.js.map", [
-            {
-                search: new RegExp('("file": *)"' + js + '"'),
-                replace: '$1"Cindy.js"',
-            },
-        ]);
+    // The shipping artifact is built from the ES module graph by esbuild
+    // (Phase 1, step 7a of MODERNIZATION.md); see tools/build-cindy.js for the
+    // factory composition that preserves the per-widget re-evaluation
+    // semantics. The concat flavors above ("plain"/"closure"/"ours") stay for
+    // now because the unit tests and `make eslint` still consume them; step 7b
+    // retires them.
+    //
+    // Consequently the `build=release` switch no longer selects a compiler for
+    // the core: there is one Cindy.js, minification moves to esbuild in Phase 2.
+    task("Cindy.js", [], function () {
+        versionJson(this);
+        this.input("tools/esbuild-common.js");
+        this.input("make/sources.js");
+        this.input(src.lib);
+        this.input(
+            glob.sync("src/js/**/*.@(js|ts)", {
+                ignore: ["src/js/ifs/**", "src/js/includes/**", "src/js/**/*.d.ts"],
+            })
+        );
+        this.output("build/js/Cindy.js");
+        this.output("build/js/Cindy.js.map");
+        this.node("tools/build-cindy.js");
+        // Shape assertions the behavioral suites cannot make; see the script.
+        // No --no-experimental-global-navigator here: unlike the doctests this
+        // only loads the bundle, and node's own global navigator satisfies it.
+        this.node("tools/check-cindy-artifact.js");
     });
 
     //////////////////////////////////////////////////////////////////////
@@ -175,7 +182,10 @@ module.exports = function build(settings, task) {
     // Run test suite from reference manual using node
     //////////////////////////////////////////////////////////////////////
 
-    task("nodetest", ["plain"], function () {
+    // The reference doctests run against the SHIPPING artifact (they used to
+    // load build/js/Cindy.plain.js). Since step 7a that is the esbuild factory
+    // bundle, which makes ~1400 doctests the main equivalence gate for it.
+    task("nodetest", ["Cindy.js"], function () {
         if (process.version > "v21.2") {
             this.node("--no-experimental-global-navigator", "ref/js/runtests.js");
         } else {

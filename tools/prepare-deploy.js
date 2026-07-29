@@ -43,6 +43,9 @@ var handlers = {
     "ComplexCurves.js.map": false,
     "ComplexCurves.plugin.js": false,
     "Version.js": false,
+    // Same value as Version.js, consumed by tools/build-cindy.js as an
+    // esbuild `define`; a build input, never shipped.
+    "Version.json": false,
     "WEB-INF": false,
     "c3dres.js": false,
     "cglres.js": false,

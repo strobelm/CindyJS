@@ -5,7 +5,7 @@ import {
     cs_simulationstart,
     cs_simulationstop,
 } from "./Events.js";
-import { window, nada, document, instanceInvocationArguments } from "./expose.js";
+import { CindyJS, window, nada, document, instanceInvocationArguments } from "./expose.js";
 import { globalInstance, shutdownHooks } from "./Instance.js";
 import { General } from "./libcs/General.js";
 import { niceprint } from "./libcs/Essentials.js";
@@ -18,7 +18,15 @@ import { stateArrays, stateIn, recalcAll } from "./libgeo/Tracing.js";
 import { noop } from "./libgeo/GeoOps.js";
 import { csinitphys, csPhysicsInited, csresetphys } from "./liblab/LabBasics.js";
 
-const CindyJS = this; // since this will be turned into a method
+// The page-global CindyJS function object used to be reached as `this`, because
+// the whole core was concatenated into the body of `CindyJS.newInstance`. It now
+// crosses the factory boundary through the environment seam: expose.browser.js
+// binds it to the real object in the shipping bundle, expose.ts to a stub for
+// node/tests. Nothing else about its use here changes.
+//
+// In the (still canonical for the unit tests) concatenated build the import
+// above is stripped by tools/cat.js, so the name resolves to Head.js's
+// `CindyJS` in the enclosing IIFE scope - the very object `this` used to be.
 
 let csconsole;
 let cslib;

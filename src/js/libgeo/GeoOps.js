@@ -44,6 +44,10 @@ import {
     setStateInIdx,
     setTracingInitial,
 } from "./Tracing.js";
+// Constants, not values published by Tracing.js at evaluation time: the op
+// tables below are built at module scope, and Tracing.js imports this file, so
+// reading them off Tracing would be order-dependent. See TracingSizes.js.
+import { tracing2StateSize, tracing4StateSize, tracing2ConicsStateSize } from "./TracingSizes.js";
 
 const geoOps = {};
 geoOps._helper = {};
@@ -642,7 +646,7 @@ geoOps.PointOnCircle.updatePosition = function (el) {
     el.antipodalPoint = candidates.value[1];
 };
 geoOps.PointOnCircle.getRandomMove = geoOps._helper.getRandPointMove;
-geoOps.PointOnCircle.stateSize = 6 + tracing2.stateSize;
+geoOps.PointOnCircle.stateSize = 6 + tracing2StateSize;
 geoOps.PointOnCircle.get_angle = function (el) {
     const circle = csgeo.csnames[el.args[0]];
     let mid = geoOps._helper.CenterOfCircle(circle.matrix);
@@ -1263,7 +1267,7 @@ geoOps.ConicBy4p1l.updatePosition = function (el) {
 
     el.results = erg;
 };
-geoOps.ConicBy4p1l.stateSize = tracing2.stateSize;
+geoOps.ConicBy4p1l.stateSize = tracing2StateSize;
 
 geoOps._helper.ConicBy3p2l = function (a, b, c, g, h) {
     // see http://math.stackexchange.com/a/1187525/35416
@@ -1402,7 +1406,7 @@ geoOps.ConicBy1p4l.updatePosition = function (el) {
     erg = [t1, t2];
     el.results = erg;
 };
-geoOps.ConicBy1p4l.stateSize = tracing2.stateSize;
+geoOps.ConicBy1p4l.stateSize = tracing2StateSize;
 
 geoOps.ConicParabolaPL = {};
 geoOps.ConicParabolaPL.kind = "C";
@@ -1703,7 +1707,7 @@ geoOps.ConicBy1Pol2P1L.updatePosition = function (el) {
     const res2 = List.normalizeMax(List.sub(M1, M2));
     el.results = tracing2Conics(res1, res2).value;
 };
-geoOps.ConicBy1Pol2P1L.stateSize = tracing2Conics.stateSize;
+geoOps.ConicBy1Pol2P1L.stateSize = tracing2ConicsStateSize;
 
 // Given (A, a, B, c, d), compute conic such that
 // 1. (A, a) is a pole-polar pair,
@@ -1795,7 +1799,7 @@ geoOps.ConicBy1Pol1P2L.updatePosition = function (el) {
     const res2 = List.normalizeMax(List.sub(M1, M2));
     el.results = tracing2Conics(res1, res2).value;
 };
-geoOps.ConicBy1Pol1P2L.stateSize = tracing2Conics.stateSize;
+geoOps.ConicBy1Pol1P2L.stateSize = tracing2ConicsStateSize;
 
 geoOps._helper.coHarmonic = function (a1, a2, b1, b2) {
     const poi = List.realVector([100 * Math.random(), 100 * Math.random(), 1]);
@@ -1954,7 +1958,7 @@ geoOps.AngleBisector.updatePosition = function (el) {
     if (isAlmostZero(res2)) res2 = cross(cross(cross(linfty, res1), linfty), p);
     el.results = tracing2(nm(res1), nm(res2));
 };
-geoOps.AngleBisector.stateSize = tracing2.stateSize;
+geoOps.AngleBisector.stateSize = tracing2StateSize;
 
 geoOps._helper.IntersectLC = function (l, c) {
     const N = CSNumber;
@@ -2013,7 +2017,7 @@ geoOps.IntersectLC.updatePosition = function (el) {
     const erg2 = erg[1];
     el.results = tracing2(erg1, erg2);
 };
-geoOps.IntersectLC.stateSize = tracing2.stateSize;
+geoOps.IntersectLC.stateSize = tracing2StateSize;
 
 geoOps.OtherIntersectionCL = {};
 geoOps.OtherIntersectionCL.kind = "P";
@@ -2057,7 +2061,7 @@ geoOps.IntersectCirCir.updatePosition = function (el) {
     const erg2 = erg[1];
     el.results = tracing2(erg1, erg2);
 };
-geoOps.IntersectCirCir.stateSize = tracing2.stateSize;
+geoOps.IntersectCirCir.stateSize = tracing2StateSize;
 
 geoOps.OtherIntersectionCC = {};
 geoOps.OtherIntersectionCC.kind = "P";
@@ -2199,7 +2203,7 @@ geoOps.IntersectConicConic.updatePosition = function (el) {
     el.results = erg;
     //    el.results = List.turnIntoCSList(erg);
 };
-geoOps.IntersectConicConic.stateSize = tracing4.stateSize;
+geoOps.IntersectConicConic.stateSize = tracing4StateSize;
 
 geoOps.SelectP = {};
 geoOps.SelectP.kind = "P";

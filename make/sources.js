@@ -25,6 +25,7 @@ exports.libcs = [
 ];
 
 exports.libgeo = [
+    "src/js/libgeo/TracingSizes.js", // constants read at definition time by both Tracing.js and GeoOps.js
     "src/js/libgeo/GeoState.js",
     "src/js/libgeo/GeoBasics.js",
     "src/js/libgeo/GeoRender.js",

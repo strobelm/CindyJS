@@ -1,12 +1,14 @@
 // ES module entry point for the CindyJS core (Phase 1, step 5 of
 // MODERNIZATION.md).
 //
-// This file is deliberately NOT listed in make/sources.js: the concatenation
-// build (Head.js + inclosure + Tail.js, imports stripped by tools/cat.js) stays
-// the canonical, shipping path until step 7 flips the switch. Until then this
-// module exists so that node, esbuild and every other ESM consumer have a
-// single root for the graph, and so tools/check-esm-graph.js has something to
-// anchor the reachability of the whole core on.
+// This file is deliberately NOT listed in make/sources.js. Since step 7a the
+// shipping build/js/Cindy.js is produced from this graph by tools/build-cindy.js
+// (through src/js/instance-main.js, which adds the value newInstance returns);
+// the concatenation build (Head.js + inclosure + Tail.js, imports stripped by
+// tools/cat.js) survives only for the unit tests and `make eslint`, which step
+// 7b retires. This module is the single root of the graph for node, esbuild and
+// every other ESM consumer, and what tools/check-esm-graph.js anchors the
+// reachability and the evaluation order of the whole core on.
 //
 // The import list is the `inclosure` order of make/sources.js with one
 // deliberate difference: Instance/Setup/Events move from the front to the back.
@@ -67,6 +69,7 @@ import "./libcs/PSLQ.js";
 import "./libgeo/GeoState.js";
 import "./libgeo/GeoBasics.js";
 import "./libgeo/GeoRender.js";
+import "./libgeo/TracingSizes.js";
 import "./libgeo/Tracing.js";
 import "./libgeo/Prover.js";
 import "./libgeo/GeoOps.js";
@@ -83,17 +86,16 @@ import "./Setup.js";
 import "./Events.js";
 
 // --- public API ------------------------------------------------------------
-// Head.js/Tail.js expose exactly one thing on the global scope: the `CindyJS`
+// The bundle exposes exactly one thing on the global scope: the `CindyJS`
 // function object (plus the deprecated `createCindy` alias and, under node,
 // `module.exports = CindyJS`). Setup.js re-exports that object under the same
 // name, so the entry simply forwards it.
 //
-// Caveat until step 7: Setup.js obtains the object as `const CindyJS = this`,
-// because the whole inclosure is still compiled as the body of
-// `CindyJS.newInstance`. Evaluated as a real module there is no such receiver,
-// so this binding is undefined until Head.js is replaced by a module that
-// constructs the API object. The name and shape of the export do not change
-// then - only where the value comes from.
+// Where the object itself comes from is the environment seam's business:
+// src/js/CindyJS.js builds it once per page and the factory wrapper hands it to
+// expose.browser.js, while expose.ts substitutes a stub for node and the tests.
+// Either way Setup.js just imports `CindyJS` (it used to take it from `this`,
+// which only worked while the core was compiled into `newInstance`'s body).
 import { CindyJS } from "./Setup.js";
 
 export { CindyJS, CindyJS as createCindy };

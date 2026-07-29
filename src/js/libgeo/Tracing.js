@@ -9,6 +9,7 @@ import { minCostMatching } from "../libcs/Operators.js";
 import { evaluate } from "../libcs/Evaluator.js";
 import { getGeoDependants, isShowing } from "./GeoBasics.js";
 import { geoOps } from "./GeoOps.js";
+import { tracing2StateSize, tracing4StateSize, tracing2ConicsStateSize } from "./TracingSizes.js";
 
 function assert(condition, message) {
     const msg = "Assertion failed: " + message;
@@ -324,9 +325,14 @@ if (instanceInvocationArguments.enableTraceLog) {
         currentStep: null,
         currentElement: null,
         currentParam: null,
-        labelTracing2: General.wrap("tracing2"),
-        labelTracing4: General.wrap("tracing4"),
-        labelTracingSesq: General.wrap("tracingSesq"),
+        // Filled in on first use by traceLabel() below, not here: this module
+        // is evaluated before libcs/General.js in the bundled build - both sit
+        // in the same import cycle, so ESM picks the order and General is
+        // still in its temporal dead zone at this point. The concatenation
+        // build hid that by listing General.js first.
+        labelTracing2: null,
+        labelTracing4: null,
+        labelTracingSesq: null,
         postMouseHooks: [],
     };
     if (typeof instanceInvocationArguments.enableTraceLog === "number")
@@ -334,6 +340,14 @@ if (instanceInvocationArguments.enableTraceLog) {
     globalInstance.getTraceLog = getTraceLog;
     globalInstance.formatTraceLog = formatTraceLog;
     globalInstance.addTraceHook = traceLog.postMouseHooks.push.bind(traceLog.postMouseHooks);
+}
+
+// The three constant CindyScript labels of the trace log rows. See the comment
+// in the traceLog literal above for why they cannot be built eagerly; every
+// caller below is a function body, so first use is safely past module
+// evaluation.
+function traceLabel(key, name) {
+    return traceLog[key] || (traceLog[key] = General.wrap(name));
 }
 
 function getTraceLog() {
@@ -411,7 +425,7 @@ function tracing2core(n1, n2, o1, o2) {
     // debug = console.log.bind(console);
     if (traceLog && traceLog.currentStep) {
         const logRow = [
-            traceLog.labelTracing2, //                        1
+            traceLabel("labelTracing2", "tracing2"), //                        1
             General.wrap(traceLog.currentElement.name), //    2
             List.turnIntoCSList(res), //                      3
             List.turnIntoCSList([o1, o2]), //                 4
@@ -471,7 +485,7 @@ function tracing2core(n1, n2, o1, o2) {
     }
     return res;
 }
-tracing2.stateSize = 12; // two three-element complex vectors
+tracing2.stateSize = tracing2StateSize;
 
 function tracing4(n1, n2, n3, n4) {
     const o1 = getStateComplexVector(3);
@@ -487,7 +501,7 @@ function tracing4(n1, n2, n3, n4) {
     putStateComplexVector(res[3]);
     return List.turnIntoCSList(res);
 }
-tracing4.stateSize = 24; // four three-element complex vectors
+tracing4.stateSize = tracing4StateSize;
 
 function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
     let debug = function () {};
@@ -571,7 +585,7 @@ function tracing4core(n1, n2, n3, n4, o1, o2, o3, o4) {
 
     if (traceLog && traceLog.currentStep) {
         const logRow = [
-            traceLog.labelTracing4, //                        1
+            traceLabel("labelTracing4", "tracing4"), //                        1
             General.wrap(traceLog.currentElement.name), //    2
             List.turnIntoCSList(res), //                      3
             List.turnIntoCSList(old_el), //                   4
@@ -737,7 +751,7 @@ function tracingSesq(newVecs) {
     let debug = function () {};
     if (traceLog && traceLog.currentStep) {
         const logRow = [
-            traceLog.labelTracingSesq, //                     1
+            traceLabel("labelTracingSesq", "tracingSesq"), //                     1
             General.wrap(traceLog.currentElement.name), //    2
             List.turnIntoCSList(res), //                      3
             List.turnIntoCSList(oldVecs), //                  4
@@ -805,7 +819,7 @@ function tracing2Conics(c1, c2) {
     return List.turnIntoCSList([r1, r2]);
 }
 
-tracing2Conics.stateSize = 24;
+tracing2Conics.stateSize = tracing2ConicsStateSize;
 
 export {
     traceMouseAndScripts,

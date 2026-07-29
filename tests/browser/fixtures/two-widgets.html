@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>CindyJS: two independent widgets</title>
+        <script type="text/javascript" src="../../../build/js/Cindy.js"></script>
+        <link rel="stylesheet" href="../../../css/cindy.css" />
+    </head>
+
+    <body style="font-family: Arial">
+        <!--
+            Regression fixture for the multi-instance semantics of build/js/Cindy.js
+            (Phase 1, step 7a of MODERNIZATION.md).
+
+            The whole interpreter is re-evaluated inside CindyJS.newInstance, once per
+            widget, because ~94 of its top-level bindings are per-widget runtime state.
+            Every step that moves code out of that factory (step 8 hoists provably
+            stateless subsystems out of it) risks turning one of those bindings into
+            shared state, and shared state between two widgets on one page is exactly
+            what this fixture makes visible.
+
+            Both widgets therefore use the SAME CindyScript variable names (`tint`,
+            `mark`, `boxes`) and the SAME geometry element name (`A`) with DIFFERENT
+            values, and each fills a stack of discs in colours derived from its own
+            `tint`. If interpreter state leaked between them, either both canvases end
+            up the same colour or one widget repaints with the other's numbers.
+        -->
+        <h1>Widget one</h1>
+        <script id="csdrawA" type="text/x-cindyscript">
+            tint = 0;
+            mark = 1;
+            boxes = 3;
+            repeat(boxes, i,
+              fillcircle((0, 0), 2 - (i - 1) * 0.6,
+                         color -> (tint, 1 - tint, i / boxes));
+            );
+        </script>
+        <div id="widgetA" style="width: 240px; height: 240px; border: 2px solid #000000"></div>
+
+        <h1>Widget two</h1>
+        <script id="csdrawB" type="text/x-cindyscript">
+            tint = 1;
+            mark = 2;
+            boxes = 3;
+            repeat(boxes, i,
+              fillcircle((0, 0), 2 - (i - 1) * 0.6,
+                         color -> (tint, 1 - tint, i / boxes));
+            );
+        </script>
+        <div id="widgetB" style="width: 240px; height: 240px; border: 2px solid #000000"></div>
+
+        <script type="text/javascript">
+            window.widgetA = CindyJS({
+                canvasname: "widgetA",
+                drawscript: "csdrawA",
+                geometry: [{ name: "A", kind: "P", type: "Free", pos: [1, 1, 1] }],
+            });
+
+            window.widgetB = CindyJS({
+                canvasname: "widgetB",
+                drawscript: "csdrawB",
+                geometry: [{ name: "A", kind: "P", type: "Free", pos: [3, 3, 1] }],
+            });
+        </script>
+    </body>
+</html>

@@ -32,8 +32,12 @@ const srcRoot = path.join(repoRoot, "src", "js");
 const verbose = process.argv.includes("--verbose");
 
 // Not part of the module graph:
-//   Head.js / Tail.js  - concat-only scaffolding, deleted at the flip
+//   Head.js / Tail.js  - concat-only scaffolding, deleted in step 7b
 //   ifs/, includes/    - web worker / asm.js payloads built separately
+//
+// expose.browser.js IS checked: it is a real module (the shipping variant of
+// the environment seam), it just gets substituted for expose.js at build time
+// rather than imported by name.
 const skipDirs = new Set(["ifs", "includes"]);
 const skipFiles = new Set(["Head.js", "Tail.js"]);
 
@@ -42,13 +46,19 @@ const skipFiles = new Set(["Head.js", "Tail.js"]);
 // external (a DOM global, the CindyJS global itself, third-party code such as
 // katex) rather than a missing import.
 //
-// Derived from what the current tree needs: nothing. Steps 1-4 of phase 1 made
-// every cross-file reference explicit, so the collision candidates - "window",
-// "document" and "nada" (DOM globals / the shared undefined value, all exported
-// as stubs by expose.ts) and "CindyJS" (the global built by Head.js, exported
-// by Setup.js as the value of `this`) - are imported everywhere they are used.
-// The list stays empty until a genuinely external reference needs it.
-const externalAllowlist = new Set([]);
+// Steps 1-4 of phase 1 made every cross-file reference explicit, so the
+// collision candidates - "window", "document", "nada" and "CindyJS" (DOM
+// globals, the shared undefined value and the page-global API object, all
+// provided by the environment seam expose.ts / expose.browser.js) - are
+// imported everywhere they are used.
+//
+// The one genuine external is "generateId": src/js/CindyJS.js owns the id
+// counter and is evaluated ONCE per page, while the instance graph is
+// re-evaluated per widget (see tools/build-cindy.js). Importing it would make
+// esbuild inline a second counter into every widget, so libgeo/GeoOps.js reads
+// it as a free identifier that the newInstance wrapper binds - the same way the
+// concatenated build resolved it into Head.js's scope.
+const externalAllowlist = new Set(["generateId"]);
 
 // Free globals that every browser/node file may use without an import. Only
 // used for the informational report of "externals the bundle has to provide".
@@ -415,6 +425,59 @@ for (const [from, tos] of initEdges) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+// (d3) The order ESM actually produces, and whether the init-time edges
+// survive it.
+//
+// Every fragile edge above is a coin flip whose outcome is decided by one
+// deterministic thing: the depth-first traversal from the entry module. So
+// rather than trusting it, replay it. `evalIndex` is the position each module
+// body gets - dependencies first, a module already on the stack (a cycle)
+// contributing nothing, which is exactly the specified ESM order and exactly
+// the order esbuild inlines the module bodies in.
+//
+// An init-time edge A -> B that comes out with B *after* A is a live bug: A
+// reads a binding B has not assigned yet. That is how the flip to the bundled
+// build broke every geometry operation whose state size came from Tracing.js
+// (fixed by libgeo/TracingSizes.js), and it cost a doctest run to find. It is a
+// hard failure from here on.
+
+const importOrder = new Map(); // file -> [target files], in source order
+for (const [file, ast] of asts) {
+    const targets = [];
+    for (const node of ast.program.body) {
+        if (!node.source) continue;
+        if (
+            node.type !== "ImportDeclaration" &&
+            node.type !== "ExportNamedDeclaration" &&
+            node.type !== "ExportAllDeclaration"
+        )
+            continue;
+        const target = resolveSpecifier(node.source.value, file);
+        if (target && !targets.includes(target)) targets.push(target);
+    }
+    importOrder.set(file, targets);
+}
+
+const evalIndex = new Map();
+const evalVisiting = new Set();
+function evaluateModule(file) {
+    if (evalIndex.has(file) || evalVisiting.has(file)) return;
+    evalVisiting.add(file);
+    for (const target of importOrder.get(file) || []) evaluateModule(target);
+    evalVisiting.delete(file);
+    evalIndex.set(file, evalIndex.size);
+}
+evaluateModule(path.join(srcRoot, "index.js"));
+
+const invertedInitEdges = [];
+for (const [from, tos] of initEdges) {
+    for (const [to, names] of tos) {
+        if (!evalIndex.has(from) || !evalIndex.has(to)) continue; // not reachable from the entry
+        if (evalIndex.get(to) > evalIndex.get(from)) invertedInitEdges.push([from, to, names]);
+    }
+}
+
 let edgeCount = 0;
 for (const tos of allEdges.values()) edgeCount += tos.size;
 let initEdgeCount = 0;
@@ -480,7 +543,19 @@ for (const comp of allSCCs) {
 
 console.log(`\n(d2) order-fragile init-time edges (inside a cycle, reported, not failed): ${fragileInitEdges.length}`);
 for (const [from, to] of fragileInitEdges.sort((a, b) => rel(a[0]).localeCompare(rel(b[0])))) {
-    console.log(`    ${short(from)} -> ${short(to)}`);
+    const ok = evalIndex.has(from) && evalIndex.has(to) && evalIndex.get(to) < evalIndex.get(from);
+    console.log(`    ${short(from)} -> ${short(to)}  ${ok ? "(order holds)" : "(INVERTED)"}`);
+}
+
+console.log(`\n(d3) init-time edges inverted by the actual evaluation order: ${invertedInitEdges.length}`);
+if (invertedInitEdges.length) {
+    problems.push(`${invertedInitEdges.length} init-time edge(s) evaluated in the wrong order`);
+    for (const [from, to, names] of invertedInitEdges.sort((a, b) => rel(a[0]).localeCompare(rel(b[0])))) {
+        console.log(`    ${short(from)} reads ${names.sort().join(", ")} from ${short(to)}, which is evaluated LATER`);
+    }
+} else if (verbose) {
+    const order = [...evalIndex.entries()].sort((a, b) => a[1] - b[1]).map(([f]) => short(f));
+    console.log("    evaluation order: " + order.join(" "));
 }
 
 const externals = [...nonStandardGlobals.keys()].sort();
@@ -493,4 +568,4 @@ if (problems.length) {
     console.log("\nFAILED: " + problems.join("; "));
     process.exit(1);
 }
-console.log("\nOK: no unresolved specifiers, no missing imports, no init-time cycles.");
+console.log("\nOK: no unresolved specifiers, no missing imports, no init-time cycles, no inverted init-time edges.");

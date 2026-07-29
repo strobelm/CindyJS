@@ -40,6 +40,11 @@ module.exports = tseslint.config(
                 ...globals.mocha,
                 Atomics: "readonly",
                 SharedArrayBuffer: "readonly",
+                // Not in the es2017 set above (globalThis is ES2020). Used by
+                // src/js/CindyJS.js and src/js/expose.browser.js to reach the
+                // real DOM globals without a bare reference that would throw
+                // when the bundle is loaded under node.
+                globalThis: "readonly",
                 ClipperLib: "writable",
                 enableInlineVideo: "writable",
                 WebKitMutationObserver: "writable",

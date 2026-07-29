@@ -202,3 +202,88 @@ for (const testCase of CASES) {
         expect(failures.failedRequests, "failed or 4xx/5xx requests").toEqual([]);
     });
 }
+
+/**
+ * The multi-instance regression test.
+ *
+ * `build/js/Cindy.js` re-evaluates its whole interpreter inside
+ * `CindyJS.newInstance`, once per widget - that re-evaluation IS the
+ * multi-instance mechanism (Phase 1, step 7a of MODERNIZATION.md), and the four
+ * single-widget cases above cannot observe it at all. This one loads two
+ * widgets whose scripts use identical variable and element names with different
+ * values and checks that neither the interpreter state nor the geometry leaked
+ * between them:
+ *
+ *   - both canvases are painted, and painted DIFFERENTLY,
+ *   - each instance still evaluates its own `mark` and its own point `A`,
+ *   - `CindyJS.instances` holds exactly the two of them,
+ *   - and no page error or console error was produced.
+ *
+ * It is also the guard for step 8, which hoists modules out of the factory one
+ * subsystem at a time: the first hoist that shares mutable state turns one of
+ * these assertions red.
+ */
+test("two independent widgets on one page", async ({ page }) => {
+    const failures = collectFailures(page);
+
+    await page.goto(`${baseURL()}/tests/browser/fixtures/two-widgets.html`, { waitUntil: "load" });
+
+    const canvasA = page.locator("#widgetA canvas");
+    const canvasB = page.locator("#widgetB canvas");
+    await expect(canvasA).toBeVisible();
+    await expect(canvasB).toBeVisible();
+
+    let statsA, statsB;
+    await expect
+        .poll(
+            async () => {
+                statsA = await canvasStats(page, "#widgetA canvas");
+                statsB = await canvasStats(page, "#widgetB canvas");
+                return Math.min(statsA.paintedPixels, statsB.paintedPixels);
+            },
+            { message: "one of the two widgets stayed blank", timeout: 30_000 }
+        )
+        .toBeGreaterThan(500);
+
+    // Different `tint` per widget, so the two pictures must not coincide. The
+    // dominant colour is the background, hence the comparison over the shares
+    // of the painted pixels rather than over a screenshot hash.
+    expect(statsA.distinctColors).toBeGreaterThan(2);
+    expect(statsB.distinctColors).toBeGreaterThan(2);
+    const identical = await page.evaluate(async () => {
+        const shot = (sel) => document.querySelector(sel).toDataURL();
+        return shot("#widgetA canvas") === shot("#widgetB canvas");
+    });
+    expect(identical, "both widgets rendered the same picture - shared interpreter state?").toBe(false);
+
+    // The decisive check: each instance's namespace is its own.
+    const state = await page.evaluate(() => {
+        // evalcs returns a CindyScript value; unwrap the real part of numbers.
+        const num = (instance, code) => {
+            const value = instance.evalcs(code);
+            return value && value.ctype === "number" ? value.value.real : value && value.ctype;
+        };
+        return {
+            markA: num(window.widgetA, "mark"),
+            markB: num(window.widgetB, "mark"),
+            tintA: num(window.widgetA, "tint"),
+            tintB: num(window.widgetB, "tint"),
+            axA: num(window.widgetA, "A.x"),
+            axB: num(window.widgetB, "A.x"),
+            instances: window.CindyJS.instances.length,
+            distinct: window.widgetA !== window.widgetB,
+        };
+    });
+    expect(state.distinct).toBe(true);
+    expect(state.instances).toBe(2);
+    expect(state.markA, "widget one's `mark`").toBe(1);
+    expect(state.markB, "widget two's `mark`").toBe(2);
+    expect(state.tintA, "widget one's `tint`").toBe(0);
+    expect(state.tintB, "widget two's `tint`").toBe(1);
+    expect(state.axA, "widget one's point A").toBeCloseTo(1, 6);
+    expect(state.axB, "widget two's point A").toBeCloseTo(3, 6);
+
+    expect(failures.pageErrors, "uncaught page errors").toEqual([]);
+    expect(failures.consoleErrors, "console.error output").toEqual([]);
+    expect(failures.failedRequests, "failed or 4xx/5xx requests").toEqual([]);
+});

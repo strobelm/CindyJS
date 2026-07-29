@@ -3,13 +3,14 @@
 var fs = require("fs"),
     path = require("path");
 global.navigator = {};
-var CindyJS = require("../../build/js/Cindy.plain.js");
+// The shipping artifact, built from the ES module graph by tools/build-cindy.js.
+var CindyJS = require("../../build/js/Cindy.js");
 
 var refdir = path.dirname(__dirname);
 var println = console.log.bind(console);
 var exportJSON = false;
 
-var reTestLine = /^    ([<>!.] )?(.*)/gm;
+var reTestLine = /^ {4}([<>!.] )?(.*)/gm;
 var failures = 0,
     numtests = 0;
 var cjs, fakeCanvas;
