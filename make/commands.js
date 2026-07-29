@@ -3,11 +3,10 @@
 var chalk = require("chalk");
 var cp = require("child_process");
 var fs = require("fs");
+var fsp = require("fs/promises");
 var glob = require("glob");
+var nodeUtil = require("util");
 var path = require("path");
-var Q = require("q");
-var qfs = require("q-io/fs");
-var request = require("request");
 var rimraf = require("rimraf");
 var stream = require("stream");
 var touch = require("touch");
@@ -16,8 +15,11 @@ var WholeLineStream = require("whole-line-stream");
 var BuildError = require("./BuildError");
 var util = require("./util");
 
+var globAsync = nodeUtil.promisify(glob);
+var rmrf = nodeUtil.promisify(rimraf);
+
 function cmdImpl(task, opts, command, args) {
-    return Q.Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var cmdline = [command || "node"].concat(args).join(" ");
         task.log(cmdline);
         var spawnOpts = { stdio: ["ignore", "pipe", "pipe"] };
@@ -156,28 +158,34 @@ exports.sass = function (src, dst) {
     this.addJob(function () {
         task.log(src + " \u219d " + dst);
         var basename = path.basename(dst);
-        return Q.fcall(require, "sass")
-            .ninvoke("render", {
-                file: src,
-                outFile: basename,
-                sourceMap: basename + ".map",
-                sourceMapRoot: path.relative(path.dirname(dst), "."),
-            })
-            .then(
-                function (res) {
-                    return Q.all([qfs.write(dst, res.css), qfs.write(dst + ".map", res.map)]);
+        return new Promise(function (resolve, reject) {
+            require("sass").render(
+                {
+                    file: src,
+                    outFile: basename,
+                    sourceMap: basename + ".map",
+                    sourceMapRoot: path.relative(path.dirname(dst), "."),
                 },
-                function (err) {
-                    throw new BuildError("Error applying SASS to " + src + ": " + err.message);
+                function (err, res) {
+                    if (err) reject(err);
+                    else resolve(res);
                 }
             );
+        }).then(
+            function (res) {
+                return Promise.all([fsp.writeFile(dst, res.css), fsp.writeFile(dst + ".map", res.map)]);
+            },
+            function (err) {
+                throw new BuildError("Error applying SASS to " + src + ": " + err.message);
+            }
+        );
     });
 };
 
 exports.touch = function (dst) {
     this.output(dst);
     this.addJob(function () {
-        return Q.nfcall(touch, dst);
+        return touch(dst);
     });
 };
 
@@ -185,19 +193,19 @@ exports.copy = function (src, dst) {
     this.input(src);
     this.output(dst);
     this.addJob(function () {
-        return qfs.copy(src, dst);
+        return fsp.copyFile(src, dst);
     });
 };
 
 exports.delete = function (name) {
     this.addJob(function () {
-        return Q.nfcall(rimraf, name);
+        return rmrf(name);
     });
 };
 
 exports.mkdir = function (name) {
     this.addJob(function () {
-        return qfs.makeTree(name, 7 * 8 * 8 + 7 * 8 + 7);
+        return fsp.mkdir(name, { recursive: true, mode: 7 * 8 * 8 + 7 * 8 + 7 });
     });
 };
 
@@ -207,7 +215,12 @@ exports.process = function (src, dst, transformation) {
     this.output(dst);
     this.addJob(function () {
         task.log(src + " \u219d " + dst);
-        return qfs.read(src).then(transformation).then(qfs.write.bind(qfs, dst));
+        return fsp
+            .readFile(src, "utf-8")
+            .then(transformation)
+            .then(function (content) {
+                return fsp.writeFile(dst, content);
+            });
     });
 };
 
@@ -229,7 +242,7 @@ exports.forbidden = function (files, expressions) {
             listFiles = gitLsFiles(task);
             files = "all versioned files";
         } else {
-            listFiles = Q.nfcall(glob, files, opts);
+            listFiles = globAsync(files, opts);
         }
         task.log(
             "Looking for " +
@@ -241,9 +254,9 @@ exports.forbidden = function (files, expressions) {
         );
         return listFiles.then(function (files) {
             var errors = 0;
-            return Q.all(
+            return Promise.all(
                 files.map(function (path) {
-                    return qfs.read(path).then(
+                    return fsp.readFile(path, "utf-8").then(
                         function (content) {
                             expressions.forEach(function (expression) {
                                 var match;
@@ -257,7 +270,7 @@ exports.forbidden = function (files, expressions) {
                         },
                         function (err) {
                             if (err.code !== "ENOENT") throw err;
-                            return Q.nfcall(fs.lstat, path).then(function (stats) {
+                            return fsp.lstat(path).then(function (stats) {
                                 if (!stats.isSymbolicLink()) throw err;
                             });
                         }
@@ -274,19 +287,21 @@ exports.excomp = function (filesPattern, parserFile, checkfunc) {
     var task = this;
     this.addJob(function () {
         // load parser without caching
-        var parser = qfs.read(parserFile).then(function (body) {
+        var parser = fsp.readFile(parserFile, "utf-8").then(function (body) {
             var exports = {};
             var module = { exports: {} };
             new Function("module", "exports", "require", body)(module, module.exports);
             return module.exports;
         });
-        return Q.all([Q.nfcall(glob, filesPattern, { nodir: true }), parser]).spread(function (files, parser) {
+        return Promise.all([globAsync(filesPattern, { nodir: true }), parser]).then(function (results) {
+            var files = results[0],
+                parser = results[1];
             var failed = 0;
             var count = 0;
             task.log("Compiling example scripts from " + files.length + " examples");
-            return Q.all(
+            return Promise.all(
                 files.map(function (file) {
-                    return qfs.read(file).then(function (html) {
+                    return fsp.readFile(file, "utf-8").then(function (html) {
                         try {
                             count += checkfunc(html, parser) | 0;
                         } catch (err) {
@@ -307,14 +322,18 @@ exports.download = function (url, dst) {
     var task = this;
     this.output(dst);
     this.addJob(function () {
-        return Q.Promise(function (resolve, reject) {
-            task.log("Downloading " + url);
-            var out = fs.createWriteStream(dst + ".part");
-            request.get(url).on("error", reject).pipe(out);
-            out.on("error", reject).on("finish", function () {
-                Q.nfcall(fs.rename, dst + ".part", dst).then(resolve, reject);
+        task.log("Downloading " + url);
+        return fetch(url)
+            .then(function (response) {
+                if (!response.ok)
+                    throw new BuildError(
+                        "Failed to download " + url + ": " + response.status + " " + response.statusText
+                    );
+                return util.pipe(stream.Readable.fromWeb(response.body), fs.createWriteStream(dst + ".part"));
+            })
+            .then(function () {
+                return fsp.rename(dst + ".part", dst);
             });
-        });
     });
 };
 
@@ -355,30 +374,37 @@ exports.unzip = function (src, dst, files) {
     this.addJob(function () {
         task.log("unzip " + src + " to " + dst);
         var yauzl = require("yauzl"); // load lazily, only when needed
+        var openZip = nodeUtil.promisify(yauzl.open);
         var zipFile, readNext;
-        return Q.nfcall(yauzl.open, src, { lazyEntries: true }).then(function (zf) {
+        return openZip(src, { lazyEntries: true }).then(function (zf) {
             zipFile = zf;
             readNext = zipFile.readEntry.bind(zipFile);
             process.nextTick(readNext);
-            return Q.Promise(function (resolve, reject) {
+            return new Promise(function (resolve, reject) {
                 zipFile.on("error", reject);
                 zipFile.on("end", resolve);
                 zipFile.on("entry", function (entry) {
-                    handleEntry(entry).then(readNext).catch(reject).done();
+                    handleEntry(entry).then(readNext).catch(reject);
                 });
             });
         });
         function handleEntry(entry) {
-            if (!listed(entry.fileName)) return Q(); // skip this file
+            if (!listed(entry.fileName)) return Promise.resolve(); // skip this file
             var dst = outFile(entry.fileName);
-            if (entry.fileName[entry.fileName.length - 1] === "/") return qfs.makeTree(dst, 7 * 8 * 8 + 7 * 8 + 7);
-            return qfs
-                .makeTree(path.dirname(dst), 7 * 8 * 8 + 7 * 8 + 7)
+            if (entry.fileName[entry.fileName.length - 1] === "/")
+                return fsp.mkdir(dst, { recursive: true, mode: 7 * 8 * 8 + 7 * 8 + 7 });
+            return fsp
+                .mkdir(path.dirname(dst), { recursive: true, mode: 7 * 8 * 8 + 7 * 8 + 7 })
                 .then(function () {
-                    return Q.ninvoke(zipFile, "openReadStream", entry);
+                    return new Promise(function (resolve, reject) {
+                        zipFile.openReadStream(entry, function (err, inStream) {
+                            if (err) reject(err);
+                            else resolve(inStream);
+                        });
+                    });
                 })
                 .then(function (inStream) {
-                    return util.qpipe(inStream, fs.createWriteStream(dst));
+                    return util.pipe(inStream, fs.createWriteStream(dst));
                 });
         }
     });

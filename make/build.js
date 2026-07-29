@@ -1,10 +1,9 @@
 "use strict";
 
 var fs = require("fs");
+var fsp = require("fs/promises");
 var glob = require("glob");
 var path = require("path");
-var Q = require("q");
-var qfs = require("q-io/fs");
 
 var getversion = require("./getversion");
 var src = require("./sources");
@@ -58,7 +57,7 @@ module.exports = function build(settings, task) {
             return require("../tools/cs2js")
                 .compileFiles(cssrc)
                 .then(function (jscode) {
-                    return qfs.write(dst, jscode);
+                    return fsp.writeFile(dst, jscode);
                 });
         });
     });

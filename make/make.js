@@ -7,10 +7,11 @@
  */
 
 var chalk = require("chalk");
-var fs = require("fs");
-var Q = require("q");
-var qfs = require("q-io/fs");
+var fsp = require("fs/promises");
 var rimraf = require("rimraf");
+var util = require("util");
+
+var rmrf = util.promisify(rimraf);
 
 var BuildError = require("./BuildError");
 var buildRules = require("./build");
@@ -22,18 +23,18 @@ module.exports = function make(settings, tasksToRun, doClean) {
     buildRules(settings, tasks.task); // Execute task definitions
     tasks.complete();
     if (tasksToRun.length === 0 && !doClean) tasksToRun = ["all"];
-    return Q.Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         process.nextTick(resolve); // detach from call stack
     })
         .then(function () {
             if (!doClean) return;
             console.log("Deleting build directory");
-            return Q.nfcall(rimraf, "build").then(function () {
-                return Q.nfcall(rimraf, "plugins/ComplexCurves/lib/ComplexCurves");
+            return rmrf("build").then(function () {
+                return rmrf("plugins/ComplexCurves/lib/ComplexCurves");
             });
         })
         .then(function () {
-            return qfs.makeTree("build", 7 * 8 * 8 + 7 * 8 + 7);
+            return fsp.mkdir("build", { recursive: true, mode: 7 * 8 * 8 + 7 * 8 + 7 });
         })
         .then(function () {
             return tasks.schedule(tasksToRun);

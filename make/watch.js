@@ -7,7 +7,6 @@
  * reload of connected browsers.
  */
 
-var Q = require("q");
 var chalk = require("chalk");
 var chokidar = require("chokidar");
 var browserSync = require("browser-sync");
@@ -32,7 +31,11 @@ var ignored = [
 ];
 
 module.exports = function watch(makeOnce, doClean) {
-    var deferred = Q.defer();
+    var deferred = {};
+    deferred.promise = new Promise(function (resolve, reject) {
+        deferred.resolve = resolve;
+        deferred.reject = reject;
+    });
     var watcher;
 
     var bs = browserSync.create("CindyJS");
@@ -60,7 +63,7 @@ module.exports = function watch(makeOnce, doClean) {
 
     function make(doClean) {
         console.log(chalk.yellow("Starting build"));
-        makeOnce(doClean).then(gotResult).catch(fail).done();
+        makeOnce(doClean).then(gotResult).catch(fail);
     }
 
     function fail(err) {
@@ -84,6 +87,7 @@ module.exports = function watch(makeOnce, doClean) {
             } else {
                 var msg = String(result.error)
                     .replace(/\n[^]*/, "")
+                    // eslint-disable-next-line no-control-regex -- strips ANSI color codes
                     .replace(/\x1b\[[0-9,;]*m/g, "")
                     .replace(/&/g, "&amp;")
                     .replace(/</g, "&lt;")

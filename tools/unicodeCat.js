@@ -38,8 +38,6 @@
 
 "use strict";
 
-const request = require("request");
-
 create(
     "unicodeLetters",
     "https://raw.githubusercontent.com/mathiasbynens/unicode-8.0.0/" +
@@ -47,15 +45,19 @@ create(
 );
 
 function create(name, url, filter) {
-    request(url, (err, resp, body) => {
-        if (err) throw err;
-        var f = Function("module", body.toString());
-        var m = {};
-        f(m);
-        var cps = m.exports;
-        if (filter) cps = cps.filter(filter);
-        compress(name, cps);
-    });
+    fetch(url)
+        .then((resp) => {
+            if (!resp.ok) throw Error("Failed to download " + url + ": " + resp.status + " " + resp.statusText);
+            return resp.text();
+        })
+        .then((body) => {
+            var f = Function("module", body);
+            var m = {};
+            f(m);
+            var cps = m.exports;
+            if (filter) cps = cps.filter(filter);
+            compress(name, cps);
+        });
 }
 
 function compress(name, cps) {

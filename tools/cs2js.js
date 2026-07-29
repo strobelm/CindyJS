@@ -2,8 +2,7 @@
 
 "use strict";
 
-var Q = require("q");
-var qfs = require("q-io/fs");
+var fsp = require("fs/promises");
 var parse = require("../src/js/libcs/Parser.js").parse;
 
 if (!String.prototype.startsWith) {
@@ -67,7 +66,6 @@ Visitor.prototype.visit = function (expr) {
                         this.statement(expr.args[0]);
                         return this.visit(expr.args[1]);
                     }
-                    break;
                 case "=":
                     if (expr.args[0].ctype === "variable") {
                         if (this.isLocal(expr.args[0].name)) {
@@ -92,7 +90,6 @@ Visitor.prototype.visit = function (expr) {
                     }
                     throw Error("Operator unsupported: " + expr.oper);
             }
-            break;
         case "function":
             var key1 = "fun_" + expr.oper;
             var key2 = "fun_" + expr.name;
@@ -103,7 +100,6 @@ Visitor.prototype.visit = function (expr) {
             } else {
                 return this.cscall("evaluator." + expr.oper, expr.args, expr.modifs);
             }
-            break;
         case "variable":
             if (this.isLocal(expr.name)) {
                 return this.local[expr.name];
@@ -129,10 +125,10 @@ Visitor.prototype.cscall = function (name, args, modifs) {
     modifs = modifs || {};
     var keys = Object.keys(modifs).slice();
     keys.sort();
-    var modifs = keys.map(function (key) {
+    var modifStrings = keys.map(function (key) {
         return key + ": " + this.visit(modifs[key]);
     }, this);
-    return [name, "([", args.map(this.visit, this).join(", "), "], {", modifs.join(", "), "})"].join("");
+    return [name, "([", args.map(this.visit, this).join(", "), "], {", modifStrings.join(", "), "})"].join("");
 };
 
 Visitor.prototype.fun_regional = function (args, modifs) {
@@ -218,11 +214,11 @@ function serialize() {
 }
 
 function loadFile(path) {
-    return qfs.read(path).then(parse);
+    return fsp.readFile(path, "utf-8").then(parse);
 }
 
 function compileFiles(files) {
-    return Q.all(files.map(loadFile)).then(function (codes) {
+    return Promise.all(files.map(loadFile)).then(function (codes) {
         codes.forEach(top);
         return serialize();
     });
@@ -231,7 +227,13 @@ function compileFiles(files) {
 module.exports.compileFiles = compileFiles;
 
 if (require.main === module) {
-    return compileFiles(process.argv.slice(2)).done(function (res) {
-        process.stdout.write(res);
-    });
+    compileFiles(process.argv.slice(2)).then(
+        function (res) {
+            process.stdout.write(res);
+        },
+        function (err) {
+            console.error(err.stack || String(err));
+            process.exit(1);
+        }
+    );
 }

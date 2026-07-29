@@ -1,10 +1,9 @@
 "use strict";
 
 var fs = require("fs");
+var fsp = require("fs/promises");
 var os = require("os");
 var path = require("path");
-var Q = require("q");
-var qfs = require("q-io/fs");
 var util = require("util");
 var marked = require("marked");
 
@@ -206,7 +205,12 @@ Page.prototype.makeOpts = function () {
 
 Page.prototype.renderBody = function () {
     var self = this;
-    return Q.nfcall(marked, this.md, this.makeOpts()).then(function (html) {
+    return new Promise(function (resolve, reject) {
+        marked(self.md, self.makeOpts(), function (err, html) {
+            if (err) reject(err);
+            else resolve(html);
+        });
+    }).then(function (html) {
         self.html = html;
         return self;
     });
@@ -249,14 +253,16 @@ InMemoryPipeline.prototype.addPage = function (name, md, extra) {
     var self = this;
     var page = this.createPage(name);
     page.extra = extra;
-    var res = Q(md)
+    var res = Promise.resolve(md)
         .then(function (md) {
             page.md = md;
             return page.renderBody();
         })
         .then(this.pageRendered.bind(this, page))
         .then(this.writePage.bind(this, page))
-        .thenResolve(page);
+        .then(function () {
+            return page;
+        });
     this.pages.push(res);
     return res;
 };
@@ -270,7 +276,7 @@ InMemoryPipeline.prototype.writePage = function (page) {
 };
 
 InMemoryPipeline.prototype.done = function () {
-    return Q.all(this.pages).then(this.postprocess.bind(this));
+    return Promise.all(this.pages).then(this.postprocess.bind(this));
 };
 
 InMemoryPipeline.prototype.postprocess = function (pages) {
@@ -384,7 +390,16 @@ InMemoryPipeline.prototype.createIndex = function (pages) {
             "</div>"
         )
         .join("\n");
-    return Q(this.pageRendered(indexPage)).then(this.writePage.bind(this, indexPage)).delay(500).thenResolve(indexPage);
+    return Promise.resolve(this.pageRendered(indexPage))
+        .then(this.writePage.bind(this, indexPage))
+        .then(function () {
+            return new Promise(function (resolve) {
+                setTimeout(resolve, 500);
+            });
+        })
+        .then(function () {
+            return indexPage;
+        });
 };
 
 InMemoryPipeline.prototype.reportExternalLinks = function (page) {
@@ -414,7 +429,7 @@ FileBasedPipeline.prototype.processFiles = function (names) {
 
 FileBasedPipeline.prototype.addFile = function (file) {
     var name = path.basename(file, ".md") + ".html";
-    return this.addPage(name, qfs.read(file));
+    return this.addPage(name, fsp.readFile(file, "utf-8"));
 };
 
 FileBasedPipeline.prototype.template = function () {
@@ -430,7 +445,7 @@ FileBasedPipeline.prototype.pageRendered = function (page) {
 };
 
 FileBasedPipeline.prototype.writePage = function (page) {
-    return qfs.write(path.join(this.outdir, page.name), page.html);
+    return fsp.writeFile(path.join(this.outdir, page.name), page.html);
 };
 
 FileBasedPipeline.prototype.reportExternalLinks = function (links) {
@@ -469,7 +484,7 @@ function main() {
         args.splice(0, 2);
     }
     var pipeline = new FileBasedPipeline(outDir);
-    pipeline.processFiles(args).done(
+    pipeline.processFiles(args).then(
         function () {
             exitStatus = 0;
         },

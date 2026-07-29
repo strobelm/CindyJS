@@ -9,10 +9,8 @@
  */
 
 var chalk = require("chalk");
-var fs = require("fs");
+var fsp = require("fs/promises");
 var path = require("path");
-var Q = require("q");
-var qfs = require("q-io/fs");
 
 var commands = require("./commands");
 
@@ -90,7 +88,7 @@ Task.prototype.parallel = function (callback) {
     callback.call(this);
     this.jobs = backup;
     this.addJob(function () {
-        return Q.all(
+        return Promise.all(
             lst.map(function (job) {
                 return job();
             })
@@ -128,7 +126,7 @@ Task.prototype.forceRun = function (message) {
 
 Task.prototype.allDeps = function (f) {
     var tasks = this.tasks;
-    return Q.all(
+    return Promise.all(
         this.deps.map(function (name) {
             return f(tasks.get(name));
         })
@@ -136,11 +134,11 @@ Task.prototype.allDeps = function (f) {
 };
 
 function times(files) {
-    return Q.all(
+    return Promise.all(
         files.map(function (path) {
-            return qfs.stat(path).then(
+            return fsp.stat(path).then(
                 function (stat) {
-                    return stat.lastModified().getTime();
+                    return stat.mtime.getTime();
                 },
                 function (err) {
                     if (err.code === "ENOENT") return null;
@@ -166,11 +164,11 @@ Task.prototype.mustRun = function () {
         // There are no outputs, so this task runs for its side effects.
         // This avoids having to declare all such tasks as PHONY.
         log("has no outputs; run it");
-        return (this.mustRunCache = Q(true));
+        return (this.mustRunCache = Promise.resolve(true));
     }
     if (this.runForced) {
         this.log("Forcing run of " + this.name + " since " + this.runForced);
-        return (this.mustRunCache = Q(true));
+        return (this.mustRunCache = Promise.resolve(true));
     }
     return (this.mustRunCache = this.allDeps(function (dep) {
         return dep.mustRun();
@@ -185,7 +183,7 @@ Task.prototype.mustRun = function () {
             if (task.conditions.length === 0) {
                 return false; // check times
             }
-            return Q.all(
+            return Promise.all(
                 task.conditions.map(function (condition) {
                     return condition();
                 })
@@ -200,7 +198,9 @@ Task.prototype.mustRun = function () {
         })
         .then(function (runByCondition) {
             if (runByCondition) return true;
-            return Q.all([times(task.inputs), times(task.outputs)]).spread(function (inTimes, outTimes) {
+            return Promise.all([times(task.inputs), times(task.outputs)]).then(function (results) {
+                var inTimes = results[0],
+                    outTimes = results[1];
                 if (outTimes.indexOf(null) !== -1) {
                     // At least one output file missing, so run
                     log("has missing output; run it");
@@ -246,9 +246,9 @@ Task.prototype.promise = function () {
                     function rethrow() {
                         throw err;
                     }
-                    return Q.allSettled(
-                        task.outputs.forEach(function (name) {
-                            return Q.nfcall(fs.unlink, name);
+                    return Promise.allSettled(
+                        task.outputs.map(function (name) {
+                            return fsp.unlink(name);
                         })
                     ).then(rethrow, rethrow);
                 }
@@ -265,13 +265,15 @@ Task.prototype.mkdirs = function () {
     dirs.sort(function (a, b) {
         return a.length - b.length;
     });
-    return Q.all(
+    return Promise.all(
         dirs.map(function (name) {
-            return qfs.makeTree(name, 7 * 8 * 8 + 7 * 8 + 7);
+            return fsp.mkdir(name, { recursive: true, mode: 7 * 8 * 8 + 7 * 8 + 7 });
         })
     );
 };
 
 Task.prototype.run = function () {
-    return this.jobs.reduce(Q.when, Q());
+    return this.jobs.reduce(function (promise, job) {
+        return promise.then(job);
+    }, Promise.resolve());
 };

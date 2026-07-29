@@ -6,7 +6,6 @@
  */
 
 var chalk = require("chalk");
-var Q = require("q");
 
 var BuildError = require("./BuildError");
 var Task = require("./Task");
@@ -76,14 +75,14 @@ module.exports = function Tasks(settings) {
      */
     this.schedule = function (taskNames) {
         if (settings.get("parallel") === "true") {
-            return Q.all(
+            return Promise.all(
                 taskNames.map(function (name) {
                     return this.get(name).promise();
                 }, this)
             );
         } else {
             var results = [];
-            var promise = Q(results);
+            var promise = Promise.resolve(results);
             taskNames.forEach(function (name) {
                 var task = this.get(name);
                 promise = promise.then(task.promise.bind(task)).then(function (result) {

@@ -7,11 +7,14 @@
  */
 
 var fs = require("fs");
-var Q = require("q");
+var fsp = require("fs/promises");
 
 var prevSettingsFile = "build/prev-settings.json";
 
-module.exports = function Settings() {
+module.exports = Settings;
+module.exports.prevSettingsFile = prevSettingsFile;
+
+function Settings() {
     var configSettings = {
         build: "release",
         closure_urlbase: "https://repo1.maven.org/maven2/com/google/javascript/closure-compiler",
@@ -51,9 +54,7 @@ module.exports = function Settings() {
 
     this.store = function () {
         var json = JSON.stringify(perTaskSettings);
-        // Can't use qfs: https://github.com/kriskowal/q-io/issues/149
-        //return qfs.write(prevSettingsFile, json);
-        return Q.nfcall(fs.writeFile, prevSettingsFile, json);
+        return fsp.writeFile(prevSettingsFile, json);
     };
 
     this.load = function () {
@@ -68,4 +69,4 @@ module.exports = function Settings() {
     this.forget = function (taskName) {
         delete perTaskSettings[taskName];
     };
-};
+}

@@ -1,8 +1,7 @@
 "use strict";
 
 var cp = require("child_process");
-var Q = require("q");
-var qfs = require("q-io/fs");
+var fsp = require("fs/promises");
 
 exports.factory = function (path, varname) {
     // Make sure we run this task only once for every instance of this factory
@@ -29,7 +28,7 @@ function getVersion(path, varname, task) {
     // The fourth entry indicates the number of commits since the given tag.
     // So a number of 0 means an official release.  That's the reason why
     // we use -1 instead of 0 when we don't have a tag to build on.
-    return Q.Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         cp.execFile("git", args, function (err, stdout, stderr) {
             if (stderr) task.log(stderr.replace(/\n$/, ""));
             if (err) {
@@ -55,6 +54,6 @@ function getVersion(path, varname, task) {
         var json = JSON.stringify(parts);
         task.log("Version: " + json);
         if (varname) json = varname + " = " + json + ";\n";
-        return qfs.write(path, json);
+        return fsp.writeFile(path, json);
     });
 }

@@ -8,8 +8,6 @@
 
 var chalk = require("chalk");
 var path = require("path");
-var Q = require("q");
-Q.longStackSupport = true;
 
 var Settings = require("./Settings");
 var make = require("./make");
@@ -40,7 +38,7 @@ function main(args) {
     try {
         settings.load();
     } catch (err) {
-        if (err.code !== "ENOENT") console.error("Problems with " + prevSettingsFile + ": " + err);
+        if (err.code !== "ENOENT") console.error("Problems with " + Settings.prevSettingsFile + ": " + err);
     }
     settings.set = null; // Safety precaution against later modification
 
@@ -74,8 +72,7 @@ function main(args) {
         .catch(function (err) {
             // Failed to print the error above
             process.exit(2);
-        })
-        .done();
+        });
 }
 
 if (require.main === module) main(process.argv.slice(2));
