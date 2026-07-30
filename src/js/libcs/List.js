@@ -1,15 +1,50 @@
 import { nada } from "../expose.js";
 import { CSNumber } from "./CSNumber.js";
 import { General } from "./General.js";
-import { eval_helper } from "./Registry.js";
-import { comp_equals, comp_almostequals } from "./Operators.js";
-import { evaluateAndVal } from "./Evaluator.js";
 
 //==========================================
 //      Lists
 //==========================================
 const List = {};
 List._helper = {};
+
+// The geo->value coercion that Evaluator.js's evaluateAndVal applies: a point
+// stands for its dehomogenized coordinates, a mass for its value. List
+// elements are always evaluated values (every list constructor evaluates, see
+// evaluator.genList), so on an element evaluateAndVal reduces to exactly this
+// coercion - which is what keeps the elementwise semantics of the recursive
+// operations and ~= intact without List importing the interpreter.
+function derefGeo(x) {
+    if (x.ctype === "geo") {
+        const val = x.value;
+        if (val.kind === "P") {
+            return General.withUsage(List.dehom(val.homog), "Point");
+        }
+        if (val.kind === "V") {
+            return val.value;
+        }
+    }
+    return x;
+}
+
+// Elementwise ~= : the semantics of comp_almostequals on evaluated values.
+function almostequalsElem(a, b) {
+    const v0 = derefGeo(a);
+    const v1 = derefGeo(b);
+    if (v0.ctype === "number" && v1.ctype === "number") {
+        return CSNumber._helper.isAlmostEqual(v0, v1);
+    }
+    if (v0.ctype === "string" && v1.ctype === "string") {
+        return v0.value === v1.value;
+    }
+    if (v0.ctype === "boolean" && v1.ctype === "boolean") {
+        return v0.value === v1.value;
+    }
+    if (v0.ctype === "list" && v1.ctype === "list") {
+        return List.almostequals(v0, v1).value;
+    }
+    return false;
+}
 
 List.turnIntoCSList = function (l) {
     return {
@@ -292,7 +327,7 @@ List.contains = function (a, b) {
     const bb = false;
 
     for (const cc of a.value) {
-        if (eval_helper.equals(cc, b).value) {
+        if (General.equals(cc, b).value) {
             return {
                 ctype: "boolean",
                 value: true,
@@ -313,7 +348,7 @@ List.common = function (a, b) {
         let bb = false;
         const cc = a.value[i];
         for (let j = 0; j < b.value.length; j++) {
-            bb = bb || eval_helper.equals(cc, b.value[j]).value;
+            bb = bb || General.equals(cc, b.value[j]).value;
         }
         if (bb) {
             erg[ct] = a.value[i];
@@ -333,7 +368,7 @@ List.remove = function (a, b) {
         let bb = false;
         const cc = a.value[i];
         for (let j = 0; j < b.value.length; j++) {
-            bb = bb || eval_helper.equals(cc, b.value[j]).value;
+            bb = bb || General.equals(cc, b.value[j]).value;
         }
         if (!bb) {
             erg[ct] = a.value[i];
@@ -391,7 +426,7 @@ List.equals = function (a1, a2) {
         if (av1.ctype === "list" && av2.ctype === "list") {
             erg = erg && List.equals(av1, av2).value;
         } else {
-            erg = erg && comp_equals([av1, av2], []).value;
+            erg = erg && General.equals(av1, av2).value;
         }
     }
     return {
@@ -415,7 +450,7 @@ List.almostequals = function (a1, a2) {
         if (av1.ctype === "list" && av2.ctype === "list") {
             erg = erg && List.almostequals(av1, av2).value;
         } else {
-            erg = erg && comp_almostequals([av1, av2], []).value;
+            erg = erg && almostequalsElem(av1, av2);
         }
     }
     return {
@@ -472,7 +507,7 @@ List.set = function (a1) {
     erg1.sort(General.compare);
 
     for (let i = 0; i < erg1.length; i++) {
-        if (i === 0 || !comp_equals([erg[erg.length - 1], erg1[i]], []).value) {
+        if (i === 0 || !General.equals(erg[erg.length - 1], erg1[i]).value) {
             erg[ct] = erg1[i];
             ct++;
         }
@@ -712,7 +747,7 @@ List.normalizeMaxXX = function (a) {
 List.recursive = function (a1, op) {
     const erg = [];
     for (let i = 0; i < a1.value.length; i++) {
-        const av1 = evaluateAndVal(a1.value[i]); //Will man hier evaluieren
+        const av1 = derefGeo(a1.value[i]);
         if (av1.ctype === "number") {
             erg[i] = CSNumber[op](av1);
         } else if (av1.ctype === "list") {

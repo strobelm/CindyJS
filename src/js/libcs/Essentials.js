@@ -1,7 +1,7 @@
 import { nada } from "../expose.js";
 import { csconsole } from "../Setup.js";
 import { CSNumber } from "./CSNumber.js";
-import { List } from "./List.js";
+import { General } from "./General.js";
 import { Json } from "./Json.js";
 import { Dict } from "./Dict.js";
 import { namespace } from "./Namespace.js";
@@ -278,47 +278,12 @@ eval_helper.evaluate = function (name, args, modifs) {
     return nada;
 };
 
+// Structural equality moved to General.equals (the data layer owns it since
+// the List-purity cleanup); the registry name stays for its existing callers.
+// A delegating function, not an init-time alias: Essentials and General sit in
+// the same import cycle, so General may not be evaluated yet at this point.
 eval_helper.equals = function (v0, v1) {
-    // TODO: use this everywhere where elements are compared (see function comp_equals(args, modifs) )
-    //Und nochmals un-OO
-    if (v0.ctype === "number" && v1.ctype === "number") {
-        return {
-            ctype: "boolean",
-            value: v0.value.real === v1.value.real && v0.value.imag === v1.value.imag,
-        };
-    }
-    if (v0.ctype === "string" && v1.ctype === "string") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    if (v0.ctype === "boolean" && v1.ctype === "boolean") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    if (v0.ctype === "list" && v1.ctype === "list") {
-        const erg = List.equals(v0, v1);
-        return erg;
-    }
-    if (v0.ctype === "geo" && v1.ctype === "geo") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    if (v0.ctype === "JSON" && v1.ctype === "JSON") {
-        return {
-            ctype: "boolean",
-            value: v0.value === v1.value,
-        };
-    }
-    return {
-        ctype: "boolean",
-        value: false,
-    };
+    return General.equals(v0, v1);
 };
 
 export { niceprint, defaultNiceprintOptions, evaluator, eval_helper, infixmap, myfunctions };

@@ -281,15 +281,21 @@ lands, then is switched off in one commit.
     exist as the template.
 -   Tighten `tsconfig` incrementally (`strictNullChecks` etc. are currently
     off); enable per-flag once the codebase passes.
--   When `List.js` is converted: move its ~10 interpreter-dependent call sites
-    (`evaluateAndVal`, `comp_equals`/`comp_almostequals`, `eval_helper.equals`
-    in the set-like ops) up into the operator layer, making
-    `CSNumber`/`List`/`General`/`Dict` a pure, independently testable data
-    layer with no dependency on the interpreter. Deliberately NOT done in
-    Phase 1: those are harmless call-time cycles, and the fast-check property
-    suite plus TS types make Phase 3 the safe moment for it. `General` stays
-    as-is — it is the polymorphic dispatch layer over the value union (280
-    lines, coherent), and becomes the home of the typed `CSValue` union.
+-   ~~When `List.js` is converted: move its ~10 interpreter-dependent call
+    sites up into the operator layer~~ **Done early** (pulled forward after
+    step 8, since it gates hoisting the data layer): `List.js` now imports
+    only `CSNumber`/`General`/`expose`. Structural equality lives in
+    `General.equals` (`eval_helper.equals` delegates); the elementwise `~=`
+    and the geo→value coercion of `evaluateAndVal` are reproduced purely in
+    `List.js` (`derefGeo`: point → dehomogenized coordinates, mass → value —
+    exact because list constructors evaluate their elements, so on an element
+    `evaluateAndVal` reduces to that coercion). Remaining before the data
+    layer is interpreter-free: `General`/`Dict` import `niceprint` from
+    `Essentials`, `Dict` imports `csconsole` from `Setup`, `Json.ts` imports
+    `Evaluator`/`Namespace`, and `CSNumber.ts` reads
+    `instanceInvocationArguments.angleUnit` at module scope. `General` stays
+    as-is otherwise — it is the polymorphic dispatch layer over the value
+    union, and becomes the home of the typed `CSValue` union.
 -   Emit `.d.ts` for the public API: `CindyJS(...)`, the plugin registration
     API, and the data types plugins consume (`CSNumber`, `List`, modifiers).
     These types are also the executable specification of the legacy-plugin

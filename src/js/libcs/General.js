@@ -48,6 +48,35 @@ General.isEqual = function (a, b) {
     return General.compare(a, b) === 0;
 };
 
+// Structural equality over evaluated values, as a CS boolean. This is the
+// semantics of the == operator once its arguments are evaluated: numbers by
+// components, strings/booleans by value, lists elementwise (List.equals),
+// geo objects and JSONs by identity, everything else (and any ctype
+// mismatch) unequal. Registered as eval_helper.equals in Essentials.js;
+// owned here so the data layer can compare values without importing the
+// interpreter.
+General.equals = function (v0, v1) {
+    if (v0.ctype === "number" && v1.ctype === "number") {
+        return General.bool(v0.value.real === v1.value.real && v0.value.imag === v1.value.imag);
+    }
+    if (v0.ctype === "string" && v1.ctype === "string") {
+        return General.bool(v0.value === v1.value);
+    }
+    if (v0.ctype === "boolean" && v1.ctype === "boolean") {
+        return General.bool(v0.value === v1.value);
+    }
+    if (v0.ctype === "list" && v1.ctype === "list") {
+        return List.equals(v0, v1);
+    }
+    if (v0.ctype === "geo" && v1.ctype === "geo") {
+        return General.bool(v0.value === v1.value);
+    }
+    if (v0.ctype === "JSON" && v1.ctype === "JSON") {
+        return General.bool(v0.value === v1.value);
+    }
+    return General.bool(false);
+};
+
 General.compareResults = function (a, b) {
     return General.compare(a.result, b.result);
 };
