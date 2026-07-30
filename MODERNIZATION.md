@@ -224,8 +224,26 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
    risk (callbacks re-binding the current instance) is confined to the
    last, smallest steps.
 
-    **Mechanism landed** (first hoists: `libcs/PSLQ.js`,
-    `libgeo/TracingSizes.js`). `tools/hoisted-modules.js` is the manifest;
+    **Done for the data layer** (2026-07-30). Hoisted: `nada.js`,
+    `libcs/PSLQ.js`, `libcs/Parser.js`, `libgeo/TracingSizes.js`, and the
+    whole data layer `{CSNumber, List, General, Dict}` as one batch —
+    once/instance split went 13/695 → 125/586 kB. Enablers, in landing
+    order: List purity (structural equality → `General.equals`, `derefGeo`),
+    `AngleUnit.ts`/`Random.js` out of CSNumber, the `nada` leaf, type-only
+    `types.ts` imports, and retiring the printing indirection (the string
+    branch of `+` lives in Operators.js as `addOrConcat`; Dict takes
+    reporter/printer parameters). Guards: check (f) (import closure) and
+    check (g) (no per-instance writes into hoisted exports) in
+    `tools/check-esm-graph.js`, build-cindy's once/instance asserts, and a
+    Playwright case with two widgets of different `angleUnit` asserting
+    per-widget formatting and console routing (negative-controlled). The
+    never-hoist list lives in `tools/hoisted-modules.js`. Anything beyond
+    the data layer (the 21-file interpreter SCC) is genuinely per-instance
+    and would need a real instance-context mechanism; the async
+    entry-point inventory for that decision (~75 callback entry points)
+    exists in the 2026-07-30 design notes.
+
+    Original mechanism notes: `tools/hoisted-modules.js` is the manifest;
     the once-bundle entry is now `src/js/once-main.js` (CindyJS.js plus the
     namespace objects of the hoisted modules, published as
     `__cindyOnce.shared`), and tools/build-cindy.js substitutes each hoisted
