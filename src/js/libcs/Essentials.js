@@ -1,11 +1,10 @@
 import { nada } from "../expose.js";
-import { csconsole } from "../Setup.js";
 import { CSNumber } from "./CSNumber.js";
 import { General } from "./General.js";
 import { Json } from "./Json.js";
 import { Dict } from "./Dict.js";
 import { namespace } from "./Namespace.js";
-import { evaluator, eval_helper } from "./Registry.js";
+import { evaluator, eval_helper, printing } from "./Registry.js";
 import {
     postfix_numb_degree,
     infix_take,
@@ -208,6 +207,11 @@ function niceprint(a, modifs, options) {
 }
 niceprint.errorTypes = ["_?_", "_??_", "_???_", "___"];
 
+// The data layer (General.add's string branch, Dict.key, Dict.niceprint) prints
+// values through this slot instead of importing Essentials, which would put the
+// interpreter back into its imports. See libcs/Registry.js.
+printing.niceprint = niceprint;
+
 //TODO Eventuell auslagern
 //*******************************************************
 //this is the container for self-defined functions
@@ -274,7 +278,7 @@ eval_helper.evaluate = function (name, args, modifs) {
         f = evaluator[n];
         if (f) return f(args, modifs);
     }
-    csconsole.err("Called undefined function " + n + " (as " + name + ")");
+    printing.err("Called undefined function " + n + " (as " + name + ")");
     return nada;
 };
 

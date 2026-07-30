@@ -2,7 +2,7 @@ import { nada } from "../expose.js";
 import { CSNumber } from "./CSNumber.js";
 import { List } from "./List.js";
 import { Dict } from "./Dict.js";
-import { niceprint } from "./Essentials.js";
+import { printing } from "./Registry.js";
 
 //==========================================
 //      Things that apply to several types
@@ -135,7 +135,7 @@ General.add = function (v0, v1) {
     if (v0.ctype === "string" || v1.ctype === "string") {
         return {
             ctype: "string",
-            value: niceprint(v0) + niceprint(v1),
+            value: printing.niceprint(v0) + printing.niceprint(v1),
         };
     }
 

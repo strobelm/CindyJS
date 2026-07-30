@@ -9,7 +9,7 @@ import { CindyJS, window, nada, document, instanceInvocationArguments } from "./
 import { globalInstance, shutdownHooks } from "./Instance.js";
 import { General } from "./libcs/General.js";
 import { niceprint } from "./libcs/Essentials.js";
-import { evaluator } from "./libcs/Registry.js";
+import { evaluator, printing } from "./libcs/Registry.js";
 import { setStatusBar } from "./libcs/Operators.js";
 import { evaluate, analyse, labelCode, usedFunctions } from "./libcs/Evaluator.js";
 import { csport } from "./libgeo/GeoState.js";
@@ -26,6 +26,14 @@ import { csinitphys, csPhysicsInited, csresetphys } from "./liblab/LabBasics.js"
 
 let csconsole;
 let cslib;
+
+// Dict.key reports malformed dictionary keys on the CindyScript console, but
+// Dict must not import Setup (see libcs/Registry.js). csconsole is only
+// assigned when an instance is created, so the slot gets a delegating function
+// which reads the live binding at call time, not the console object itself.
+printing.err = function (message) {
+    csconsole.err(message);
+};
 
 const cscompiled = {};
 
@@ -1064,7 +1072,14 @@ globalInstance.evalcs = function (code) {
 globalInstance.parse = function (code) {
     return analyse(code);
 };
-globalInstance.niceprint = niceprint;
+// A delegating function, not an init-time alias: since Dict.js stopped
+// importing Setup, the depth-first evaluation order reaches Setup through
+// Essentials -> Operators -> Setup, i.e. before Essentials' own body has run.
+// Reading the binding at call time keeps that order-independent (the two
+// getters above are written the same way).
+globalInstance.niceprint = function (a, modifs, options) {
+    return niceprint(a, modifs, options);
+};
 globalInstance.canvas = null; // will be set during startup
 
 var startupCalled = false;

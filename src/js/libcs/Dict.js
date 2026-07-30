@@ -1,5 +1,4 @@
-import { csconsole } from "../Setup.js";
-import { niceprint } from "./Essentials.js";
+import { printing } from "./Registry.js";
 
 /*
  * Dictionaries map CindyScript values to CindyScript values.
@@ -23,7 +22,7 @@ Dict.key = function (x) {
         const keys = Object.keys(x.value).sort();
         return "d" + keys.length + ":" + keys.join(",") + ";";
     }
-    if (x.ctype !== "undefined") csconsole.err("Bad dictionary key: " + niceprint(x));
+    if (x.ctype !== "undefined") printing.err("Bad dictionary key: " + printing.niceprint(x));
     return "undef";
 };
 
@@ -68,7 +67,7 @@ Dict.niceprint = function (dict) {
             .sort()
             .map(function (key) {
                 const kv = dict.value[key];
-                return niceprint(kv.key) + ":" + niceprint(kv.value);
+                return printing.niceprint(kv.key) + ":" + printing.niceprint(kv.value);
             })
             .join(", ") +
         "}"
