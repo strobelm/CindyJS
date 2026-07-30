@@ -1,5 +1,6 @@
 import { nada } from "../expose.js";
 import { CSNumber } from "./CSNumber.js";
+import { printNumber } from "./AngleUnit.js";
 import { General } from "./General.js";
 import { Json } from "./Json.js";
 import { Dict } from "./Dict.js";
@@ -142,7 +143,7 @@ function niceprint(a, modifs, options) {
         return "___";
     }
     if (a.ctype === "number") {
-        return CSNumber.niceprint(a);
+        return printNumber(a);
     }
     if (a.ctype === "boolean") {
         return a.value;

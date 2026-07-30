@@ -23,6 +23,7 @@ import {
 import { nada, instanceInvocationArguments, window, document } from "../expose.js";
 import { cskey, cskeycode, multipos, move, multiid, addAutoCleaningEventListener, scheduleUpdate } from "../Events.js";
 import { CSNumber } from "./CSNumber.js";
+import { rand, randnormal, seedrandom } from "./Random.js";
 import { List } from "./List.js";
 import { Json } from "./Json.js";
 import { Dict } from "./Dict.js";
@@ -1935,13 +1936,13 @@ evaluator.abs_infix = evaluator.abs$1;
 ///////////////////////////////
 
 evaluator.random$0 = function (args, modifs) {
-    return CSNumber.real(CSNumber._helper.rand());
+    return CSNumber.real(rand());
 };
 
 evaluator.random$1 = function (args, modifs) {
     const v0 = evaluateAndVal(args[0]);
     if (v0.ctype === "number") {
-        return CSNumber.complex(v0.value.real * CSNumber._helper.rand(), v0.value.imag * CSNumber._helper.rand());
+        return CSNumber.complex(v0.value.real * rand(), v0.value.imag * rand());
     }
     return nada;
 };
@@ -1949,13 +1950,13 @@ evaluator.random$1 = function (args, modifs) {
 evaluator.seedrandom$1 = function (args, modifs) {
     const v0 = evaluateAndVal(args[0]);
     if (v0.ctype === "number") {
-        CSNumber._helper.seedrandom(v0.value.real);
+        seedrandom(v0.value.real);
     }
     return nada;
 };
 
 evaluator.randomnormal$0 = function (args, modifs) {
-    return CSNumber.real(CSNumber._helper.randnormal());
+    return CSNumber.real(randnormal());
 };
 
 evaluator.randominteger$1 = function (args, modifs) {
@@ -1963,8 +1964,8 @@ evaluator.randominteger$1 = function (args, modifs) {
     if (v0.ctype === "number") {
         let r = v0.value.real | 0,
             i = v0.value.imag | 0;
-        r = (r * CSNumber._helper.rand()) | 0;
-        i = (i * CSNumber._helper.rand()) | 0;
+        r = (r * rand()) | 0;
+        i = (i * rand()) | 0;
         return CSNumber.complex(r, i);
     }
     return nada;
@@ -1973,7 +1974,7 @@ evaluator.randominteger$1 = function (args, modifs) {
 evaluator.randomint$1 = evaluator.randominteger$1;
 
 evaluator.randombool$0 = function (args, modifs) {
-    if (CSNumber._helper.rand() > 0.5) {
+    if (rand() > 0.5) {
         return {
             ctype: "boolean",
             value: true,

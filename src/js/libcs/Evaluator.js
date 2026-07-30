@@ -1,6 +1,7 @@
 import { nada } from "../expose.js";
 import { csconsole } from "../Setup.js";
 import { CSNumber } from "./CSNumber.js";
+import { printNumber } from "./AngleUnit.js";
 import { List } from "./List.js";
 import { Json } from "./Json.js";
 import { General } from "./General.js";
@@ -133,7 +134,7 @@ function report(a, i) {
         report(a.args[1], i + 1);
     }
     if (a.ctype === "number") {
-        console.log(prep + "NUMBER: " + CSNumber.niceprint(a));
+        console.log(prep + "NUMBER: " + printNumber(a));
     }
     if (a.ctype === "variable") {
         console.log(prep + "VARIABLE: " + a.name);

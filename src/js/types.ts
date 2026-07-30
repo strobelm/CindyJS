@@ -28,16 +28,11 @@ export interface CSList extends CSType {
 export interface CSMath {
     _helper: {
         roundingfactor: number;
-        angleroundingfactor: number;
         niceround: (a: number, roundingfactor: number) => number;
-        niceangle: (a: CSNum) => string;
         input: (a: { r: object; i: object }) => CSNum;
         isReal: (a: CSNum) => boolean;
         isNaN: (a: CSNum) => boolean;
         isFinite: (a: CSNum) => boolean;
-        seed: "NO" | number;
-        rand: () => number;
-        randnormal: () => number;
         isEqual: (a: CSNum, b: CSNum) => boolean;
         isLessThan: (a: CSNum, b: CSNum) => boolean;
         isZero: (arg: CSNum) => boolean;
@@ -50,10 +45,8 @@ export interface CSMath {
         cub1: CSList;
         cub2: CSList;
         cub3: CSList;
-        seedrandom: (a: number) => void;
         compare: (a: CSNum, b: CSNum) => number;
         isAlmostEqual: (a: CSNum, b: CSNum, preci?: number) => boolean;
-        getRangeRand: (a: number, b: number) => number;
     };
     niceprint: (a: CSNum, roundingfactor?: number) => string;
     realmult: (r: number, a: CSNum) => CSNum;

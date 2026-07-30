@@ -1,30 +1,14 @@
-import { instanceInvocationArguments, nada } from "../expose.js";
+import { nada } from "../expose.js";
 // @ts-expect-error: Not yet typed
 import { List } from "./List.js";
 
 import { CSNum, Nada, CSMath, CSList } from "../types.js";
 
-const angleUnit = instanceInvocationArguments.angleUnit || "°";
 const TWOPI = Math.PI * 2;
-const PERTWOPI = 1 / TWOPI;
-const angleUnits = {
-    rad: TWOPI,
-    "°": 360,
-    deg: 360,
-    degree: 360,
-    gra: 400,
-    grad: 400,
-    turn: 1,
-    cyc: 1,
-    rev: 1,
-    rot: 1,
-    π: 2,
-    pi: 2,
-    quad: 4,
-};
 
-type AngleUnit = keyof typeof angleUnits;
-const angleUnitName = angleUnit.replace(/\s+/g, "") as AngleUnit; // unit may contain space
+function getRangeRand(min: number, max: number) {
+    return Math.random() * (max - min) + min;
+}
 
 //==========================================
 //      Complex Numbers
@@ -33,19 +17,8 @@ const angleUnitName = angleUnit.replace(/\s+/g, "") as AngleUnit; // unit may co
 const CSNumber: CSMath = {
     _helper: {
         roundingfactor: 1e4,
-        angleroundingfactor: 1e1,
         niceround: function (a: number, roundingfactor: number) {
             return Math.round(a * roundingfactor) / roundingfactor;
-        },
-        niceangle: function (a: CSNum): string {
-            const unit = angleUnits[angleUnitName];
-            if (!unit) return CSNumber.niceprint({ ...a, usage: undefined });
-            const num = CSNumber.niceprint(
-                CSNumber.realmult(unit * PERTWOPI, a),
-                unit > 200 ? CSNumber._helper.angleroundingfactor : undefined
-            );
-            if (!num.includes("i*")) return num + angleUnit;
-            return "(" + num + ")" + angleUnit;
         },
 
         input: function (a: { r: object; i: object }) {
@@ -85,31 +58,6 @@ const CSNumber: CSMath = {
             const r = a.value.real;
             // This implementation follows Cinderella
             return r < CSNumber.epsbig && r > -CSNumber.epsbig;
-        },
-
-        seed: "NO",
-
-        seedrandom: function (a: number) {
-            a = a - Math.floor(a);
-            a = a * 0.8 + 0.1;
-            CSNumber._helper.seed = a;
-        },
-
-        rand: function () {
-            if (CSNumber._helper.seed === "NO") {
-                return Math.random();
-            }
-            let a = CSNumber._helper.seed;
-            a = Math.sin(1000 * a) * 1000;
-            a = a - Math.floor(a);
-            CSNumber._helper.seed = a;
-            return a;
-        },
-
-        randnormal: function () {
-            const a = CSNumber._helper.rand();
-            const b = CSNumber._helper.rand();
-            return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * b);
         },
 
         isEqual: function (a: CSNum, b: CSNum): boolean {
@@ -307,16 +255,9 @@ const CSNumber: CSMath = {
                 value: [CSNumber.complex(xr, xi), CSNumber.complex(yr, yi), CSNumber.complex(zr, zi)],
             };
         },
-
-        getRangeRand: function (min: number, max: number) {
-            return Math.random() * (max - min) + min;
-        },
     },
 
     niceprint: function (a: CSNum, roundingfactor: number = CSNumber._helper.roundingfactor) {
-        if (a.usage === "Angle") {
-            return CSNumber._helper.niceangle(a);
-        }
         const real = CSNumber._helper.niceround(a.value.real, roundingfactor);
         const imag = CSNumber._helper.niceround(a.value.imag, roundingfactor);
         if (imag === 0) {
@@ -798,13 +739,13 @@ const CSNumber: CSMath = {
     },
 
     getRandReal: function (min: number, max: number) {
-        const real = CSNumber._helper.getRangeRand(min, max);
+        const real = getRangeRand(min, max);
         return CSNumber.real(real);
     },
 
     getRandComplex: function (min: number, max: number) {
-        const real = CSNumber._helper.getRangeRand(min, max);
-        const imag = CSNumber._helper.getRangeRand(min, max);
+        const real = getRangeRand(min, max);
+        const imag = getRangeRand(min, max);
         return CSNumber.complex(real, imag);
     },
 };

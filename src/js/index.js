@@ -45,6 +45,8 @@
 // depends on it)
 import "./libcs/Registry.js";
 import "./libcs/CSNumber.js";
+import "./libcs/AngleUnit.js";
+import "./libcs/Random.js";
 import "./libcs/List.js";
 import "./libcs/Json.js";
 import "./libcs/Dict.js";
