@@ -1345,7 +1345,7 @@ eval_helper.genericListMathGen(
 eval_helper.genericListMathGen(
     "sum",
     function () {
-        return General.add;
+        return addOrConcat;
     },
     function () {
         return CSNumber.real(0);
@@ -1560,11 +1560,22 @@ evaluator.min$4 = function (args, modifs) {
 
 evaluator.add$2 = infix_add;
 
+// The CindyScript + operator: General.add plus the string-concatenation case.
+// The concatenation needs niceprint, i.e. interpreter-layer code, so it lives
+// here rather than in the data layer (see General.add). Testing for a string
+// first is behaviour-identical to General.add's old branch order: every case
+// General.add handles requires both operands to be number/list/void.
+function addOrConcat(v0, v1) {
+    if (v0.ctype === "string" || v1.ctype === "string")
+        return { ctype: "string", value: niceprint(v0) + niceprint(v1) };
+    return General.add(v0, v1);
+}
+
 function infix_add(args, modifs) {
     let v0 = args[0];
     if (v0.ctype !== "void") v0 = evaluateAndVal(v0);
     const v1 = evaluateAndVal(args[1]);
-    let erg = General.add(v0, v1);
+    let erg = addOrConcat(v0, v1);
     if (v0.usage === "Angle" && v1.usage === "Angle") erg = General.withUsage(erg, "Angle");
     return erg;
 }
@@ -3464,6 +3475,13 @@ evaluator.column$2 = function (args, modifs) {
 //        DICTIONARIES       //
 ///////////////////////////////
 
+// Dict.key's sink for malformed keys. put()/get() are the two entry points a
+// user-supplied key can reach; dict() keys are the modifier names, i.e.
+// provably strings, so it passes no reporter at all.
+function badDictKey(x) {
+    csconsole.err("Bad dictionary key: " + niceprint(x));
+}
+
 evaluator.dict$0 = function (args, modifs) {
     const d = Dict.create();
     for (const key in modifs) if (modifs.hasOwnProperty(key)) Dict.put(d, General.string(key), evaluate(modifs[key]));
@@ -3476,7 +3494,7 @@ evaluator.put$3 = function (args, modifs) {
     const v = evaluate(args[2]);
     if (d.ctype === "dict") {
         d = Dict.clone(d);
-        Dict.put(d, k, v);
+        Dict.put(d, k, v, badDictKey);
         return d;
     }
     return nada;
@@ -3486,7 +3504,7 @@ evaluator.get$2 = function (args, modifs) {
     const d = evaluate(args[0]);
     const k = evaluate(args[1]);
     if (d.ctype === "dict") {
-        return Dict.get(d, k, nada);
+        return Dict.get(d, k, nada, badDictKey);
     }
     return nada;
 };

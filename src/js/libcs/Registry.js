@@ -7,22 +7,15 @@
 // evaluator: name (with arity suffix, e.g. "sin$1") -> function(args, modifs)
 // eval_helper: helper functions shared by the operator implementations
 //
-// printing: the two host services the pure data layer (General/Dict) needs but
-// must not import, for the same acyclicity reason:
-//   * niceprint(a, modifs, options) - the value printer. It lives in
-//     Essentials.js because it recurses through evaluate() and the namespace,
-//     i.e. it is interpreter-layer code; General.add's string-concatenation
-//     branch and Dict.niceprint/Dict.key only consume it. Filled by
-//     Essentials.js at module init.
-//   * err(message) - the per-instance CindyScript console's error sink, used by
-//     Dict.key to report a malformed dictionary key. csconsole itself is
-//     Setup.js state that is only assigned when an instance is created, so the
-//     slot holds a delegating function that reads the live binding at call
-//     time. Filled by Setup.js at module init.
-// Both slots are only ever read at call time, never during module init.
+// There used to be a third slot, `printing`, holding niceprint and the console
+// error sink for the pure data layer (General.add's string branch, Dict.key,
+// Dict.niceprint). It is gone: string concatenation moved up into Operators.js
+// (addOrConcat), and Dict.key/Dict.niceprint take the printer and the error
+// reporter as ordinary parameters, supplied by the callers that have them. That
+// leaves General.js and Dict.js importing nothing but their siblings in the data
+// layer, which is what makes them hoistable (tools/hoisted-modules.js).
 
 const evaluator = {};
 const eval_helper = {};
-const printing = {};
 
-export { evaluator, eval_helper, printing };
+export { evaluator, eval_helper };

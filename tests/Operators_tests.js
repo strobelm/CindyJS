@@ -134,6 +134,39 @@ describe("Operators: removeAt", function () {
     itCmd("removeAt(aList,3);aList", "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
 });
 
+// The + operator concatenates when either side is a string, but that case does
+// NOT live in the data layer: General.add is numeric/structural only, and
+// Operators.js wraps it with the printing case (addOrConcat). Pinning both
+// halves keeps the split from silently drifting back.
+describe("Operators: string concatenation is an operator-layer concern", function () {
+    var { nada, General } = require("../build/js/exposed.cjs");
+
+    it("General.add returns nada for two strings", function () {
+        General.add(General.wrap("a"), General.wrap("b")).should.equal(nada);
+    });
+    it("General.add returns nada for string + number", function () {
+        General.add(General.wrap("a"), General.wrap(1)).should.equal(nada);
+        General.add(General.wrap(1), General.wrap("a")).should.equal(nada);
+    });
+
+    itCmd('"a"+"b"', "ab");
+    itCmd('"a"+1', "a1");
+    itCmd('1+"a"', "1a");
+    // Unary plus on a string: the void operand falls through the unary-plus
+    // cases (which want a number or a list) into the concatenation case, and
+    // niceprint renders the void as "_?_". Long-standing behaviour, verified
+    // unchanged against the pre-split build; pinned here because the split
+    // moved the branch that produces it.
+    itCmd('+"abc"', "_?_abc");
+    itCmd("+5", "5");
+    itCmd("+[1,2]", "[1, 2]");
+    itCmd('"a"+[1,2]', "a[1, 2]");
+    itCmd('sum(["a","b","c"])', "abc");
+    itCmd('sum([1,2,"c"])', "3c");
+    itCmd("1+2", "3");
+    itCmd("[1,2]+[3,4]", "[4, 6]");
+});
+
 describe("Operators: print", function () {
     itCmd("text(1)", "1");
     itCmd("text(nada)", "___");

@@ -5,7 +5,7 @@ import { General } from "./General.js";
 import { Json } from "./Json.js";
 import { Dict } from "./Dict.js";
 import { namespace } from "./Namespace.js";
-import { evaluator, eval_helper, printing } from "./Registry.js";
+import { evaluator, eval_helper } from "./Registry.js";
 import {
     postfix_numb_degree,
     infix_take,
@@ -45,6 +45,11 @@ import {
     infix_semicolon,
 } from "./Operators.js";
 import { evaluate } from "./Evaluator.js";
+// The per-instance CindyScript console, for the "called undefined function"
+// report below - the same seam Evaluator.js and Operators.js already use. Listed
+// last on purpose: Setup.js is reached through the Operators import above, so
+// this line adds an edge without moving anything in the evaluation order.
+import { csconsole } from "../Setup.js";
 
 const myfunctions = {};
 
@@ -175,7 +180,11 @@ function niceprint(a, modifs, options) {
         }
     }
     if (a.ctype === "dict") {
-        return Dict.niceprint(a);
+        // The bare function, deliberately NOT a closure forwarding modifs /
+        // niceprintOptions: dictionary entries have always been printed without
+        // inheriting the surrounding quote-> modifier, and that quirk is part of
+        // the observable output.
+        return Dict.niceprint(a, niceprint);
     }
     if (a.ctype === "function") {
         return "FUNCTION";
@@ -207,11 +216,6 @@ function niceprint(a, modifs, options) {
     return "_?_";
 }
 niceprint.errorTypes = ["_?_", "_??_", "_???_", "___"];
-
-// The data layer (General.add's string branch, Dict.key, Dict.niceprint) prints
-// values through this slot instead of importing Essentials, which would put the
-// interpreter back into its imports. See libcs/Registry.js.
-printing.niceprint = niceprint;
 
 //TODO Eventuell auslagern
 //*******************************************************
@@ -279,7 +283,7 @@ eval_helper.evaluate = function (name, args, modifs) {
         f = evaluator[n];
         if (f) return f(args, modifs);
     }
-    printing.err("Called undefined function " + n + " (as " + name + ")");
+    csconsole.err("Called undefined function " + n + " (as " + name + ")");
     return nada;
 };
 

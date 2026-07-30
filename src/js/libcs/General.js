@@ -2,7 +2,6 @@ import { nada } from "../nada.js";
 import { CSNumber } from "./CSNumber.js";
 import { List } from "./List.js";
 import { Dict } from "./Dict.js";
-import { printing } from "./Registry.js";
 
 //==========================================
 //      Things that apply to several types
@@ -120,6 +119,11 @@ General.compare = function (a, b) {
     }
 };
 
+// Numeric/structural addition only. The `"a" + b` string-concatenation
+// semantics of the CindyScript + operator needs the value printer, which is
+// interpreter-layer code (Essentials.niceprint); it lives in Operators.js as
+// addOrConcat, which every string-capable caller goes through. Keeping it out
+// of here is what lets the data layer be a leaf of the import graph.
 General.add = function (v0, v1) {
     if (v0.ctype === "void" && v1.ctype === "number") {
         // unary plus
@@ -132,13 +136,6 @@ General.add = function (v0, v1) {
     if (v0.ctype === "number" && v1.ctype === "number") {
         return CSNumber.add(v0, v1);
     }
-    if (v0.ctype === "string" || v1.ctype === "string") {
-        return {
-            ctype: "string",
-            value: printing.niceprint(v0) + printing.niceprint(v1),
-        };
-    }
-
     if (v0.ctype === "list" && v1.ctype === "list") {
         return List.add(v0, v1);
     }
