@@ -58,12 +58,13 @@
 // never renames unbound identifiers):
 //
 //   CindyJS                        -> __cindyApi   \  read by
-//   instanceInvocationArguments    -> __cindyArgs   > src/js/expose.browser.js
-//   nada                           -> __cindyNada  /  (substituted for expose.ts)
+//   instanceInvocationArguments    -> __cindyArgs  /  src/js/expose.browser.js
+//                                                     (substituted for expose.ts)
 //   generateId                     -> generateId      read bare by GeoOps.js
 //   shared                         -> __cindyShared   read by the step-8 shims
 //                                                     substituted for hoisted
-//                                                     modules (see below)
+//                                                     modules (nada travels
+//                                                     this way since its hoist)
 //
 // `version` (build/js/Version.js in the concat world) is not a runtime value at
 // all - it is a build-time constant and becomes an esbuild `define`.
@@ -256,7 +257,6 @@ async function main() {
         "CindyJS.newInstance = function (instanceInvocationArguments) {",
         "    var __cindyApi = CindyJS;",
         "    var __cindyArgs = instanceInvocationArguments;",
-        "    var __cindyNada = __cindyOnce.nada;",
         "    var __cindyShared = __cindyOnce.shared;",
         "    var generateId = __cindyOnce.generateId;",
         "", // bundle B follows

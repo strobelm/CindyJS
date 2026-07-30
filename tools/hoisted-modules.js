@@ -32,7 +32,22 @@
 // the build if an instance module imports a name that is missing here, and
 // check (f) fails if a name here is not exported by the real file.
 
+// NEVER hoist these - they hold genuine per-instance state even where their
+// own file looks init-only (audited 2026-07-30, evidence in the commit that
+// added this note):
+//   libcs/Registry.js     evaluator/eval_helper/printing are filled per
+//                         instance at runtime (plugins, defineFunction)
+//   libcs/Essentials.js   myfunctions collects user := definitions
+//   libcs/Json.ts         _helper.self is the evaluator's dynamic scope
+//   libcs/Namespace.js    the CindyScript variable store
+//   libcs/Evaluator.js    callStack
+//   libcs/Operators.js    epoch/statusbar/activeButton + registry writes
+//   libgeo/GeoBasics.js   csgeo construction state, geoDependantsCache
 module.exports = [
+    {
+        id: "nada.js",
+        exports: ["nada"],
+    },
     {
         id: "libcs/PSLQ.js",
         exports: ["PSLQ", "PSLQMatrix"],

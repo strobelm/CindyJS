@@ -41,6 +41,9 @@
 // --- inclosure order, bottom-up --------------------------------------------
 // build/js/Version.js goes here (it only defines the `version` global)
 
+// leaves shared by everything
+import "./nada.js";
+
 // libcs (Registry first: every file registering into evaluator/eval_helper
 // depends on it)
 import "./libcs/Registry.js";

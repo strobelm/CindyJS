@@ -1,10 +1,11 @@
-import { Nada } from "./types.js";
+// nada is owned by the leaf module nada.js (one object per page, compared by
+// identity); this seam only re-exports it.
+import { nada } from "./nada.js";
 
 /* eslint no-var: off */
 var instanceInvocationArguments = { angleUnit: undefined };
 var document = {};
 var window = { document };
-var nada: Nada = { ctype: "undefined" };
 
 // The page-global CindyJS function object. In the shipping bundle this is the
 // real one, handed across the factory boundary (see expose.browser.js); here it

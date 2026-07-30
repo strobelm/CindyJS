@@ -18,10 +18,12 @@
 
 export { CindyJS, generateId, nada } from "./CindyJS.js";
 
+import * as nada from "./nada.js";
 import * as PSLQ from "./libcs/PSLQ.js";
 import * as TracingSizes from "./libgeo/TracingSizes.js";
 
 export const shared = {
+    "nada.js": nada,
     "libcs/PSLQ.js": PSLQ,
     "libgeo/TracingSizes.js": TracingSizes,
 };

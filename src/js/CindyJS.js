@@ -31,6 +31,10 @@
 // directly; capturing them here keeps that meaning while making the names
 // bound identifiers, so the graph gate does not mistake them for the stubs
 // that expose.js hands to the instance graph.
+// Owned by the leaf module nada.js since step 8; re-exported below so the
+// newInstance wrapper keeps reading it off __cindyOnce unchanged.
+import { nada } from "./nada.js";
+
 const window = globalThis.window;
 const document = globalThis.document;
 
@@ -174,10 +178,6 @@ CindyJS.autoLoadPlugin = function (name, path, onload) {
     }
     listeners.push(onload);
     return null;
-};
-
-const nada = {
-    ctype: "undefined",
 };
 
 CindyJS.waitFor = waitFor;

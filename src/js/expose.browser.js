@@ -8,7 +8,7 @@
 // build-time module substitution, not a runtime switch, so exactly one of the
 // two ever ends up in an artifact.
 //
-// Four of the five bindings are genuinely per-instance and cannot come from an
+// Two of the bindings are genuinely per-instance and cannot come from an
 // import, because importing them would drag the once-evaluated module
 // src/js/CindyJS.js into the per-instance bundle (esbuild would inline a second
 // copy of the plugin registry, the instance list and the id counter into every
@@ -21,14 +21,16 @@
 //   __cindyArgs  - the `instanceInvocationArguments` parameter of newInstance,
 //                  i.e. the configuration object the caller passed to
 //                  `CindyJS({...})`.
-//   __cindyNada  - the shared `nada` value. It is threaded through rather than
-//                  recreated per instance so that its object identity stays
-//                  page-global exactly as in the concatenated build (the core
-//                  compares against it with `!==` in a dozen places).
 //
-// esbuild never renames unbound identifiers, so these three names survive into
+// esbuild never renames unbound identifiers, so these two names survive into
 // the artifact verbatim and resolve lexically to the wrapper's locals.
-/* global __cindyApi, __cindyArgs, __cindyNada */
+//
+// nada used to be a third such value (__cindyNada); since the step-8 hoist of
+// the leaf module nada.js it is re-exported from there instead - the hoist
+// shim resolves it to the once-bundle's object, so its page-global identity is
+// preserved without a dedicated wrapper binding.
+/* global __cindyApi, __cindyArgs */
+export { nada } from "./nada.js";
 
 // The real DOM globals. Read off globalThis rather than referenced bare so
 // that loading the bundle under node (the ref/ doctests do exactly that)
@@ -39,6 +41,5 @@ const document = globalThis.document;
 
 const CindyJS = __cindyApi;
 const instanceInvocationArguments = __cindyArgs;
-const nada = __cindyNada;
 
-export { CindyJS, document, instanceInvocationArguments, nada, window };
+export { CindyJS, document, instanceInvocationArguments, window };

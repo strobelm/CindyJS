@@ -1,4 +1,4 @@
-import { nada } from "../expose.js";
+import { nada } from "../nada.js";
 // @ts-expect-error: Not yet typed
 import { List } from "./List.js";
 

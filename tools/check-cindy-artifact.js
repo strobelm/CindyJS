@@ -65,7 +65,9 @@ check("the interpreter lives inside the factory", () => {
 
 check("the browser environment seam was used, not the node stubs", () => {
     assert.strictEqual(occurrences("var CindyJS = __cindyApi"), 1, "expose.browser.js not bundled");
-    assert.strictEqual(occurrences("var nada = __cindyNada"), 1, "nada is not threaded across the boundary");
+    // Since the step-8 hoist of nada.js, nada reaches the instance bundle
+    // through the shared-module shim, not a dedicated wrapper binding.
+    assert.ok(occurrences('__cindyShared["nada.js"]') >= 1, "nada is not served from the once-bundle");
     assert.ok(!/var instanceInvocationArguments = \{ angleUnit/.test(source), "expose.ts stubs leaked in");
 });
 
