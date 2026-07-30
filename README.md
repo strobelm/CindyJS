@@ -47,6 +47,24 @@ If you are building from an official commit, then `make build=release deploy`
 will create `build/deploy` which is even better suited to be put on a web server,
 since it references the commit at GitHub which may help diagnose problems.
 
+### npm scripts
+
+The `node make [SETTINGS] [TASKS]` build system stays the full interface, but
+the everyday entry points are also available as npm scripts, which work the
+same way on every platform:
+
+| command                | does                                                       |
+| ---------------------- | ---------------------------------------------------------- |
+| `npm run build`        | `build/js/Cindy.js` (the core artifact, minified)          |
+| `npm run build:all`    | the core plus every plugin (needs a JRE)                   |
+| `npm run dev`          | watch, rebuild and live-reload on <http://localhost:1337/> |
+| `npm test`             | build + ref-manual doctests + unit tests + example compile |
+| `npm run test:unit`    | mocha over `tests/`                                        |
+| `npm run test:ref`     | the CindyScript snippets embedded in `ref/*.md`            |
+| `npm run test:browser` | the Playwright smoke tests (builds the GPU plugins first)  |
+| `npm run test:all`     | the full pre-PR suite, same as `node make alltests`        |
+| `npm run lint`         | eslint                                                     |
+
 ### Building on Windows
 
 The description above uses `make` mostly for convenience.
@@ -58,9 +76,9 @@ So a standard release build would be `node make build=release`.
 
 Note that you should have the following software installed:
 
-- A recent Java Runtime Environment (JRE)
-- Node.js with the `node` command added to the PATH
-- Git for Windows with the `git` command usable from the Windows Command Prompt
+-   A recent Java Runtime Environment (JRE)
+-   Node.js with the `node` command added to the PATH
+-   Git for Windows with the `git` command usable from the Windows Command Prompt
 
 ## Contributing
 
