@@ -283,10 +283,47 @@ lands, then is switched off in one commit.
     (replaces `node make live`), production build with minify + sourcemaps
     (replaces Closure; run `benchmarks/` and compare bundle size before/after to
     quantify the regression, if any).
+
+    **Minified production artifact: landed.** Both bundles of
+    `tools/build-cindy.js` are built with `minify: true`; `build/js/Cindy.js`
+    went 935 kB -> 587 kB raw and 182 kB -> 149 kB gzipped (our own code: 711
+    kB -> 363 kB raw, 135 kB -> 102 kB gzipped; the rest is the vendored
+    `lib/` scripts, which were already minified). Nothing in the
+    factory composition needed to change: the four values that cross the
+    boundary (`__cindyApi`, `__cindyArgs`, `__cindyShared`, `generateId`) are
+    free identifiers, which esbuild may not rename, and the `globalName`
+    objects plus their export names are equally off-limits to it. `keepNames`
+    is off - no core code reads `Function.prototype.name`.
+
+    The two consumers that are not downloads stay unminified on purpose:
+    `build/js/exposed.cjs` (unit tests) and the `esmbundle` graph check.
+
+    Two gates came with it. `tools/check-cindy-artifact.js`'s literal
+    fingerprints were re-expressed against what minification cannot touch
+    (property names, string literals, export names, the hand-written glue),
+    plus a new check that the artifact _is_ minified. The composed source map
+    is no longer merely produced but verified: `tools/check-cindy-sourcemap.js`
+    resolves probes in all three regions of the file (vendored `lib/` script,
+    once-bundle, instance-bundle) back to the source file and line they came
+    from. `tools/prepare-deploy.js` now embeds `sourcesContent` for the core
+    sources too; its `^build/` rule dated from the Closure world and left the
+    whole deployed map contentless.
+
 -   Small plain-node scripts (in `make/` or `scripts/`) wrap the remaining
     non-bundling steps: cs2js, sass, ref-doctest runner, forbidden-pattern
     checks, example compile check. Wire them as npm scripts:
     `dev`, `build`, `test`, `test:unit`, `test:ref`, `lint`, `bench`.
+
+    **npm scripts: landed** as thin wrappers around the existing `node make`
+    tasks (`build`, `build:all`, `dev`, `test`, `test:all`, `test:unit`,
+    `test:ref`, `test:browser`, `lint`), documented in the README. `node make alltests` stays the canonical pre-PR gate and is what CI runs; `npm run test:all` is the same thing.
+
+    `dev` is `node make live Cindy.js`: `make/watch.js` already watches the
+    tree with chokidar, re-runs the task graph and live-reloads through
+    browser-sync on port 1337, and the task graph is esbuild now, so a
+    dedicated esbuild `context().watch()` would be a second, parallel watcher
+    for a build that takes 2.3 s from cold. Revisit if that number grows.
+
 -   `node make` remains solely as the legacy-plugin builder (Closure + Java stay
     a dependency only for that path); the core no longer needs Java.
 -   CI runs the new pipeline plus one legacy-plugin build to prove the contract

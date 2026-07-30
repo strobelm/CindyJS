@@ -113,7 +113,7 @@ module.exports = function build(settings, task) {
     // semantics.
     //
     // Consequently the `build=release` switch no longer selects a compiler for
-    // the core: there is one Cindy.js, minification moves to esbuild in Phase 2.
+    // the core: there is one Cindy.js, and it is minified by esbuild (Phase 2).
     task("Cindy.js", [], function () {
         versionJson(this);
         coreSources.call(this);
@@ -126,6 +126,10 @@ module.exports = function build(settings, task) {
         // No --no-experimental-global-navigator here: unlike the doctests this
         // only loads the bundle, and node's own global navigator satisfies it.
         this.node("tools/check-cindy-artifact.js");
+        // The artifact is minified, so the source map is the only thing that
+        // makes a deployed stack trace readable - and it is composed by hand
+        // out of three pieces, which fails silently. Checked, not trusted.
+        this.node("tools/check-cindy-sourcemap.js");
     });
 
     //////////////////////////////////////////////////////////////////////

@@ -68,6 +68,41 @@
 //
 // `version` (build/js/Version.js in the concat world) is not a runtime value at
 // all - it is a build-time constant and becomes an esbuild `define`.
+//
+//////////////////////////////////////////////////////////////////////
+// Minification (Phase 2)
+//
+// Both bundles are minified; this is the shipping artifact and nothing else
+// consumes it. The unit-test bundle (tools/build-test-bundle.js) and the
+// esmbundle graph check (tools/bundle-esm.js) stay unminified - they are
+// debugging surfaces, not downloads.
+//
+// The composition survives minification because everything it relies on is
+// something esbuild is not permitted to rename:
+//
+//   * the four wrapper bindings above are UNBOUND inside their bundle. esbuild
+//     cannot rename a free identifier without changing the program's meaning,
+//     so `__cindyApi`, `__cindyArgs`, `__cindyShared` and `generateId` come out
+//     verbatim and still resolve lexically to the wrapper's locals;
+//   * `globalName` is by definition the name the outside world uses, so
+//     `var __cindyOnce =` / `var __cindyInstance =` survive, as do the export
+//     names on those objects (`.CindyJS`, `.shared`, `.generateId`,
+//     `.globalInstance`) - esbuild compiles exports to getters keyed by the
+//     export name and does not mangle property names;
+//   * the prologue/boundary/epilogue is concatenated AFTER esbuild has run, so
+//     esbuild never sees it.
+//
+// tools/check-cindy-artifact.js asserts each of these on the real artifact
+// rather than taking the above on faith, and tools/check-cindy-sourcemap.js
+// resolves probes in all three regions of the composed map.
+//
+// `keepNames` is deliberately NOT set: nothing in the core reads
+// `Function.prototype.name` or `constructor.name` (the only such use in the
+// tree is plugins/cindygl's CglDiscardError, which is Closure-compiled
+// separately and self-contained). Turning it on would cost ~2% of the bundle
+// for nothing. `target: "es2018"` is likewise unchanged - lowering the target
+// further would only re-introduce transpilation weight for browsers that the
+// retirement of Closure already dropped support for.
 
 const fs = require("fs");
 const path = require("path");
@@ -102,6 +137,8 @@ async function bundle(entry, globalName, extra) {
         entryPoints: [path.join(srcRoot, entry)],
         format: "iife",
         globalName,
+        // See the "Minification" section in the header.
+        minify: true,
         // Not written; only used to make esbuild compute the map's `sources`
         // relative to build/js, the way the concat build's map is.
         outfile: path.join(outDir, "Cindy." + globalName + ".js"),
