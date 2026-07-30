@@ -73,7 +73,6 @@ import "./libgeo/TracingSizes.js";
 import "./libgeo/Tracing.js";
 import "./libgeo/Prover.js";
 import "./libgeo/GeoOps.js";
-import "./libgeo/GeoScripts.js";
 import "./libgeo/StateIO.js";
 
 // liblab
