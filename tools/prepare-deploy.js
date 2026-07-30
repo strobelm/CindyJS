@@ -124,12 +124,26 @@ function map(name, err, content) {
     map.sourceRoot = "https://raw.githubusercontent.com/CindyJS/CindyJS/" + head + "/";
     map.sources = map.sources.map(function (src) {
         if (/^ \[synthetic:.*\] $/.test(src)) return src;
-        if (/^lib|node_modules/.test(src)) return src;
+        // Already repo-relative (that is how the Closure-built maps spelled
+        // vendored sources); anything else still has to be resolved against
+        // build/js below - esbuild writes "../../node_modules/..." there.
+        if (/^lib\/|^node_modules\//.test(src)) return src;
         if (/^build\/ts/.test(src)) return src;
         return ppath.normalize(ppath.join("build/js", root, src));
     });
+    // Embedding the sources makes the deployed map self-contained: sourceRoot
+    // points at raw.githubusercontent, which is fine for a browsable checkout
+    // but not for a file the browser must fetch cross-origin. Since the core
+    // artifact is minified, a map without content is close to useless.
+    //
+    // Every entry is repo-relative at this point, so "does the file exist"
+    // is the whole rule. It used to be "starts with build/", which was true in
+    // the Closure world (the core was compiled out of generated build/js
+    // copies) but leaves every src/js module of the esbuild artifact blank.
     map.sourcesContent = map.sources.map(function (src) {
-        if (!/^build/.test(src) || /^build\/js\/src\/com\/google/.test(src)) return null;
+        if (/^ \[synthetic:.*\] $/.test(src)) return null;
+        if (/^build\/js\/src\/com\/google/.test(src)) return null;
+        if (src.startsWith("..") || !fs.existsSync(src)) return null;
         return fs.readFileSync(src, "utf-8");
     });
     var keys = Object.keys(map);
