@@ -22,10 +22,18 @@ import * as nada from "./nada.js";
 import * as PSLQ from "./libcs/PSLQ.js";
 import * as Parser from "./libcs/Parser.js";
 import * as TracingSizes from "./libgeo/TracingSizes.js";
+import * as CSNumber from "./libcs/CSNumber.js";
+import * as List from "./libcs/List.js";
+import * as General from "./libcs/General.js";
+import * as Dict from "./libcs/Dict.js";
 
 export const shared = {
     "nada.js": nada,
     "libcs/PSLQ.js": PSLQ,
     "libcs/Parser.js": Parser,
     "libgeo/TracingSizes.js": TracingSizes,
+    "libcs/CSNumber.js": CSNumber,
+    "libcs/List.js": List,
+    "libcs/General.js": General,
+    "libcs/Dict.js": Dict,
 };

@@ -155,12 +155,38 @@ const missingImports = []; // {file, name, owner, line}
 const nonStandardGlobals = new Map(); // name -> Set(file) - reported, not failed
 const initEdges = new Map(); // file -> Map(file -> [binding names])
 const allEdges = new Map(); // file -> Set(file)
+// Writes THROUGH an imported binding: `X.y = ...`, `X.y.z = ...`, `X.y++`,
+// `delete X.y`, where X is a module binding. Collected for every file; check
+// (g) below is what interprets them. {file, local, imported, target, line}
+const memberWrites = [];
 let callOnlyBindings = 0;
 let initBindings = 0;
 
 function addEdge(map, from, to) {
     if (!map.has(from)) map.set(from, new Set());
     map.get(from).add(to);
+}
+
+// Is this reference to an imported binding the root of a member expression that
+// gets WRITTEN? Returns the line number of the write, or 0 if it is a read.
+//
+// Climbing the chain first means `X.y.z = 1` counts as a write to X just like
+// `X.y = 1` does: both mutate state reachable from the exported object, and
+// that is what matters for sharing a module across instances. Going through the
+// binding's referencePaths rather than matching identifiers by name means a
+// shadowing local of the same name is not mistaken for the import.
+function memberWriteThrough(ref) {
+    let p = ref;
+    while (p.parentPath && p.parentPath.isMemberExpression() && p.parentPath.node.object === p.node) p = p.parentPath;
+    if (p === ref) return 0; // the binding itself is read, not a member of it
+    const parent = p.parentPath;
+    if (!parent) return 0;
+    const isWrite =
+        (parent.isAssignmentExpression() && parent.node.left === p.node) ||
+        (parent.isUpdateExpression() && parent.node.argument === p.node) ||
+        (parent.isUnaryExpression() && parent.node.operator === "delete" && parent.node.argument === p.node);
+    if (!isWrite) return 0;
+    return p.node.loc ? p.node.loc.start.line : 0;
 }
 
 for (const [file, ast] of asts) {
@@ -310,9 +336,22 @@ for (const [file, ast] of asts) {
                 const target = resolveSpecifier(decl.source.value, file);
                 if (!target) continue; // already reported under (a)
                 addEdge(allEdges, file, target);
+                // What the binding is called on the exporting side: for
+                // `import { CSNumber as CS }` the manifest names CSNumber.
+                const spec = binding.path.node;
+                const imported =
+                    spec.type === "ImportSpecifier"
+                        ? spec.imported.type === "Identifier"
+                            ? spec.imported.name
+                            : spec.imported.value
+                        : spec.type === "ImportDefaultSpecifier"
+                        ? "default"
+                        : "*"; // namespace import: a write hits whatever it names
                 let initUses = 0;
                 for (const ref of binding.referencePaths) {
                     if (isInitTimeReference(ref)) initUses++;
+                    const write = memberWriteThrough(ref);
+                    if (write) memberWrites.push({ file, local: name, imported, target, line: write });
                 }
                 if (initUses > 0) {
                     initBindings++;
@@ -608,6 +647,38 @@ for (const file of [...hoistedFiles.keys()].sort()) console.log(`    ${rel(file)
 if (hoistViolations.length) {
     problems.push(`${hoistViolations.length} hoisted-module violation(s)`);
     for (const v of hoistViolations) console.log("    " + v);
+}
+
+//////////////////////////////////////////////////////////////////////
+// (g) Nobody writes into a hoisted module's exports from outside the hoist.
+//
+// Check (f) keeps the hoisted set closed under imports; this one keeps it
+// closed under mutation. A hoisted module is evaluated once and its namespace
+// object is shared by every widget, so `CSNumber.foo = ...` executed from a
+// per-instance module is not a local change - it is one widget reaching into
+// page-global state that the next widget then inherits. That is the exact class
+// of bug the hoist can introduce, it is invisible at runtime (the write
+// succeeds), and it is what disqualifies Registry/Essentials/Namespace from
+// being hoisted in the first place.
+//
+// Writes from one hoisted module into another are fine: both live in the
+// once-scope, so nothing per-instance is involved.
+
+const exportedNamesOf = (file) => new Set(hoistedFiles.get(file).exports);
+const sharedStateWrites = memberWrites.filter((w) => {
+    if (!hoistedFiles.has(w.target)) return false; // target is not shared
+    if (hoistedFiles.has(w.file)) return false; // writer is shared too
+    return w.imported === "*" || exportedNamesOf(w.target).has(w.imported);
+});
+console.log(`\n(g) writes into a hoisted module's exports from per-instance code: ${sharedStateWrites.length}`);
+if (sharedStateWrites.length) {
+    problems.push(`${sharedStateWrites.length} write(s) into shared hoisted state`);
+    for (const w of sharedStateWrites.sort((a, b) => rel(a.file).localeCompare(rel(b.file)) || a.line - b.line)) {
+        console.log(
+            `    ${rel(w.file)}:${w.line}  writes through ${w.local} ` +
+                `(${w.imported} of ${rel(w.target)}) - that state would be shared by every widget`
+        );
+    }
 }
 
 if (problems.length) {

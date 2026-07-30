@@ -287,3 +287,87 @@ test("two independent widgets on one page", async ({ page }) => {
     expect(failures.consoleErrors, "console.error output").toEqual([]);
     expect(failures.failedRequests, "failed or 4xx/5xx requests").toEqual([]);
 });
+
+/**
+ * The step-8 hoisting regression test.
+ *
+ * Step 8 moves provably stateless modules out of `CindyJS.newInstance` so they
+ * are evaluated once per page and SHARED by every widget
+ * (tools/hoisted-modules.js). The test above would not notice a bad hoist of
+ * the value layer: it compares pictures and namespaces, and the value layer has
+ * no picture and no namespace. What it does have are two seams through which
+ * per-widget configuration reaches it, and this test drives both.
+ *
+ *   - Angle formatting. libcs/CSNumber.ts is shared; libcs/AngleUnit.ts, which
+ *     reads the widget's `angleUnit` argument, is not. Widget A prints degrees,
+ *     widget B radians, from the same shared arithmetic - so `"a=" + (90°)` is
+ *     an exact string that differs per widget. It is asserted interleaved
+ *     (A, B, A, B) so a shared last-writer-wins slot cannot pass by accident,
+ *     and again after both widgets have been animating in the SAME
+ *     requestAnimationFrame ticks, which is when a shared slot would actually
+ *     be overwritten between the two draws.
+ *
+ *   - Error reporting. libcs/Dict.js is shared; the CindyScript console is
+ *     per-widget. Dict.key takes the reporter as a parameter from its caller
+ *     (it used to read a module-level slot), so each widget's malformed-key
+ *     report has to land in its own console <div> and nowhere else. Each init
+ *     script does exactly one bad put(), keyed by its own geometry point, so
+ *     the two messages are distinguishable strings and a miscount is visible in
+ *     both directions.
+ */
+test("two widgets share the hoisted value layer without sharing their settings", async ({ page }) => {
+    const failures = collectFailures(page);
+
+    await page.goto(`${baseURL()}/tests/browser/fixtures/two-widgets-angleunit.html`, { waitUntil: "load" });
+
+    // Reads `label` out of each instance, alternating between them. A shared
+    // formatter would make both reads return the same string.
+    const readLabels = () =>
+        page.evaluate(() => {
+            const str = (instance) => {
+                const value = instance.evalcs("label");
+                return value && value.ctype === "string" ? value.value : `<${value && value.ctype}>`;
+            };
+            return [str(window.widgetA), str(window.widgetB), str(window.widgetA), str(window.widgetB)];
+        });
+
+    // The draw scripts run on requestAnimationFrame, so `label` is set slightly
+    // after load.
+    await expect.poll(async () => (await readLabels())[0]).toBe("a=90°");
+    expect(await readLabels()).toEqual(["a=90°", "a=1.5708rad", "a=90°", "a=1.5708rad"]);
+
+    // Exactly one report per console, each its own.
+    const consoles = () =>
+        page.evaluate(() => ({
+            a: document.getElementById("consoleA").textContent,
+            b: document.getElementById("consoleB").textContent,
+        }));
+    const reports = await consoles();
+    expect(reports.a, "widget A's console").toBe("Bad dictionary key: P");
+    expect(reports.b, "widget B's console").toBe("Bad dictionary key: Q");
+
+    // Now let both widgets animate. Their tick and draw scripts interleave on
+    // the page's single rAF clock, which is the situation a shared module-level
+    // slot survives least: A writes it, B overwrites it, A reads B's value.
+    await page.evaluate(() => {
+        window.widgetA.play();
+        window.widgetB.play();
+    });
+    await page.waitForTimeout(500);
+
+    const ticks = await page.evaluate(() => {
+        const num = (instance) => instance.evalcs("ticks").value.real;
+        return { a: num(window.widgetA), b: num(window.widgetB) };
+    });
+    expect(ticks.a, "widget A never ticked - the animation did not run").toBeGreaterThan(0);
+    expect(ticks.b, "widget B never ticked - the animation did not run").toBeGreaterThan(0);
+
+    expect(await readLabels()).toEqual(["a=90°", "a=1.5708rad", "a=90°", "a=1.5708rad"]);
+
+    // Still one report each: nothing re-reported into the wrong console.
+    expect(await consoles()).toEqual(reports);
+
+    expect(failures.pageErrors, "uncaught page errors").toEqual([]);
+    expect(failures.consoleErrors, "console.error output").toEqual([]);
+    expect(failures.failedRequests, "failed or 4xx/5xx requests").toEqual([]);
+});

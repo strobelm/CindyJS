@@ -204,14 +204,22 @@ async function main() {
     // Step 8: the hoisted modules live in the once-bundle and ONLY there.
     const onceInputs = new Set(once.inputs);
     const onceMain = fs.readFileSync(path.join(srcRoot, "once-main.js"), "utf-8");
+    // A manifest id is the import SPECIFIER path, so it always ends in ".js"
+    // even when the file on disk is ".ts" (libcs/CSNumber.js -> CSNumber.ts).
+    // esbuild's metafile keys are the real paths, hence both candidates.
+    const inputNames = (id) => {
+        const src = "src/js/" + id;
+        return src.endsWith(".js") ? [src, src.slice(0, -3) + ".ts"] : [src];
+    };
     for (const m of hoisted) {
-        const src = "src/js/" + m.id;
+        const names = inputNames(m.id);
+        const src = names.find((n) => fs.existsSync(path.join(repoRoot, n))) || names[0];
         require1(
-            !instanceInputs.has(src),
+            !names.some((n) => instanceInputs.has(n)),
             src + " was bundled into the per-instance bundle - the hoist-shim substitution did not catch it."
         );
         require1(
-            onceInputs.has(src),
+            names.some((n) => onceInputs.has(n)),
             src +
                 " is listed in tools/hoisted-modules.js but missing from the once-bundle - " +
                 "import it in src/js/once-main.js."

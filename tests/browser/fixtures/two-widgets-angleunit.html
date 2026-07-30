@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>CindyJS: two widgets with different angle units</title>
+        <script type="text/javascript" src="../../../build/js/Cindy.js"></script>
+        <link rel="stylesheet" href="../../../css/cindy.css" />
+    </head>
+
+    <body style="font-family: Arial">
+        <!--
+            Regression fixture for step 8 of MODERNIZATION.md: the modules hoisted
+            out of CindyJS.newInstance (tools/hoisted-modules.js) are evaluated ONCE
+            per page and shared by every widget, while the rest of the interpreter is
+            re-evaluated per widget.
+
+            two-widgets.html covers the per-instance side (namespace, geometry). This
+            fixture covers the seam itself: the two things a widget configures that
+            the shared value layer is reached through.
+
+              * angleUnit. libcs/CSNumber.ts is hoisted; libcs/AngleUnit.ts, which
+                reads instanceInvocationArguments.angleUnit and formats angles with
+                it, is NOT. Widget A prints angles in degrees, widget B in radians,
+                and both compute their label from the same shared CSNumber code in
+                the same requestAnimationFrame ticks. If the printer ever became
+                page-global (a module-level printer slot on a hoisted module is
+                exactly how it used to work, via Registry.printing), the two labels
+                would agree - whichever widget was constructed last winning.
+
+              * the CindyScript console. Each widget writes into its own <div>.
+                libcs/Dict.js is hoisted too, and Dict.key reports a malformed key
+                through a reporter its CALLER supplies, so the report has to land in
+                the console of the widget that ran the put() and nowhere else. The
+                init scripts below each do exactly one such put(), with their own
+                geometry point (P in widget A, Q in widget B) - a "geo" value, which
+                is not a usable dictionary key. The two points are named differently
+                precisely so the two reports are distinguishable strings: each console
+                must hold its own line and only its own.
+
+            Everything the test asserts is an exact string; nothing here is a
+            picture, so this fixture does not depend on the rasteriser.
+        -->
+        <h1>Widget A (degrees)</h1>
+        <script id="csinitA" type="text/x-cindyscript">
+            ticks = 0;
+            label = "";
+            // One malformed-key report, on this widget's console only.
+            badput = put(dict(), P, 1);
+        </script>
+        <script id="cstickA" type="text/x-cindyscript">
+            ticks = ticks + 1;
+        </script>
+        <script id="csdrawA" type="text/x-cindyscript">
+            label = "a=" + (90°);
+            drawtext((-1, 0), label);
+        </script>
+        <div id="widgetA" style="width: 240px; height: 120px; border: 2px solid #000000"></div>
+        <div id="consoleA" style="height: 60px; overflow: auto"></div>
+
+        <h1>Widget B (radians)</h1>
+        <script id="csinitB" type="text/x-cindyscript">
+            ticks = 0;
+            label = "";
+            badput = put(dict(), Q, 1);
+        </script>
+        <script id="cstickB" type="text/x-cindyscript">
+            ticks = ticks + 1;
+        </script>
+        <script id="csdrawB" type="text/x-cindyscript">
+            label = "a=" + (90°);
+            drawtext((-1, 0), label);
+        </script>
+        <div id="widgetB" style="width: 240px; height: 120px; border: 2px solid #000000"></div>
+        <div id="consoleB" style="height: 60px; overflow: auto"></div>
+
+        <script type="text/javascript">
+            window.widgetA = CindyJS({
+                canvasname: "widgetA",
+                csconsole: "consoleA",
+                angleUnit: "°",
+                initscript: "csinitA",
+                tickscript: "cstickA",
+                drawscript: "csdrawA",
+                geometry: [{ name: "P", kind: "P", type: "Free", pos: [1, 1, 1] }],
+            });
+
+            window.widgetB = CindyJS({
+                canvasname: "widgetB",
+                csconsole: "consoleB",
+                angleUnit: "rad",
+                initscript: "csinitB",
+                tickscript: "cstickB",
+                drawscript: "csdrawB",
+                geometry: [{ name: "Q", kind: "P", type: "Free", pos: [3, 3, 1] }],
+            });
+        </script>
+    </body>
+</html>
