@@ -1,8 +1,9 @@
+// @ts-expect-error: Not yet typed
 import { nada } from "../nada.js";
 // @ts-expect-error: Not yet typed
 import { List } from "./List.js";
 
-import { CSNum, Nada, CSMath, CSList } from "../types.js";
+import type { CSNum, Nada, CSMath, CSList } from "../types.js";
 
 const TWOPI = Math.PI * 2;
 

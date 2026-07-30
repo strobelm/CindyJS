@@ -53,6 +53,16 @@ module.exports = [
         exports: ["PSLQ", "PSLQMatrix"],
     },
     {
+        // The CindyScript grammar. Its operator tables (`operators`,
+        // `operatorSymbols`, `functionCallPrecedence`) are built by the
+        // initializeOperators IIFE during module evaluation and never written
+        // again; everything a parse mutates lives on the `new Parser()`
+        // instance (usedVariables/usedFunctions/infixmap, set per call in
+        // Evaluator.analyse). Audited 2026-07-30.
+        id: "libcs/Parser.js",
+        exports: ["Parser"],
+    },
+    {
         id: "libgeo/TracingSizes.js",
         exports: ["tracing2StateSize", "tracing4StateSize", "tracing2ConicsStateSize"],
     },

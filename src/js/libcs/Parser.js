@@ -1,6 +1,11 @@
 "use strict"; // So this file can be used as a stand-alone node module
 
-import { window } from "../expose.js";
+// The node-detection guard at the bottom of this file is the only thing that
+// looks at a DOM global here. Reading it off globalThis rather than importing
+// it from the environment seam (expose.js) is what keeps this module free of
+// per-instance dependencies, so it can be hoisted into the once-per-page
+// bundle (tools/hoisted-modules.js); src/js/CindyJS.js does the same.
+const window = globalThis.window;
 
 // All operators, sorted by precedence level
 const operatorLevels = [

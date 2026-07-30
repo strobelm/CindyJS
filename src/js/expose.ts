@@ -1,5 +1,6 @@
 // nada is owned by the leaf module nada.js (one object per page, compared by
 // identity); this seam only re-exports it.
+// @ts-expect-error: Not yet typed
 import { nada } from "./nada.js";
 
 /* eslint no-var: off */

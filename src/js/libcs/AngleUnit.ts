@@ -1,7 +1,7 @@
 import { instanceInvocationArguments } from "../expose.js";
 import { CSNumber, TWOPI } from "./CSNumber.js";
 
-import { CSNum } from "../types.js";
+import type { CSNum } from "../types.js";
 
 const angleUnit = instanceInvocationArguments.angleUnit || "°";
 const PERTWOPI = 1 / TWOPI;

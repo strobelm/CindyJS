@@ -7,7 +7,7 @@ import { niceprint, defaultNiceprintOptions } from "./Essentials.js";
 import { namespace } from "./Namespace.js";
 // @ts-expect-error: Not yet typed
 import { evaluate } from "./Evaluator.js";
-import { CSJsonValue, CSJsonKey, Nada, CSJson, CSType, CSJsonIterator } from "../types.js";
+import type { CSJsonValue, CSJsonKey, Nada, CSJson, CSType, CSJsonIterator } from "../types.js";
 
 const Json: CSJson = {
     _helper: {
