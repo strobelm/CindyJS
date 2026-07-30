@@ -270,8 +270,8 @@ for (const [file, ast] of asts) {
             const holder = enclosing ? enclosing.node : null;
             if (!callsInFunction.has(holder)) callsInFunction.set(holder, []);
             const list = callsInFunction.get(holder);
-            if (isFunctionNode(p.node.callee))
-                list.push(p.node.callee); // IIFE
+            if (isFunctionNode(p.node.callee)) list.push(p.node.callee);
+            // IIFE
             else {
                 const key = calleeKey(p.node.callee);
                 if (key) list.push(key);
@@ -561,6 +561,53 @@ const externals = [...nonStandardGlobals.keys()].sort();
 console.log(`\n(e) non-standard free globals the bundle must provide: ${externals.length}`);
 for (const name of externals) {
     console.log(`    ${name}: ${[...nonStandardGlobals.get(name)].sort().join(", ")}`);
+}
+
+//////////////////////////////////////////////////////////////////////
+// (f) The hoisted-module closure (Phase 1, step 8).
+//
+// tools/hoisted-modules.js lists the modules tools/build-cindy.js evaluates
+// once per page instead of once per instance. Sharing is only sound if a
+// hoisted module's whole import closure is hoisted with it: an import of a
+// factory module would make esbuild inline a private copy of that module into
+// the once-bundle - per-instance state suddenly evaluated once and shared, and
+// nothing at runtime would say so. The environment seam (expose.js) is the
+// clearest instance of the rule: it IS per-instance state.
+
+const hoisted = require("./hoisted-modules");
+const hoistedFiles = new Map(); // absolute path -> manifest entry
+const hoistViolations = [];
+for (const m of hoisted) {
+    const file = resolveSpecifier("./" + m.id, path.join(srcRoot, "x"));
+    if (!file) {
+        hoistViolations.push(`${m.id}: listed in tools/hoisted-modules.js but no such file`);
+        continue;
+    }
+    hoistedFiles.set(file, m);
+}
+for (const [file, m] of hoistedFiles) {
+    const exported = exportsByFile.get(file) || new Set();
+    for (const name of m.exports) {
+        if (!exported.has(name)) {
+            hoistViolations.push(`${m.id}: manifest export "${name}" is not exported by the file`);
+        }
+    }
+    for (const target of allEdges.get(file) || []) {
+        if (!hoistedFiles.has(target)) {
+            hoistViolations.push(
+                `${rel(file)} imports ${rel(target)}, which is not hoisted - ` +
+                    `the once-bundle would get a private copy of it`
+            );
+        }
+    }
+}
+console.log(
+    `\n(f) hoisted modules (shared across instances): ${hoistedFiles.size}, violations: ${hoistViolations.length}`
+);
+for (const file of [...hoistedFiles.keys()].sort()) console.log(`    ${rel(file)}`);
+if (hoistViolations.length) {
+    problems.push(`${hoistViolations.length} hoisted-module violation(s)`);
+    for (const v of hoistViolations) console.log("    " + v);
 }
 
 if (problems.length) {

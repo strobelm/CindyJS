@@ -91,6 +91,7 @@ const nonGraphSources = new Set([
     "instance-main.js", // entry of the per-instance bundle
     "test-exports.js", // entry of the unit-test bundle
     "CindyJS.js", // the once-evaluated bundle; importing it per instance is a bug
+    "once-main.js", // entry of the once-evaluated bundle (CindyJS.js + hoisted modules)
     "expose.browser.js", // substituted in for expose.ts, never imported by name
     "types.ts", // type declarations only, erased by esbuild
 ]);

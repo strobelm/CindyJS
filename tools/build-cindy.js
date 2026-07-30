@@ -17,9 +17,12 @@
 //
 // So the artifact keeps exactly that shape, only now assembled from modules:
 //
-//   bundle A  src/js/CindyJS.js      once-evaluated page-global state
+//   bundle A  src/js/once-main.js    once-evaluated page-global state
 //                                    (the callable, plugin registry, script
-//                                    loader, waitFor barrier, id counter, nada)
+//                                    loader, waitFor barrier, id counter, nada
+//                                    - all in CindyJS.js - plus the modules
+//                                    hoisted out of the factory, see
+//                                    tools/hoisted-modules.js)
 //   bundle B  src/js/instance-main.js the interpreter graph, embedded TEXTUALLY
 //                                    as the body of `CindyJS.newInstance` so
 //                                    that every call re-evaluates it
@@ -58,6 +61,9 @@
 //   instanceInvocationArguments    -> __cindyArgs   > src/js/expose.browser.js
 //   nada                           -> __cindyNada  /  (substituted for expose.ts)
 //   generateId                     -> generateId      read bare by GeoOps.js
+//   shared                         -> __cindyShared   read by the step-8 shims
+//                                                     substituted for hoisted
+//                                                     modules (see below)
 //
 // `version` (build/js/Version.js in the concat world) is not a runtime value at
 // all - it is a build-time constant and becomes an esbuild `define`.
@@ -77,6 +83,7 @@ const {
     readVersion,
 } = require("./esbuild-common");
 const sources = require("../make/sources");
+const hoisted = require("./hoisted-modules");
 
 const outDir = path.join(repoRoot, "build", "js");
 const outfile = path.join(outDir, "Cindy.js");
@@ -120,8 +127,46 @@ async function bundle(entry, globalName, extra) {
 // that is the spelling the composed map uses.
 function normalizeMapSources(text) {
     const map = JSON.parse(text);
-    map.sources = map.sources.map((src) => (/^<(.*)>$/.test(src) ? ` [synthetic:${src.slice(1, -1)}] ` : src));
+    map.sources = map.sources.map((src) => {
+        if (/^<(.*)>$/.test(src)) return ` [synthetic:${src.slice(1, -1)}] `;
+        if (src.includes("hoist-shim:")) return ` [synthetic:hoist-shim] `;
+        return src;
+    });
     return JSON.stringify(map);
+}
+
+//////////////////////////////////////////////////////////////////////
+// Step 8: shims for the hoisted modules.
+//
+// A hoisted module (tools/hoisted-modules.js) is evaluated once, inside bundle
+// A. Instance modules keep importing it by its original specifier; this plugin
+// serves those imports with a generated shim that reads the module's namespace
+// object off `__cindyShared` - the free identifier the newInstance wrapper
+// binds to `__cindyOnce.shared`. Importing the real file instead would make
+// esbuild inline a private per-widget copy, silently un-hoisting it.
+//
+// The shim lists its exports explicitly (from the manifest), so an instance
+// module importing a name the manifest misses is a hard esbuild error, not an
+// undefined at runtime.
+
+function hoistShims() {
+    const byPath = new Map(hoisted.map((m) => [path.join(srcRoot, m.id), m]));
+    return {
+        name: "hoist-shims",
+        setup(build) {
+            build.onResolve({ filter: /^\.{1,2}\// }, (args) => {
+                const abs = path.resolve(args.resolveDir, args.path);
+                if (!byPath.has(abs)) return undefined;
+                return { path: abs, namespace: "hoist-shim" };
+            });
+            build.onLoad({ filter: /.*/, namespace: "hoist-shim" }, (args) => {
+                const m = byPath.get(args.path);
+                const lines = [`const __m = __cindyShared[${JSON.stringify(m.id)}];`];
+                for (const name of m.exports) lines.push(`export const ${name} = __m.${name};`);
+                return { contents: lines.join("\n"), loader: "js" };
+            });
+        },
+    };
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -129,11 +174,11 @@ function normalizeMapSources(text) {
 async function main() {
     const version = readVersion();
 
-    const once = await bundle("CindyJS.js", "__cindyOnce", {});
+    const once = await bundle("once-main.js", "__cindyOnce", {});
 
     const instance = await bundle("instance-main.js", "__cindyInstance", {
         define: { version: JSON.stringify(version) },
-        plugins: [substituteModule("expose.js", path.join(srcRoot, "expose.browser.js"))],
+        plugins: [substituteModule("expose.js", path.join(srcRoot, "expose.browser.js")), hoistShims()],
     });
 
     // The structural invariants of the composition. A regression here is silent
@@ -154,6 +199,34 @@ async function main() {
     );
     require1(instanceInputs.has("src/js/expose.browser.js"), "the browser environment seam was not substituted in");
     require1(!instanceInputs.has("src/js/expose.ts"), "the node/test environment stubs leaked into the browser bundle");
+
+    // Step 8: the hoisted modules live in the once-bundle and ONLY there.
+    const onceInputs = new Set(once.inputs);
+    const onceMain = fs.readFileSync(path.join(srcRoot, "once-main.js"), "utf-8");
+    for (const m of hoisted) {
+        const src = "src/js/" + m.id;
+        require1(
+            !instanceInputs.has(src),
+            src + " was bundled into the per-instance bundle - the hoist-shim substitution did not catch it."
+        );
+        require1(
+            onceInputs.has(src),
+            src +
+                " is listed in tools/hoisted-modules.js but missing from the once-bundle - " +
+                "import it in src/js/once-main.js."
+        );
+        require1(
+            onceMain.includes(JSON.stringify(m.id)),
+            "src/js/once-main.js does not put " +
+                JSON.stringify(m.id) +
+                " on the shared object - " +
+                "every instance would crash reading it."
+        );
+    }
+    require1(
+        !onceInputs.has("src/js/expose.ts") && !onceInputs.has("src/js/expose.browser.js"),
+        "a hoisted module imports the environment seam - it depends on per-instance state and must not be hoisted."
+    );
 
     //////////////////////////////////////////////////////////////////
     // Composition.
@@ -184,6 +257,7 @@ async function main() {
         "    var __cindyApi = CindyJS;",
         "    var __cindyArgs = instanceInvocationArguments;",
         "    var __cindyNada = __cindyOnce.nada;",
+        "    var __cindyShared = __cindyOnce.shared;",
         "    var generateId = __cindyOnce.generateId;",
         "", // bundle B follows
     ].join("\n");

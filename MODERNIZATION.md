@@ -6,19 +6,19 @@ deployment and every legacy plugin keeps working unchanged.
 
 ## Scope decisions
 
-- **Modernized:** core (`src/js`), `plugins/cindygl`, `plugins/cindy3d`.
-- **Kept running, not modernized:** cindyprint, cindyxr, cindyleap,
-  ComplexCurves, katex, midi, QuickHull3D, symbolic. They interact with the
-  core only through the plugin API (`CindyJS.registerPlugin`), so they keep
-  building with the old `node make` pipeline and loading against the bundled
-  builds. The plugin API is therefore a compatibility contract and must not
-  change observable behavior.
-- **Compatibility target:** the published artifacts must include drop-in
-  replacements for today's `build/js/Cindy.js`, `CindyGL.js`, `Cindy3D.js`
-  (global-scope IIFE bundles), alongside new ESM entry points.
-- **Safety net, not rewrite:** behavior is frozen throughout. The existing
-  suites — mocha unit tests, fast-check property tests, `ref/` doctests,
-  example compile checks — gate every phase. No phase lands red.
+-   **Modernized:** core (`src/js`), `plugins/cindygl`, `plugins/cindy3d`.
+-   **Kept running, not modernized:** cindyprint, cindyxr, cindyleap,
+    ComplexCurves, katex, midi, QuickHull3D, symbolic. They interact with the
+    core only through the plugin API (`CindyJS.registerPlugin`), so they keep
+    building with the old `node make` pipeline and loading against the bundled
+    builds. The plugin API is therefore a compatibility contract and must not
+    change observable behavior.
+-   **Compatibility target:** the published artifacts must include drop-in
+    replacements for today's `build/js/Cindy.js`, `CindyGL.js`, `Cindy3D.js`
+    (global-scope IIFE bundles), alongside new ESM entry points.
+-   **Safety net, not rewrite:** behavior is frozen throughout. The existing
+    suites — mocha unit tests, fast-check property tests, `ref/` doctests,
+    example compile checks — gate every phase. No phase lands red.
 
 ## Phase 0 — Safety net and tooling hygiene (no architecture changes)
 
@@ -92,20 +92,20 @@ With both extractions the init-time graph is acyclic. Two missing imports to
 add (`window` in `Parser.js` L780, `niceprint` in `types.ts`); the remaining
 call-time cycles are legal ESM live-binding usage and stay as-is.
 
-- First map them: `madge --circular` (or eslint `import/no-cycle`) on the
-  converted tree, and classify each cycle as _call-time_ (an imported function
-  is only invoked inside function bodies) or _init-time_ (an imported binding
-  is read during module evaluation, e.g. building a table at top level).
-- Call-time cycles are legal ESM and work with live bindings; rollup/esbuild
-  only warn. Tolerate them during the migration; untangle opportunistically
-  in Phase 3.
-- Init-time cycles must be broken by inversion, not import tricks: the
-  lower-level module owns an empty registry, higher layers register into it,
-  and `Setup.js` acts as the composition root that does the wiring. Likely
-  candidates: the operator table (`Evaluator` ↔ `Operators`), accessor/geo-op
-  definition tables (`Accessors`, `GeoOps` ↔ `Tracing`).
-- Configure the bundler to fail CI on _new_ cycles once the initial set is
-  inventoried, so the count only goes down.
+-   First map them: `madge --circular` (or eslint `import/no-cycle`) on the
+    converted tree, and classify each cycle as _call-time_ (an imported function
+    is only invoked inside function bodies) or _init-time_ (an imported binding
+    is read during module evaluation, e.g. building a table at top level).
+-   Call-time cycles are legal ESM and work with live bindings; rollup/esbuild
+    only warn. Tolerate them during the migration; untangle opportunistically
+    in Phase 3.
+-   Init-time cycles must be broken by inversion, not import tricks: the
+    lower-level module owns an empty registry, higher layers register into it,
+    and `Setup.js` acts as the composition root that does the wiring. Likely
+    candidates: the operator table (`Evaluator` ↔ `Operators`), accessor/geo-op
+    definition tables (`Accessors`, `GeoOps` ↔ `Tracing`).
+-   Configure the bundler to fail CI on _new_ cycles once the initial set is
+    inventoried, so the count only goes down.
 
 ### Restructuring steps (minimal, in order; every step lands with alltests green)
 
@@ -154,6 +154,7 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
    stateless, including the whole data layer. Naive once-evaluated ESM
    would share interpreter state across widgets. Therefore the flip
    preserves semantics by construction:
+
     - `Head.js`'s once-only logic (CindyJS callable, plugin registry,
       script loader, waitFor, dumpState) becomes a real module evaluated
       once.
@@ -211,6 +212,7 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
       scope-sharing sources, load them through `tests/quickhull.cjs`
       instead, which concatenates them into one scope the way the
       shipping plugin build does.
+
 8. **Shrink the factory (the path to true single-evaluation ESM).**
    After the flip, hoist provably stateless modules OUT of the
    per-instance factory one subsystem at a time, sharing them across
@@ -222,21 +224,36 @@ call-time cycles are legal ESM live-binding usage and stay as-is.
    risk (callbacks re-binding the current instance) is confined to the
    last, smallest steps.
 
+    **Mechanism landed** (first hoists: `libcs/PSLQ.js`,
+    `libgeo/TracingSizes.js`). `tools/hoisted-modules.js` is the manifest;
+    the once-bundle entry is now `src/js/once-main.js` (CindyJS.js plus the
+    namespace objects of the hoisted modules, published as
+    `__cindyOnce.shared`), and tools/build-cindy.js substitutes each hoisted
+    module in the per-instance bundle with a generated shim that re-exports
+    off the `__cindyShared` wrapper binding. Guards: check (f) in
+    tools/check-esm-graph.js fails any hoisted module whose imports leave
+    the hoisted set (a factory module inlined into the once-bundle would be
+    silently shared state), and build-cindy asserts the real files land in
+    the once-bundle only. The data layer stays blocked until the Phase 3
+    List-purity cleanup - `CSNumber.ts` additionally reads
+    `instanceInvocationArguments.angleUnit` at module scope, so it also
+    needs per-instance parameterization before it can move.
+
 Explicitly out of scope for these steps: renames, TypeScript conversion,
 tsconfig strictness, build-system replacement, and any dynamic `import()` —
 cycles are broken by the two extractions alone, statically.
 
 Supporting changes in the same phase:
 
-- `tools/cs2js.js` emits an ES module instead of a concatenation fragment.
-- `build/js/Version.js` becomes a build-time constant (esbuild `define`).
-- `src/js/Head.js`, `Tail.js`, `Cindy.js.wrapper`, and `expose.ts` are
-  deleted. Tests import modules directly; `rewire` and the `exposed` bundle
-  disappear. Keep test file names and assertions unchanged so failures are
-  attributable to the migration, not to test rewrites.
-- An esbuild IIFE bundle (`CindyJS` global) reproduces today's `Cindy.js`.
-  Gate: ref doctests, unit tests, property tests, `excomp`, and the Playwright
-  smoke test all pass against the bundled output.
+-   `tools/cs2js.js` emits an ES module instead of a concatenation fragment.
+-   `build/js/Version.js` becomes a build-time constant (esbuild `define`).
+-   `src/js/Head.js`, `Tail.js`, `Cindy.js.wrapper`, and `expose.ts` are
+    deleted. Tests import modules directly; `rewire` and the `exposed` bundle
+    disappear. Keep test file names and assertions unchanged so failures are
+    attributable to the migration, not to test rewrites.
+-   An esbuild IIFE bundle (`CindyJS` global) reproduces today's `Cindy.js`.
+    Gate: ref doctests, unit tests, property tests, `excomp`, and the Playwright
+    smoke test all pass against the bundled output.
 
 Do this as one focused push per layer (bottom-up), not a months-long dual
 system. The old concat build keeps working from a branch until the final layer
@@ -244,88 +261,88 @@ lands, then is switched off in one commit.
 
 ## Phase 2 — Replace the build system for the core
 
-- esbuild drives everything for the core: dev build with watch + serve
-  (replaces `node make live`), production build with minify + sourcemaps
-  (replaces Closure; run `benchmarks/` and compare bundle size before/after to
-  quantify the regression, if any).
-- Small plain-node scripts (in `make/` or `scripts/`) wrap the remaining
-  non-bundling steps: cs2js, sass, ref-doctest runner, forbidden-pattern
-  checks, example compile check. Wire them as npm scripts:
-  `dev`, `build`, `test`, `test:unit`, `test:ref`, `lint`, `bench`.
-- `node make` remains solely as the legacy-plugin builder (Closure + Java stay
-  a dependency only for that path); the core no longer needs Java.
-- CI runs the new pipeline plus one legacy-plugin build to prove the contract
-  holds.
+-   esbuild drives everything for the core: dev build with watch + serve
+    (replaces `node make live`), production build with minify + sourcemaps
+    (replaces Closure; run `benchmarks/` and compare bundle size before/after to
+    quantify the regression, if any).
+-   Small plain-node scripts (in `make/` or `scripts/`) wrap the remaining
+    non-bundling steps: cs2js, sass, ref-doctest runner, forbidden-pattern
+    checks, example compile check. Wire them as npm scripts:
+    `dev`, `build`, `test`, `test:unit`, `test:ref`, `lint`, `bench`.
+-   `node make` remains solely as the legacy-plugin builder (Closure + Java stay
+    a dependency only for that path); the core no longer needs Java.
+-   CI runs the new pipeline plus one legacy-plugin build to prove the contract
+    holds.
 
 ## Phase 3 — TypeScript migration of the core
 
-- Flip `allowJs: true`, `checkJs` selectively; migrate file-by-file in the
-  same bottom-up order as Phase 1. `CSNumber.ts`/`Json.ts`/`types.ts` already
-  exist as the template.
-- Tighten `tsconfig` incrementally (`strictNullChecks` etc. are currently
-  off); enable per-flag once the codebase passes.
-- When `List.js` is converted: move its ~10 interpreter-dependent call sites
-  (`evaluateAndVal`, `comp_equals`/`comp_almostequals`, `eval_helper.equals`
-  in the set-like ops) up into the operator layer, making
-  `CSNumber`/`List`/`General`/`Dict` a pure, independently testable data
-  layer with no dependency on the interpreter. Deliberately NOT done in
-  Phase 1: those are harmless call-time cycles, and the fast-check property
-  suite plus TS types make Phase 3 the safe moment for it. `General` stays
-  as-is — it is the polymorphic dispatch layer over the value union (280
-  lines, coherent), and becomes the home of the typed `CSValue` union.
-- Emit `.d.ts` for the public API: `CindyJS(...)`, the plugin registration
-  API, and the data types plugins consume (`CSNumber`, `List`, modifiers).
-  These types are also the executable specification of the legacy-plugin
-  contract.
+-   Flip `allowJs: true`, `checkJs` selectively; migrate file-by-file in the
+    same bottom-up order as Phase 1. `CSNumber.ts`/`Json.ts`/`types.ts` already
+    exist as the template.
+-   Tighten `tsconfig` incrementally (`strictNullChecks` etc. are currently
+    off); enable per-flag once the codebase passes.
+-   When `List.js` is converted: move its ~10 interpreter-dependent call sites
+    (`evaluateAndVal`, `comp_equals`/`comp_almostequals`, `eval_helper.equals`
+    in the set-like ops) up into the operator layer, making
+    `CSNumber`/`List`/`General`/`Dict` a pure, independently testable data
+    layer with no dependency on the interpreter. Deliberately NOT done in
+    Phase 1: those are harmless call-time cycles, and the fast-check property
+    suite plus TS types make Phase 3 the safe moment for it. `General` stays
+    as-is — it is the polymorphic dispatch layer over the value union (280
+    lines, coherent), and becomes the home of the typed `CSValue` union.
+-   Emit `.d.ts` for the public API: `CindyJS(...)`, the plugin registration
+    API, and the data types plugins consume (`CSNumber`, `List`, modifiers).
+    These types are also the executable specification of the legacy-plugin
+    contract.
 
 ## Phase 4 — CindyGL and Cindy3D
 
-- Convert both to TS ESM in the same toolchain. Their existing Closure
-  `/** @type {...} */` annotations translate nearly 1:1 to TypeScript.
-- GLSL sources import via esbuild's text loader (replaces the `c3dres`/
-  `cglres` string-resource tasks).
-- Each ships two ways: a subpath export (`cindyjs/cindygl`, `cindyjs/cindy3d`)
-  and a standalone IIFE bundle (`CindyGL.js`, `Cindy3D.js`) for script-tag
-  users, registered through the same public plugin API the legacy plugins use
-  — no private core access, so the modernized plugins prove the API is
-  sufficient.
-- Gate: the Playwright GPU smoke tests from Phase 0.
+-   Convert both to TS ESM in the same toolchain. Their existing Closure
+    `/** @type {...} */` annotations translate nearly 1:1 to TypeScript.
+-   GLSL sources import via esbuild's text loader (replaces the `c3dres`/
+    `cglres` string-resource tasks).
+-   Each ships two ways: a subpath export (`cindyjs/cindygl`, `cindyjs/cindy3d`)
+    and a standalone IIFE bundle (`CindyGL.js`, `Cindy3D.js`) for script-tag
+    users, registered through the same public plugin API the legacy plugins use
+    — no private core access, so the modernized plugins prove the API is
+    sufficient.
+-   Gate: the Playwright GPU smoke tests from Phase 0.
 
 ## Phase 5 — npm publishing
 
-- `package.json`:
-    - `"type": "module"`, `exports` map: `.` (ESM + types), `./cindygl`,
-      `./cindy3d`, plus the IIFE bundles under `./dist/*` for CDN use
-      (jsDelivr/unpkg), `sideEffects` audited, `files` restricted to `dist` +
-      types + LICENSE/README.
-    - version: start `0.1.0` and move honestly toward `1.0.0` once the API
-      surface is typed and stable; the existing 0.0.5 on npm makes any fresh
-      `0.x` fine.
-- Publish from CI on tag with `--provenance`; no local publishes.
-- Document the CDN path so cindyjs.org and existing users can switch script
-  tags with a one-line change.
+-   `package.json`:
+    -   `"type": "module"`, `exports` map: `.` (ESM + types), `./cindygl`,
+        `./cindy3d`, plus the IIFE bundles under `./dist/*` for CDN use
+        (jsDelivr/unpkg), `sideEffects` audited, `files` restricted to `dist` +
+        types + LICENSE/README.
+    -   version: start `0.1.0` and move honestly toward `1.0.0` once the API
+        surface is typed and stable; the existing 0.0.5 on npm makes any fresh
+        `0.x` fine.
+-   Publish from CI on tag with `--provenance`; no local publishes.
+-   Document the CDN path so cindyjs.org and existing users can switch script
+    tags with a one-line change.
 
 ## Phase 6 — Cleanup and docs
 
-- Remove dead make tasks, wrappers, `rewire`, the `exposed` machinery, and any
-  dependency only they used.
-- Update README, [the createCindy reference](ref/createCindy.md), and CLAUDE.md for the new commands and
-  the ESM import story (`import { CindyJS } from "cindyjs"`).
-- Keep `ref/` doctests running under node against the ESM build — they remain
-  the executable documentation.
+-   Remove dead make tasks, wrappers, `rewire`, the `exposed` machinery, and any
+    dependency only they used.
+-   Update README, [the createCindy reference](ref/createCindy.md), and CLAUDE.md for the new commands and
+    the ESM import story (`import { CindyJS } from "cindyjs"`).
+-   Keep `ref/` doctests running under node against the ESM build — they remain
+    the executable documentation.
 
 ## Known risks
 
-- **Implicit shared state** across concatenated files is the main unknown in
-  Phase 1; the mechanical conversion surfaces it, but tracing/geo state may
-  need genuine (small) refactors to become importable.
-- **Dropping Closure ADVANCED for the core** removes property renaming; the
-  IIFE bundle must be checked to expose only the intended `CindyJS` global,
-  and bundle size compared (expect some growth; acceptable if benchmarks
-  hold).
-- **Strict-mode/module semantics**: top-level `this`, cross-file function
-  hoisting, and accidental globals behave differently in modules — exactly the
-  bugs the test suites and the Playwright smoke test exist to catch.
-- **Legacy plugins** are compiled against `plugins/cindyjs.externs`; that
-  externs file must stay in sync with the (now typed) public API until those
-  plugins are retired.
+-   **Implicit shared state** across concatenated files is the main unknown in
+    Phase 1; the mechanical conversion surfaces it, but tracing/geo state may
+    need genuine (small) refactors to become importable.
+-   **Dropping Closure ADVANCED for the core** removes property renaming; the
+    IIFE bundle must be checked to expose only the intended `CindyJS` global,
+    and bundle size compared (expect some growth; acceptable if benchmarks
+    hold).
+-   **Strict-mode/module semantics**: top-level `this`, cross-file function
+    hoisting, and accidental globals behave differently in modules — exactly the
+    bugs the test suites and the Playwright smoke test exist to catch.
+-   **Legacy plugins** are compiled against `plugins/cindyjs.externs`; that
+    externs file must stay in sync with the (now typed) public API until those
+    plugins are retired.
