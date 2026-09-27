@@ -6,6 +6,7 @@
  * written against KaTeX 0.7) minus
  * the workarounds that KaTeX has since made obsolete: `\operatorname` is
  * supported natively now, so it must no longer be mapped to `\text`.
+ * `\mathbm` (bold math, used by KeTCindy, see CindyJS issue #829) is new.
  */
 export const macros = {
     "\\mbox": "\\text",
@@ -42,6 +43,7 @@ export const macros = {
     "\\arccot": "\\operatorname{arccot}",
     "\\arcsec": "\\operatorname{arcsec}",
     "\\arccsc": "\\operatorname{arccsc}",
+    "\\mathbm": "\\boldsymbol",
 };
 
 /**

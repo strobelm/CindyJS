@@ -161,9 +161,8 @@ const issue829 = {
     vec: "\\vec{a}",
     overrightarrow: "\\overrightarrow{AB}",
     frac: "\\frac{a}{b}",
-    // Not a KaTeX command (nor a LaTeX one); rendered as KaTeX's error
-    // message. \bm is probably what was meant.
-    mathbm: { tex: "\\mathbm{a}", noThrow: true },
+    // Not a KaTeX command; a Cinderella macro for \boldsymbol.
+    mathbm: "\\mathbm{a}",
     bm: "\\bm{a}",
     fbox: "\\fbox{a}",
     color: "\\color{red}{a}b",
