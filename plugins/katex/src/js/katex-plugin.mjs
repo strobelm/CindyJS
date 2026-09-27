@@ -36,7 +36,7 @@ function stylesheetLoaded() {
 }
 
 // Font faces by family, style and weight (without the size): true once
-// loaded, false while loading.
+// loaded (or given up on), false while loading.
 const fonts = {};
 
 function faceOf(font) {
@@ -51,9 +51,16 @@ function missingFonts(fontList) {
         missing = true;
         if (fonts[face] === undefined) {
             fonts[face] = false;
+            // A font that cannot be loaded is not waited for forever: the
+            // formula is then drawn in a fallback font, with a warning.
+            const unavailable = (why) =>
+                console.warn(`KaTeX font ${face} is unavailable (${why}); formulas use a fallback font`);
             stylesheetLoaded()
                 .then(() => document.fonts.load(font))
-                .catch((e) => console.error(e))
+                .then((faces) => {
+                    if (faces.length === 0) unavailable("not defined by katex.min.css");
+                })
+                .catch((e) => unavailable(e && e.message ? e.message : e))
                 .then(() => {
                     fonts[face] = true;
                     scheduleRepaint();
@@ -94,7 +101,7 @@ function triggerRepaints() {
 CindyJS.registerPlugin(1, "katex", plugin);
 
 function plugin(api) {
-    const storage = { instance: api.instance, cache: {}, misses: 0 };
+    const storage = { instance: api.instance, cache: new Map() };
     api.setTextRenderer(katexRenderer.bind(storage), katexHtml.bind(storage));
     api.setMeasure(katexMeasure.bind(storage));
 }
@@ -132,10 +139,11 @@ function hasOutline(ctx) {
     return typeof style !== "string" || !/^rgba\(.*,\s*0\)$/.test(style);
 }
 
+// Pixel snapping only makes sense for unrotated, uniformly scaled output.
 function pixelRatioOf(ctx, angle) {
     if (angle) return null;
     const t = ctx.getTransform();
-    return t.b === 0 && t.c === 0 ? Math.abs(t.a) : null;
+    return t.b === 0 && t.c === 0 && Math.abs(t.a) === Math.abs(t.d) ? Math.abs(t.a) : null;
 }
 
 // KaTeX stores \gdef and \global\def definitions in the macro table it is
@@ -159,7 +167,13 @@ function sizeOf(ctx, fontSize) {
 function prepare(storage, ctx, text, fontSize, lineHeight, angle) {
     const pixelRatio = pixelRatioOf(ctx, angle);
     const key = [fontSize, lineHeight, pixelRatio, ctx.font, text].join(":");
-    if (storage.cache.hasOwnProperty(key)) return storage.cache[key];
+    const cached = storage.cache.get(key);
+    if (cached !== undefined) {
+        // Maps keep insertion order: move the entry to the recent end.
+        storage.cache.delete(key);
+        storage.cache.set(key, cached);
+        return cached;
+    }
 
     let fontsMissing = false;
     const parts = text.split("$");
@@ -191,11 +205,9 @@ function prepare(storage, ctx, text, fontSize, lineHeight, angle) {
         haveToWait(storage.instance);
         return null;
     }
-    if (++storage.misses === 1024) {
-        storage.misses = 0;
-        storage.cache = {};
-    }
-    storage.cache[key] = rows;
+    // Keep the 1024 most recently used texts.
+    if (storage.cache.size >= 1024) storage.cache.delete(storage.cache.keys().next().value);
+    storage.cache.set(key, rows);
     return rows;
 }
 
@@ -210,21 +222,22 @@ function place(ctx, rows, x, y, align, fontSize, lineHeight, angle, draw) {
     let top = y - 0.7 * 1.2 * fontSize;
     let bottom = -Infinity;
     let dy = 0;
+    // Rotated texts are drawn in a coordinate system rotated around the
+    // anchor, whose origin is the anchor.
+    const rotated = draw && angle;
+    if (rotated) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(-angle);
+    }
     for (const row of rows) {
         let total = 0;
         for (const item of row) total += item.width;
         let pos = x - align * total;
         for (const item of row) {
             if (draw) {
-                if (angle) {
-                    ctx.save();
-                    ctx.translate(x, y);
-                    ctx.rotate(-angle);
-                    item.draw(ctx, pos - x, dy);
-                    ctx.restore();
-                } else {
-                    item.draw(ctx, pos, y + dy);
-                }
+                if (rotated) item.draw(ctx, pos - x, dy);
+                else item.draw(ctx, pos, y + dy);
             }
             if (left > pos) left = pos;
             if (top > y + dy - item.height) top = y + dy - item.height;
@@ -234,6 +247,7 @@ function place(ctx, rows, x, y, align, fontSize, lineHeight, angle, draw) {
         }
         dy += lineHeight;
     }
+    if (rotated) ctx.restore();
     bottom = Math.max(bottom, y + dy - lineHeight + 0.3 * 1.2 * fontSize);
     return { left, right, top, bottom };
 }
