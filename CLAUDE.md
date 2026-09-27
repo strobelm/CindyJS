@@ -6,21 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The project uses a custom JavaScript build system in `make/` (the `Makefile` just forwards to it). Invoke it as `node make [SETTINGS] [TASKS]`, where settings are `NAME=VALUE` arguments. Task definitions live in `make/build.js`; settings in `make/Settings.js`; docs in `make/README.md`.
 
-- `node make` — build `build/js/Cindy.js` (esbuild, unminified; there is only one flavor of the core now)
-- `node make all` — Cindy.js plus all plugins (cindy3d, cindygl, katex, …). The plugins are still compiled with the Closure Compiler and need a Java runtime.
-- `node make live <task>` — watch sources, rebuild on change, reload connected browsers
-- `node make tests` — Cindy.js build + ref-manual tests + unit tests + example compilation
-- `node make alltests` — full pre-PR suite (tests, eslint, deploy, forbidden-pattern checks, ref). Run after `git add`-ing your changes; CI runs the same suite.
-- `node make eslint` or `npm run lint` — lint
-- `npm run prettier` — format (prettier also runs on staged files via husky/lint-staged)
-- Serve examples locally: `node_modules/.bin/st -l -nc`, then open `http://127.0.0.1:1337/examples/`
+-   `node make` — build `build/js/Cindy.js` (esbuild, unminified; there is only one flavor of the core now)
+-   `node make all` — Cindy.js plus all plugins (cindy3d, cindygl, katex, …). Most plugins are still compiled with the Closure Compiler and need a Java runtime; the KaTeX plugin is built with esbuild (`node make katex`).
+-   `npm run test:katex-canvas` — KaTeX plugin suite (Playwright): every formula of a corpus as KaTeX HTML vs. the canvas backend vs. the old KaTeX 0.7 fork, the plugin inside CindyJS, and the examples with old vs. new plugin. Needs `node make Cindy.js katex`; galleries land in `build/katex-canvas/`.
+-   `node make live <task>` — watch sources, rebuild on change, reload connected browsers
+-   `node make tests` — Cindy.js build + ref-manual tests + unit tests + example compilation
+-   `node make alltests` — full pre-PR suite (tests, eslint, deploy, forbidden-pattern checks, ref). Run after `git add`-ing your changes; CI runs the same suite.
+-   `node make eslint` or `npm run lint` — lint
+-   `npm run prettier` — format (prettier also runs on staged files via husky/lint-staged)
+-   Serve examples locally: `node_modules/.bin/st -l -nc`, then open `http://127.0.0.1:1337/examples/`
 
 ### Running unit tests
 
 `node make unittests` runs mocha over `tests/`. The tests load two build artifacts rather than source files:
 
-- `build/js/exposed.cjs` (`node make exposed`) — a CommonJS esbuild bundle of the module graph that re-exports the core internals the suites use (`List`, `CSNumber`, `Dict`, `General`, `niceprint`, `nada`, `geoOps`, `PSLQ`, `PSLQMatrix`). The export list lives in `src/js/test-exports.js`; add to it when a test needs another internal.
-- `build/js/Cindy.js` (`node make Cindy.js`) — the shipping artifact, for the suites that drive the public `CindyJS({...})` API.
+-   `build/js/exposed.cjs` (`node make exposed`) — a CommonJS esbuild bundle of the module graph that re-exports the core internals the suites use (`List`, `CSNumber`, `Dict`, `General`, `niceprint`, `nada`, `geoOps`, `PSLQ`, `PSLQMatrix`). The export list lives in `src/js/test-exports.js`; add to it when a test needs another internal.
+-   `build/js/Cindy.js` (`node make Cindy.js`) — the shipping artifact, for the suites that drive the public `CindyJS({...})` API.
 
 So after editing sources, rebuild before invoking mocha directly:
 
@@ -44,11 +45,13 @@ Ref-manual doctests: `node make nodetest` runs the CindyScript snippets embedded
 
 Main layers, bottom-up (the order in `src/js/index.js`):
 
-- `src/js/libcs/` — the CindyScript language: `Parser.js` → `Evaluator.js`/`Operators.js` (built-in functions), with core data types `CSNumber.ts` (complex arithmetic), `List.js` (vectors/matrices, incl. numerical linear algebra like `List.eig`), `Dict.js`; rendering in `Render2D.js`/`RenderBackends.js`. `build/js/Compiled.js` is generated from CindyScript sources by `tools/cs2js.js`.
-- `src/js/libgeo/` — the geometry engine: `GeoOps.js` (construction operations), `Tracing.js` (continuity/tracing of moving elements), `Prover.js`, `GeoState.js`.
-- `src/js/liblab/` — lab/physics objects.
-- `src/js/Setup.js` / `Events.js` — widget creation (`CindyJS(...)` API, documented in [the createCindy reference](ref/createCindy.md)) and event handling.
+-   `src/js/libcs/` — the CindyScript language: `Parser.js` → `Evaluator.js`/`Operators.js` (built-in functions), with core data types `CSNumber.ts` (complex arithmetic), `List.js` (vectors/matrices, incl. numerical linear algebra like `List.eig`), `Dict.js`; rendering in `Render2D.js`/`RenderBackends.js`. `build/js/Compiled.js` is generated from CindyScript sources by `tools/cs2js.js`.
+-   `src/js/libgeo/` — the geometry engine: `GeoOps.js` (construction operations), `Tracing.js` (continuity/tracing of moving elements), `Prover.js`, `GeoState.js`.
+-   `src/js/liblab/` — lab/physics objects.
+-   `src/js/Setup.js` / `Events.js` — widget creation (`CindyJS(...)` API, documented in [the createCindy reference](ref/createCindy.md)) and event handling.
 
-**Plugins** (`plugins/`) are separate artifacts, each compiled with the Closure Compiler at ADVANCED level against `plugins/cindyjs.externs` (cindy3d, cindygl, ComplexCurves, katex, …). They interact with the core only through the plugin API, so core-internal renames don't break them.
+**Plugins** (`plugins/`) are separate artifacts, most compiled with the Closure Compiler at ADVANCED level against `plugins/cindyjs.externs` (cindy3d, cindygl, ComplexCurves, …). They interact with the core only through the plugin API, so core-internal renames don't break them.
+
+The KaTeX plugin (`plugins/katex/src/js/`) bundles current KaTeX from npm with esbuild (`tools/build-katex-plugin.js`). KaTeX itself only produces HTML, so `canvas-backend.mjs` lays out KaTeX's internal tree (`katex.__renderToHTMLTree`) by re-implementing the CSS that `katex.css` relies on, and draws it on the canvas; `macros.mjs` holds the Cinderella macros and the KaTeX options. The old KaTeX 0.7 canvas fork it replaced is kept under `tests/katex-canvas/old/` purely as a comparison reference.
 
 The `ref/` directory is both documentation and executable test suite: markdown files describe CindyScript functions with `> examples` that `nodetest` executes. `examples/*.html` are compile-checked by the `excomp` task and screened for forbidden patterns (correct script MIME type `text/x-cindyscript`, `<div>` not `<canvas>` for the widget container, etc.) by the `forbidden` task.

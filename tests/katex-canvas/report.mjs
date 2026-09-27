@@ -145,3 +145,54 @@ document.querySelectorAll("button[data-s]").forEach((b) => b.onclick = () => { s
 `;
     writeFileSync(join(OUT_DIR, "index.html"), html);
 }
+
+/** Gallery of the example comparison (examples.spec.mjs). */
+export async function writeExamplesReport() {
+    const dir = join(OUT_DIR, "examples");
+    let files;
+    try {
+        files = readdirSync(dir).filter((f) => f.endsWith(".json"));
+    } catch {
+        return;
+    }
+    if (files.length === 0) return;
+    const results = files.map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")));
+    results.sort((a, b) => b.stats.score - a.stats.score || a.path.localeCompare(b.path));
+    const list = (xs) => (xs.length ? escape(xs.join("\n")) : "");
+    const rows = results
+        .map((r) => {
+            const notes = [
+                r.animated ? "animated: the two runs show different moments" : "",
+                `KaTeX glyphs drawn: old ${r.glyphs.old}, new ${r.glyphs.new}`,
+                r.new.errors.length ? `new page errors: ${list(r.new.errors)}` : "",
+                r.new.consoleErrors.length ? `new console errors: ${list(r.new.consoleErrors)}` : "",
+                r.old.consoleErrors.length ? `old console errors: ${list(r.old.consoleErrors)}` : "",
+                r.new.failed.length ? `failed requests: ${list(r.new.failed)}` : "",
+            ]
+                .filter(Boolean)
+                .join("<br>");
+            return `<tr><td><b>${escape(r.path)}</b><br><a href="../../${escape(r.path)}">open</a></td>
+<td class="num">${(100 * r.stats.score).toFixed(2)}%</td>
+<td><div class="details">${notes}</div><img loading="lazy" src="examples/${fileName(r.path)}.png"></td></tr>`;
+        })
+        .join("\n");
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>KaTeX plugin: examples, old vs. new</title>
+<style>
+body { font: 14px system-ui, sans-serif; margin: 16px; color: #222; background: #fafafa; }
+table { border-collapse: collapse; width: 100%; }
+td { border-top: 1px solid #ddd; padding: 8px; vertical-align: top; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.details { color: #666; font-size: 12px; margin: 4px 0; white-space: pre-wrap; }
+img { display: block; max-width: 100%; margin-top: 6px; border: 1px solid #ccc; }
+</style></head><body>
+<h1>KaTeX plugin: examples with the old (0.7 fork) and the new plugin</h1>
+<p>${results.length} examples. Images: old plugin | new plugin | diff (red: only in the old rendering, blue: only
+in the new). Percentages are mismatched pixels per inked pixel of the old rendering.</p>
+<table><tbody>
+${rows}
+</tbody></table>
+</body></html>
+`;
+    writeFileSync(join(OUT_DIR, "examples.html"), html);
+}

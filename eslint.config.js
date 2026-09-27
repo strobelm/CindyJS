@@ -16,8 +16,7 @@ module.exports = tseslint.config(
             // vendored third-party code
             "lib/**",
             "src/js/ifs/ifs.asm.js",
-            "lib/katex/katex.min.js",
-            "plugins/katex/src/js/katex-plugin.js",
+            "tests/katex-canvas/old/**",
             "plugins/cindygl/src/js/CodeBuilder.js",
         ],
     },

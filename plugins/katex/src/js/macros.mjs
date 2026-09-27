@@ -2,7 +2,8 @@
  * TeX macros defined specifically for Cinderella / CindyJS, for use with
  * current KaTeX versions.
  *
- * This is the table from katex-plugin.js (written against KaTeX 0.7) minus
+ * This is the table of the old plugin (tests/katex-canvas/old/katex-plugin.js,
+ * written against KaTeX 0.7) minus
  * the workarounds that KaTeX has since made obsolete: `\operatorname` is
  * supported natively now, so it must no longer be mapped to `\text`.
  */
@@ -43,7 +44,20 @@ export const macros = {
     "\\arccsc": "\\operatorname{arccsc}",
 };
 
-/** Source rewriting applied before parsing, as done by katex-plugin.js. */
+/**
+ * The KaTeX options the plugin renders with. `colorIsTextColor` keeps the
+ * meaning \color had in KaTeX 0.7 - `\color{red}{a}b` colours only the a,
+ * like \textcolor - so that existing content looks as before. Non-LaTeX
+ * input is accepted silently, as it was then.
+ */
+export const katexOptions = {
+    macros,
+    colorIsTextColor: true,
+    strict: "ignore",
+    throwOnError: true,
+};
+
+/** Source rewriting applied before parsing, as done by the old plugin. */
 export function preprocess(tex) {
     return tex.replace(/°/g, "\\degree");
 }

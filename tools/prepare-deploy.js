@@ -50,13 +50,16 @@ var handlers = {
     images: true,
     katex: true,
     "katex-plugin.js": true,
+    "katex-plugin.js.map": map,
     midi: true,
     "midi-plugin.js": true,
     "pako.min.js": true,
     quickhull3d: true,
     soundfonts: true,
     "symbolic.js": true,
-    "webfont.js": true,
+    // Loaded KaTeX's fonts until the plugin moved to the Font Loading API;
+    // not built any more, so only a stale copy could turn up here.
+    "webfont.js": false,
 };
 
 var exitStatus = 0;

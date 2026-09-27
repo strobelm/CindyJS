@@ -12,7 +12,7 @@
 
 import katex from "katex";
 import { layout, render } from "../../plugins/katex/src/js/canvas-backend.mjs";
-import { macros as cindyMacros, preprocess } from "../../plugins/katex/src/js/macros.mjs";
+import { katexOptions as pluginOptions, preprocess } from "../../plugins/katex/src/js/macros.mjs";
 
 const stage = document.getElementById("stage");
 const htmlCell = document.getElementById("htmlCell");
@@ -20,15 +20,16 @@ const canvasCell = document.getElementById("canvasCell");
 const host = document.getElementById("host");
 const canvas = document.getElementById("canvas");
 
+// The CindyJS sets render with the plugin's own options (macros,
+// colorIsTextColor); KaTeX's test cases with KaTeX's defaults.
 function katexOptions(testCase) {
-    return {
+    return Object.assign({ strict: "ignore" }, testCase.cindyMacros ? pluginOptions : {}, {
         displayMode: testCase.display,
         throwOnError: !testCase.noThrow,
         errorColor: testCase.errorColor || undefined,
         trust: true,
-        strict: "ignore",
-        macros: Object.assign({}, testCase.cindyMacros ? cindyMacros : {}, testCase.macros || {}),
-    };
+        macros: Object.assign({}, testCase.cindyMacros ? pluginOptions.macros : {}, testCase.macros || {}),
+    });
 }
 
 function texOf(testCase) {
@@ -104,7 +105,7 @@ async function render_(testCase, hostPx, pad) {
     c.fillStyle = "#000";
     const x0 = pad + baseLeft;
     const y0 = pad + baseline;
-    render(c, box, x0, y0, images);
+    render(c, box, x0, y0, { images });
 
     // Let both renderings reach the screen before the screenshot.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -303,9 +304,37 @@ async function compare(shot, oldShot, w, h) {
     return { new: newStats, old: oldStats, composite: composite.toDataURL("image/png") };
 }
 
+/**
+ * Diffs two screenshots of the same size (of an example page with the old
+ * and with the new plugin). Returns the statistics and a composite image
+ * [a | b | diff] as a data URL.
+ */
+async function compareTwo(a, b, w, h) {
+    const pa = await pixels(a, 0, 0, w, h);
+    const pb = await pixels(b, 0, 0, w, h);
+    const d = diff(pa, pb);
+    const stats = JSON.stringify({
+        mismatched: d.mismatched,
+        ink: d.ink,
+        score: d.mismatched / Math.max(1, d.ink),
+        centroidShift: d.centroidShift,
+        darkness: d.darkness,
+    });
+    const gap = 6;
+    const composite = document.createElement("canvas");
+    composite.width = 3 * w + 2 * gap;
+    composite.height = h;
+    const ctx = composite.getContext("2d");
+    ctx.fillStyle = "#b0b0b0";
+    ctx.fillRect(0, 0, composite.width, h);
+    [pa, pb, d.image].forEach((p, i) => ctx.putImageData(p, i * (w + gap), 0));
+    return { stats, composite: composite.toDataURL("image/png") };
+}
+
 window.harness = {
     render: render_,
     compare,
+    compareTwo,
     stageRect: () => {
         const r = stage.getBoundingClientRect();
         return { x: r.left, y: r.top, width: r.width, height: r.height };

@@ -4,18 +4,27 @@
  * (build/katex-canvas/index.html) from the per-case results.
  */
 
-import { mkdir, rm } from "node:fs/promises";
+import { access, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import * as esbuild from "esbuild";
 
 import { REPO_ROOT } from "../browser/paths.mjs";
 import { startStaticServer } from "../browser/static-server.mjs";
-import { OUT_DIR, writeReport } from "./report.mjs";
+import { OUT_DIR, writeExamplesReport, writeReport } from "./report.mjs";
+
+// The example comparison (examples.spec.mjs) runs the built artifacts.
+const REQUIRED_ARTIFACTS = ["build/js/Cindy.js", "build/js/katex-plugin.js", "build/js/katex/katex.min.css"];
 
 export default async function globalSetup() {
+    for (const artifact of REQUIRED_ARTIFACTS) {
+        await access(join(REPO_ROOT, artifact)).catch(() => {
+            throw new Error(`Missing ${artifact}; build it first: node make Cindy.js katex`);
+        });
+    }
     await rm(join(OUT_DIR, "results"), { recursive: true, force: true });
     await rm(join(OUT_DIR, "img"), { recursive: true, force: true });
+    await rm(join(OUT_DIR, "examples"), { recursive: true, force: true });
     await mkdir(join(OUT_DIR, "results"), { recursive: true });
     await mkdir(join(OUT_DIR, "img"), { recursive: true });
 
@@ -34,5 +43,6 @@ export default async function globalSetup() {
     return async () => {
         await server.close();
         await writeReport();
+        await writeExamplesReport();
     };
 }

@@ -2,7 +2,7 @@ import { assert } from "chai";
 import katex from "katex";
 
 import { layout, render } from "../plugins/katex/src/js/canvas-backend.mjs";
-import { macros as cindyMacros, preprocess } from "../plugins/katex/src/js/macros.mjs";
+import { katexOptions as pluginOptions, preprocess } from "../plugins/katex/src/js/macros.mjs";
 import { loadCorpus } from "./katex-canvas/corpus/index.mjs";
 
 // Layout checks for the KaTeX canvas backend that need no browser: text
@@ -27,13 +27,13 @@ describe("KaTeX canvas backend", function () {
     };
 
     function treeOf(c) {
-        return katex.__renderToHTMLTree(c.cindyMacros ? preprocess(c.tex) : c.tex, {
+        const options = Object.assign({ strict: "ignore" }, c.cindyMacros ? pluginOptions : {}, {
             displayMode: c.display,
             throwOnError: !c.noThrow,
             trust: true,
-            strict: "ignore",
-            macros: Object.assign({}, c.cindyMacros ? cindyMacros : {}, c.macros || {}),
+            macros: Object.assign({}, c.cindyMacros ? pluginOptions.macros : {}, c.macros || {}),
         });
+        return katex.__renderToHTMLTree(c.cindyMacros ? preprocess(c.tex) : c.tex, options);
     }
 
     function strutExtent(tree, em) {

@@ -1120,17 +1120,25 @@ export function layout(tree, ctx, options) {
 
 /**
  * Draws a laid-out box with its baseline starting at (x, y). Ops without an
- * explicit color use the context's current fill style. `images` maps the
- * URLs in `box.images` to loaded images; missing ones are skipped.
+ * explicit color use the context's current fill style.
+ *
+ * @param options.images maps the URLs in `box.images` to loaded images;
+ *        missing ones are skipped
+ * @param options.outline stroke everything with the context's stroke style
+ *        and line width before filling
  */
-export function render(ctx, box, x, y, images) {
+export function render(ctx, box, x, y, options) {
+    const images = (options && options.images) || {};
     ctx.save();
     try {
         const fill = ctx.fillStyle;
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
         ctx.translate(x, y);
-        drawOps(ctx, box.ops, fill, images || {});
+        // Outlines go below the whole formula, as CindyJS draws them for
+        // plain text: stroked with the context's stroke style and width.
+        if (options && options.outline) drawOps(ctx, box.ops, fill, images, true);
+        drawOps(ctx, box.ops, fill, images, false);
     } finally {
         ctx.restore();
     }
@@ -1147,24 +1155,26 @@ function path2D(d) {
     return p;
 }
 
-function drawOps(ctx, ops, fill, images) {
+function drawOps(ctx, ops, fill, images, stroke) {
     for (const op of ops) {
         const color = op.color === null || op.color === undefined ? fill : op.color;
         ctx.fillStyle = color;
         switch (op.type) {
-            case "text":
+            case "text": {
                 ctx.font = op.font;
-                if (op.shadow) ctx.fillText(op.text, op.x + op.shadow.dx, op.y + op.shadow.dy);
-                ctx.fillText(op.text, op.x, op.y);
+                const paint = stroke ? ctx.strokeText.bind(ctx) : ctx.fillText.bind(ctx);
+                if (op.shadow) paint(op.text, op.x + op.shadow.dx, op.y + op.shadow.dy);
+                paint(op.text, op.x, op.y);
                 break;
+            }
             case "rect":
-                drawRect(ctx, op);
+                drawRect(ctx, op, stroke);
                 break;
             case "svg":
-                drawSvg(ctx, op, color);
+                drawSvg(ctx, op, color, stroke);
                 break;
             case "image":
-                if (images[op.src]) ctx.drawImage(images[op.src], op.x, op.y, op.w, op.h);
+                if (images[op.src] && !stroke) ctx.drawImage(images[op.src], op.x, op.y, op.w, op.h);
                 break;
             case "group":
                 ctx.save();
@@ -1174,14 +1184,15 @@ function drawOps(ctx, ops, fill, images) {
                     const t = op.transform;
                     ctx.transform(t.a, t.b, t.c, t.d, t.e, t.f);
                 }
-                drawOps(ctx, op.ops, fill, images);
+                drawOps(ctx, op.ops, fill, images, stroke);
                 ctx.restore();
                 break;
         }
     }
 }
 
-function drawSvg(ctx, op, color) {
+function drawSvg(ctx, op, color, stroke) {
+    const outlineWidth = ctx.lineWidth;
     ctx.save();
     ctx.translate(op.x, op.y);
     const { w, h } = op;
@@ -1207,11 +1218,18 @@ function drawSvg(ctx, op, color) {
                 ctx.translate(v.tx, v.ty);
                 ctx.scale(v.sx, v.sy);
             }
-            ctx.fill(path2D(item.d));
+            if (stroke) {
+                // The outline's width is meant in the formula's units.
+                ctx.lineWidth = outlineWidth / (v ? Math.sqrt(Math.abs(v.sx * v.sy)) : 1);
+                ctx.stroke(path2D(item.d));
+            } else {
+                ctx.fill(path2D(item.d));
+            }
             ctx.restore();
         } else {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = item.width;
+            // A line's outline is a wider line below it.
+            if (!stroke) ctx.strokeStyle = color;
+            ctx.lineWidth = item.width + (stroke ? outlineWidth : 0);
             ctx.lineCap = "butt";
             ctx.setLineDash([]);
             ctx.beginPath();
@@ -1251,7 +1269,7 @@ function clipTo(ctx, clip, snap) {
     }
 }
 
-function drawRect(ctx, op) {
+function drawRect(ctx, op, stroke) {
     const t = ctx.getTransform();
     // Rules are snapped to device pixels the way browsers snap borders, but
     // only when that is meaningful, i.e. for axis-aligned transforms.
@@ -1268,18 +1286,20 @@ function drawRect(ctx, op) {
         const [y0, y1] = span(y, h, edge === "top" ? 1 : edge === "bottom" ? -1 : 0, t.d, t.f);
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        fillMaybeDashed(ctx, x0, y0, x1 - x0, y1 - y0, op.dashed);
+        if (stroke) ctx.lineWidth *= Math.sqrt(Math.abs(t.a * t.d));
+        paintMaybeDashed(ctx, x0, y0, x1 - x0, y1 - y0, op.dashed, stroke);
         ctx.restore();
     } else {
-        fillMaybeDashed(ctx, x, y, w, h, op.dashed);
+        paintMaybeDashed(ctx, x, y, w, h, op.dashed, stroke);
     }
 }
 
 // Dashed borders: dashes and gaps three times as long as the border is
 // thick, spread so that the rule starts and ends with a dash.
-function fillMaybeDashed(ctx, x, y, w, h, dashed) {
+function paintMaybeDashed(ctx, x, y, w, h, dashed, stroke) {
+    const paint = stroke ? ctx.strokeRect.bind(ctx) : ctx.fillRect.bind(ctx);
     if (!dashed) {
-        ctx.fillRect(x, y, w, h);
+        paint(x, y, w, h);
         return;
     }
     const horizontal = w >= h;
@@ -1290,8 +1310,8 @@ function fillMaybeDashed(ctx, x, y, w, h, dashed) {
     const gap = n > 1 ? (len - n * dash) / (n - 1) : 0;
     for (let i = 0; i < n; ++i) {
         const s = i * (dash + gap);
-        if (horizontal) ctx.fillRect(x + s, y, Math.min(dash, len - s), h);
-        else ctx.fillRect(x, y + s, w, Math.min(dash, len - s));
+        if (horizontal) paint(x + s, y, Math.min(dash, len - s), h);
+        else paint(x, y + s, w, Math.min(dash, len - s));
     }
 }
 

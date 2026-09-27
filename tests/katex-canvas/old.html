@@ -4,11 +4,11 @@
         <meta charset="UTF-8" />
         <title>Old KaTeX canvas fork</title>
         <!--
-            The KaTeX 0.7 canvas fork currently shipped with CindyJS. It runs on
+            The KaTeX 0.7 canvas fork CindyJS shipped before its current plugin. It runs on
             a page of its own because its fonts have the same family names as
             those of current KaTeX.
         -->
-        <link rel="stylesheet" href="../../lib/katex/katex.min.css" />
+        <link rel="stylesheet" href="old/katex/katex.min.css" />
         <style>
             html,
             body {
@@ -25,7 +25,7 @@
     </head>
     <body>
         <canvas id="canvas"></canvas>
-        <script src="../../lib/katex/katex.min.js"></script>
+        <script src="old/katex/katex.min.js"></script>
         <script>
             window.renderOld = async function (tex, options, width, height, x0, y0) {
                 const canvas = document.getElementById("canvas");

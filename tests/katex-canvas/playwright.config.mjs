@@ -26,5 +26,18 @@ export default defineConfig({
         deviceScaleFactor: 1,
         launchOptions: { args: ["--no-sandbox"] },
     },
-    projects: [{ name: "chromium" }],
+    projects: [
+        { name: "formulas", testMatch: /(katex-canvas|plugin)\.spec\.mjs/ },
+        {
+            // The example pages include one CindyGL example, which needs
+            // software WebGL as in tests/browser. Those flags change how
+            // chromium rasterizes, so the pixel comparison of the formulas
+            // runs without them.
+            name: "examples",
+            testMatch: /examples\.spec\.mjs/,
+            use: {
+                launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox"] },
+            },
+        },
+    ],
 });
