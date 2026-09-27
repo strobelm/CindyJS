@@ -24,7 +24,10 @@ export default defineConfig({
         headless: true,
         viewport: { width: 4000, height: 2400 },
         deviceScaleFactor: 1,
-        launchOptions: { args: ["--no-sandbox"] },
+        // Canvas text is always anti-aliased in grayscale, HTML text uses
+        // subpixel anti-aliasing where the system is set up for it (as on
+        // CI runners); keep it grayscale everywhere, so they can be compared.
+        launchOptions: { args: ["--no-sandbox", "--disable-lcd-text"] },
     },
     projects: [
         { name: "formulas", testMatch: /(katex-canvas|plugin)\.spec\.mjs/ },
@@ -36,7 +39,14 @@ export default defineConfig({
             name: "examples",
             testMatch: /examples\.spec\.mjs/,
             use: {
-                launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox"] },
+                launchOptions: {
+                    args: [
+                        "--use-angle=swiftshader",
+                        "--enable-unsafe-swiftshader",
+                        "--no-sandbox",
+                        "--disable-lcd-text",
+                    ],
+                },
             },
         },
     ],
