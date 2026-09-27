@@ -27,6 +27,18 @@ CASES.push({ tex: "\\overrightarrow{AB}+c", size: 24, align: "left", color: "rgb
 CASES.push({ tex: "\\color{red}{a}\\color{bogus}{b}c", size: 24, align: "left", color: "rgb(0, 0, 0)" });
 const BORDERS = "\\fbox{a}\\begin{array}{c|c}a&b\\\\\\hline c&d\\end{array}";
 CASES.push({ tex: BORDERS, size: 20, align: "left", color: "rgb(0, 0, 0)" });
+// Rotated around the anchor, all parts of the text together: two formulas
+// in one text, which must line up as one formula would.
+for (const align of ["left", "mid"]) {
+    CASES.push({
+        tex: "x^2\\frac{a}{b}",
+        text: "$x^2$$\\frac{a}{b}$",
+        size: 24,
+        align,
+        color: "rgb(0, 0, 0)",
+        angle: 0.5,
+    });
+}
 for (const c of CASES.slice()) {
     if (/frac|sqrt|fbox/.test(c.tex) && c.align === "left") CASES.push({ ...c, dpr: 2 });
 }
@@ -59,7 +71,10 @@ test.afterAll(async () => {
 
 for (const c of CASES) {
     const dpr = c.dpr || 1;
-    const id = `${c.tex}@${c.size} ${c.align} ${c.color}` + (dpr === 1 ? "" : ` dpr${dpr}`);
+    const id =
+        `${c.text || c.tex}@${c.size} ${c.align} ${c.color}` +
+        (c.angle ? ` angle${c.angle}` : "") +
+        (dpr === 1 ? "" : ` dpr${dpr}`);
     test(`plugin ${id}`, async () => {
         const page = pages[dpr];
         const { width, height } = await page.evaluate((c) => window.drawBoth({ ...c, x: 250, y: 110 }), c);

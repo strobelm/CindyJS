@@ -50,12 +50,14 @@
             // Draws `tex` at pixel (x, y) with CindyJS text size `size`,
             // alignment and colour, both ways. Resolves once the plugin has
             // drawn it, i.e. once its fonts have loaded.
-            window.drawBoth = async function ({ tex, size, align, color, x, y }) {
+            // `text`, if given, is what CindyJS draws instead of "$tex$".
+            window.drawBoth = async function ({ tex, text, size, align, color, x, y, angle = 0 }) {
                 // Reference: KaTeX's em is 1.21 times the host's font size;
                 // the plugin uses the CindyJS text size as the em.
                 const host = document.getElementById("host");
                 host.style.fontSize = size / 1.21 + "px";
                 host.style.color = color;
+                host.style.transform = "";
                 host.textContent = "";
                 katex.render(tex, host, { macros: {}, colorIsTextColor: true, strict: "ignore" });
                 await document.fonts.ready;
@@ -70,12 +72,16 @@
                 const factor = { left: 0, mid: 0.5, right: 1 }[align];
                 host.style.left = x - factor * width + "px";
                 host.style.top = y - baseline + "px";
+                // CindyJS rotates texts around their anchor.
+                host.style.transformOrigin = `${factor * width}px ${baseline}px`;
+                host.style.transform = angle ? `rotate(${-angle}rad)` : "";
 
                 // CindyJS: user coordinates are pixels with y pointing up.
                 // CindyScript strings take backslashes literally.
                 const rgb = color.match(/\d+/g).map((c) => c / 255);
                 const code =
-                    `drawtext([${x}, ${H - y}], "$${tex}$", ` + `size->${size}, align->"${align}", color->[${rgb}]);`;
+                    `drawtext([${x}, ${H - y}], "${text || "$" + tex + "$"}", ` +
+                    `size->${size}, align->"${align}", color->[${rgb}], angle->${angle});`;
                 window.__drawn = false;
                 if (cdy) cdy.shutdown();
                 document.getElementById("CSCanvas").innerHTML = "";

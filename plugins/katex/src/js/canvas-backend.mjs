@@ -370,6 +370,8 @@ function isColor(color) {
     if (typeof CSS === "undefined" || !CSS.supports) return true;
     let valid = colors.get(color);
     if (valid === undefined) {
+        // Colours computed from animated values are all different.
+        if (colors.size >= 1024) colors.clear();
         valid = CSS.supports("color", color);
         colors.set(color, valid);
     }
