@@ -31,6 +31,7 @@
         "http-proxy": "^1.18.1",
         "husky": "^7.0.0",
         "iphone-inline-video": "2.2.2",
+        "katex": "0.18.9",
         "leapjs": "github:CindyJS/leapjs",
         "lint-staged": "^11.1.1",
         "marked": ">=0.3.5 <=0.3.12",
@@ -59,6 +60,7 @@
         "test:ref": "node make/index.js call_npm=false nodetest",
         "pretest:browser": "node make/index.js call_npm=false Cindy.js cindygl cindy3d",
         "test:browser": "playwright test --config tests/browser/playwright.config.mjs",
+        "test:katex-canvas": "playwright test --config tests/katex-canvas/playwright.config.mjs",
         "prettier": "prettier --write .",
         "lint": "eslint 'src/js/**/*.[jt]s'",
         "prepare": "husky install"

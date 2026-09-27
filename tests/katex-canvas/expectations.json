@@ -1,0 +1,254 @@
+{
+    "cindyjs/katex1@13": {
+        "status": "unsupported",
+        "score": 0.0522
+    },
+    "cindyjs/katex1@20": {
+        "status": "unsupported",
+        "score": 0.0469
+    },
+    "cindyjs/katex1@32": {
+        "status": "unsupported",
+        "score": 0.049
+    },
+    "cindyjs/matrix3@13": {
+        "status": "unsupported",
+        "score": 0.3077
+    },
+    "cindyjs/matrix3@20": {
+        "status": "unsupported",
+        "score": 0.3112
+    },
+    "cindyjs/matrix3@32": {
+        "status": "unsupported",
+        "score": 0.2988
+    },
+    "cindyjs/quadratic@13": {
+        "status": "unsupported",
+        "score": 0.0427
+    },
+    "cindyjs/quadratic@20": {
+        "status": "unsupported",
+        "score": 0.1302
+    },
+    "cindyjs/quadratic@32": {
+        "status": "unsupported",
+        "score": 0.1157
+    },
+    "cindyjs/scalarProduct@13": {
+        "status": "unsupported",
+        "score": 0.1081
+    },
+    "cindyjs/scalarProduct@20": {
+        "status": "unsupported",
+        "score": 0.0946
+    },
+    "cindyjs/scalarProduct@32": {
+        "status": "unsupported",
+        "score": 0.113
+    },
+    "cindyjs/sqrt5@13": {
+        "status": "unsupported",
+        "score": 0.9706
+    },
+    "cindyjs/sqrt5@20": {
+        "status": "unsupported",
+        "score": 1.2014
+    },
+    "cindyjs/sqrt5@32": {
+        "status": "unsupported",
+        "score": 1.2906
+    },
+    "cindyjs/vecA@13": {
+        "status": "unsupported",
+        "score": 0.2432
+    },
+    "cindyjs/vecA@20": {
+        "status": "unsupported",
+        "score": 0.2174
+    },
+    "cindyjs/vecA@32": {
+        "status": "unsupported",
+        "score": 0.234
+    },
+    "cindyjs/vecB@13": {
+        "status": "unsupported",
+        "score": 0.225
+    },
+    "cindyjs/vecB@20": {
+        "status": "unsupported",
+        "score": 0.1829
+    },
+    "cindyjs/vecB@32": {
+        "status": "unsupported",
+        "score": 0.2105
+    },
+    "katex/Accents@20": {
+        "status": "unsupported",
+        "score": 0.107
+    },
+    "katex/Align@20": {
+        "status": "unsupported",
+        "score": 0.2515
+    },
+    "katex/Arrays@20": {
+        "status": "unsupported",
+        "score": 0.4296
+    },
+    "katex/BoldSymbol@20": {
+        "status": "unsupported",
+        "score": 1.396
+    },
+    "katex/Boxed@20": {
+        "status": "unsupported",
+        "score": 0.6283
+    },
+    "katex/CD@20": {
+        "status": "unsupported",
+        "score": 1.1059
+    },
+    "katex/Cases@20": {
+        "status": "unsupported",
+        "score": 0.5181
+    },
+    "katex/Colorbox@20": {
+        "status": "unsupported",
+        "score": 0.8834
+    },
+    "katex/DeepFontSizing@20": {
+        "status": "unsupported",
+        "score": 0.0572
+    },
+    "katex/DelimiterSizing@20": {
+        "status": "unsupported",
+        "score": 1.0915
+    },
+    "katex/DisplayStyle@20": {
+        "status": "unsupported",
+        "score": 0.2192
+    },
+    "katex/Equation@20": {
+        "status": "unsupported",
+        "score": 0.13
+    },
+    "katex/ExtensibleArrows@20": {
+        "status": "unsupported",
+        "score": 0.3849
+    },
+    "katex/FractionTest@20": {
+        "status": "unsupported",
+        "score": 0.0488
+    },
+    "katex/Gather@20": {
+        "status": "unsupported",
+        "score": 0.3338
+    },
+    "katex/HorizontalBraces@20": {
+        "status": "unsupported",
+        "score": 0.2954
+    },
+    "katex/HorizontalBrackets@20": {
+        "status": "unsupported",
+        "score": 0.4658
+    },
+    "katex/Includegraphics@20": {
+        "status": "unsupported",
+        "score": 0.9749
+    },
+    "katex/Integrands@20": {
+        "status": "unsupported",
+        "score": 0.0476
+    },
+    "katex/Lap@20": {
+        "status": "unsupported",
+        "score": 0.1757
+    },
+    "katex/LowerAccent@20": {
+        "status": "unsupported",
+        "score": 0.5492
+    },
+    "katex/Mapsfrom@20": {
+        "status": "unsupported",
+        "score": 1.2374
+    },
+    "katex/NegativeSpace@20": {
+        "status": "unsupported",
+        "score": 0.2391
+    },
+    "katex/NewLine@20": {
+        "status": "unsupported",
+        "score": 1.7457
+    },
+    "katex/OverUnderset@20": {
+        "status": "unsupported",
+        "score": 0.0419
+    },
+    "katex/Phantom@20": {
+        "status": "unsupported",
+        "score": 0.1042
+    },
+    "katex/Phase@20": {
+        "status": "unsupported",
+        "score": 0.3303
+    },
+    "katex/Raisebox@20": {
+        "status": "unsupported",
+        "score": 0.2034
+    },
+    "katex/ReactionArrows@20": {
+        "status": "unsupported",
+        "score": 0.7148
+    },
+    "katex/Reflectbox@20": {
+        "status": "unsupported",
+        "score": 1.0945
+    },
+    "katex/Sizing@20": {
+        "status": "unsupported",
+        "score": 0.1253
+    },
+    "katex/Smash@20": {
+        "status": "unsupported",
+        "score": 0.2337
+    },
+    "katex/Sqrt@20": {
+        "status": "unsupported",
+        "score": 1.1746
+    },
+    "katex/SqrtRoot@20": {
+        "status": "unsupported",
+        "score": 0.2915
+    },
+    "katex/StretchyAccent@20": {
+        "status": "unsupported",
+        "score": 0.3886
+    },
+    "katex/StretchyAccentColor@20": {
+        "status": "unsupported",
+        "score": 0.3183
+    },
+    "katex/StrikeThrough@20": {
+        "status": "unsupported",
+        "score": 0.123
+    },
+    "katex/StrikeThroughColor@20": {
+        "status": "unsupported",
+        "score": 0.1706
+    },
+    "katex/SupSubHorizSpacing@20": {
+        "status": "unsupported",
+        "score": 0.4454
+    },
+    "katex/SvgReset@20": {
+        "status": "unsupported",
+        "score": 0.7536
+    },
+    "katex/Tag@20": {
+        "status": "unsupported",
+        "score": 0.3009
+    },
+    "katex/UnsupportedCmds@20": {
+        "status": "unsupported",
+        "score": 0.167
+    }
+}
