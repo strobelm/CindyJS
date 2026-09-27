@@ -120,6 +120,9 @@ for (const testCase of cases) {
             ([s, o, w, h]) => window.harness.compare(s, o, w, h),
             [`data:image/png;base64,${shot.toString("base64")}`, old.shot || null, info.cellWidth, info.cellHeight]
         );
+        cmp.new = JSON.parse(cmp.new);
+        cmp.old = cmp.old && JSON.parse(cmp.old);
+        expect(cmp.new.score, "inconsistent diff statistics").toBe(cmp.new.mismatched / Math.max(1, cmp.new.ink));
         result.new = cmp.new;
         result.old = cmp.old;
         result.oldError = old.error || null;

@@ -6,9 +6,11 @@
  *             points at the construct at fault;
  *  - cindyjs: formulas as they occur in CindyJS examples and content,
  *             including the Cinderella-specific macros;
+ *  - issue829: the formulas reported in CindyJS issue #829;
  *  - katex:   KaTeX's own screenshot test suite (test/screenshotter/ss_data.yaml
  *             of KaTeX v0.18.9, MIT licensed, converted to JSON), which
- *             exercises nearly every supported command.
+ *             exercises nearly every supported command. The image of the
+ *             Includegraphics case is replaced by one from ref/img.
  */
 
 import { readFileSync } from "node:fs";
@@ -151,6 +153,22 @@ const cindyjs = {
     implies: "A\\Rightarrow B\\Leftrightarrow C",
 };
 
+// CindyJS issue #829 (KeTCindy): \vec at the wrong position, missing
+// \overrightarrow, later also \fbox, \mathbm and \color. The first three
+// are from the test page attached to the issue (drawtext at size 24).
+const issue829 = {
+    fracSin: "\\frac{\\sin x}{x}",
+    vec: "\\vec{a}",
+    overrightarrow: "\\overrightarrow{AB}",
+    frac: "\\frac{a}{b}",
+    // Not a KaTeX command (nor a LaTeX one); rendered as KaTeX's error
+    // message. \bm is probably what was meant.
+    mathbm: { tex: "\\mathbm{a}", noThrow: true },
+    bm: "\\bm{a}",
+    fbox: "\\fbox{a}",
+    color: "\\color{red}{a}b",
+};
+
 function readKatexCorpus() {
     const url = new URL("./katex-screenshotter.json", import.meta.url);
     return JSON.parse(readFileSync(url, "utf8"));
@@ -167,7 +185,7 @@ function normalize(set, name, entry) {
         macros: e.macros || null,
         noThrow: !!e.noThrow,
         errorColor: e.errorColor || null,
-        cindyMacros: set === "cindyjs",
+        cindyMacros: set === "cindyjs" || set === "issue829",
     };
 }
 
@@ -175,6 +193,7 @@ export function loadCorpus() {
     const cases = [];
     for (const [name, e] of Object.entries(core)) cases.push(normalize("core", name, e));
     for (const [name, e] of Object.entries(cindyjs)) cases.push(normalize("cindyjs", name, e));
+    for (const [name, e] of Object.entries(issue829)) cases.push(normalize("issue829", name, e));
     for (const [name, e] of Object.entries(readKatexCorpus())) cases.push(normalize("katex", name, e));
     return cases;
 }
@@ -182,7 +201,7 @@ export function loadCorpus() {
 // Host font sizes in CSS pixels (KaTeX renders at 1.21 times that). Rounding
 // to device pixels plays out differently at every size, so the small sets
 // run at several; KaTeX's large screenshot cases run at the middle one.
-const SIZES = { core: [13, 20, 32], cindyjs: [13, 20, 32], katex: [20] };
+const SIZES = { core: [13, 20, 32], cindyjs: [13, 20, 32], issue829: [13, 24, 32], katex: [20] };
 
 /** The corpus expanded into one test case per formula and host font size. */
 export function loadVariants() {

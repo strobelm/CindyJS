@@ -39,7 +39,9 @@ describe("KaTeX canvas backend", function () {
     function strutExtent(tree, em) {
         let height = 0;
         let depth = 0;
+        let lines = 1;
         (function walk(node) {
+            if (node.classes && node.classes.indexOf("katex-newline") !== -1) ++lines;
             if (node.classes && node.classes.indexOf("katex-strut") !== -1) {
                 const h = parseFloat(node.style.height) * em;
                 const d = -(parseFloat(node.style.verticalAlign || "0") || 0) * em;
@@ -49,7 +51,8 @@ describe("KaTeX canvas backend", function () {
             }
             (node.children || []).forEach(walk);
         })(tree);
-        return { height, depth };
+        // Struts cannot express the extent of several stacked lines.
+        return lines > 1 ? null : { height, depth };
     }
 
     it("lays out every formula of the corpus", function () {
@@ -78,6 +81,7 @@ describe("KaTeX canvas backend", function () {
             const box = layout(tree, measureCtx, { fontSize: 24 });
             if (box.unsupported.length > 0) continue;
             const extent = strutExtent(tree, 24);
+            if (extent === null) continue;
             assert.closeTo(box.height, extent.height, 0.05, `height of ${c.id}`);
             assert.closeTo(box.depth, extent.depth, 0.05, `depth of ${c.id}`);
             ++checked;
@@ -91,6 +95,7 @@ describe("KaTeX canvas backend", function () {
             fillStyle: "#123456",
             getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
             setTransform() {},
+            translate() {},
             fillText(text, x, y) {
                 calls.push(["text", text, this.fillStyle, x, y]);
             },
@@ -112,5 +117,50 @@ describe("KaTeX canvas backend", function () {
         assert.lengthOf(rects, 1, "one fraction bar");
         assert.equal(rects[0][1], "#123456");
         assert.equal(rects[0][5], 1, "the bar is snapped to one pixel");
+    });
+
+    function collect(ops, type, acc = []) {
+        for (const op of ops) {
+            if (op.type === type) acc.push(op);
+            if (op.ops) collect(op.ops, type, acc);
+        }
+        return acc;
+    }
+
+    it("draws stretchy symbols as clipped SVG paths", function () {
+        const box = layout(katex.__renderToHTMLTree("\\sqrt{x}+\\vec{a}+\\overrightarrow{AB}"), measureCtx, {
+            fontSize: 20,
+        });
+        const svgs = collect(box.ops, "svg");
+        assert.lengthOf(svgs, 3);
+        for (const svg of svgs) {
+            assert.isAbove(svg.w, 0);
+            assert.isAbove(svg.h, 0);
+            assert.isNotNull(svg.viewBox);
+            assert.match(svg.items[0].d, /^M/, "path data extracted from KaTeX's markup");
+        }
+        // \sqrt and \overrightarrow are 400em wide paths cut off by their
+        // `.hide-tail` box, which is as wide as the content above.
+        const clips = collect(box.ops, "group").filter((g) => g.clip);
+        assert.lengthOf(clips, 2);
+        for (const g of clips) assert.isBelow(g.clip.w, 5 * 20);
+        assert.deepEqual(box.unsupported, []);
+    });
+
+    it("numbers equations and stacks lines", function () {
+        const tree = katex.__renderToHTMLTree("\\begin{gather}a\\\\b\\end{gather}", { displayMode: true });
+        const box = layout(tree, measureCtx, { fontSize: 20 });
+        assert.includeMembers(
+            collect(box.ops, "text").map((op) => op.text),
+            ["(1)", "(2)"]
+        );
+        const baselines = (tex) => {
+            const b = layout(katex.__renderToHTMLTree(tex), measureCtx, { fontSize: 20 });
+            return collect(b.ops, "text").map((op) => op.y);
+        };
+        const [a, b] = baselines("a\\\\b");
+        const [c, d] = baselines("a\\\\[1em]b");
+        assert.isAbove(b, a);
+        assert.closeTo(d - c, b - a + 20, 1e-9, "\\\\[1em] adds one em");
     });
 });

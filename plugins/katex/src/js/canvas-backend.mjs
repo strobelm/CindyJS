@@ -8,10 +8,11 @@
  *
  * Most of the geometry is already explicit in the tree: glyph metrics, the
  * vertical offsets inside vlists (`top`, pstrut heights), glue as margins,
- * rule thicknesses as border widths, font sizes as `katex-sizing` classes.
- * What is left for us is the horizontal flow (widths come from measuring the
- * glyphs with the canvas' own `measureText`), text alignment inside vlists
- * and percentage widths such as fraction bars.
+ * rule thicknesses as border widths, font sizes as `katex-sizing` classes,
+ * and stretchy symbols as SVG paths. What is left for us is the horizontal
+ * flow (widths come from measuring the glyphs with the canvas' own
+ * `measureText`), text alignment inside vlists, percentage widths such as
+ * fraction bars, and the absolutely positioned, clipped SVG pieces.
  *
  * Usage:
  *
@@ -58,7 +59,7 @@ const FONT_CLASSES = [
 // Horizontal padding and margins that katex.scss attaches to classes (in em).
 const CLASS_BOX = {
     "x-arrow-pad": { paddingLeft: 0.5, paddingRight: 0.5 },
-    "cd-arrow-pad": { paddingLeft: 0.55556, paddingRight: 0.27778 },
+    "cd-arrow-pad": { paddingLeft: 0.27778, paddingRight: 0.55556 },
     boxpad: { paddingLeft: 0.3, paddingRight: 0.3 },
     "cancel-pad": { paddingLeft: 0.2, paddingRight: 0.2 },
     "cancel-lap": { marginLeft: -0.2, marginRight: -0.2 },
@@ -66,30 +67,9 @@ const CLASS_BOX = {
     angl: { marginRight: 0.03889 },
 };
 
-// Classes whose rendering needs features this backend does not implement
-// yet. The nodes are skipped and reported in `box.unsupported`.
-const UNSUPPORTED_CLASSES = new Set([
-    "hide-tail",
-    "katex-stretchy",
-    "halfarrow-left",
-    "halfarrow-right",
-    "brace-left",
-    "brace-center",
-    "brace-right",
-    "katex-tag",
-    "katex-newline",
-    "reflectbox",
-    "fbox",
-    "fcolorbox",
-    "angl",
-    "katex-hdashline",
-    "cd-vert-arrow",
-    "cd-label-left",
-    "cd-label-right",
-]);
-
-// Elements with `display: inline-block` in katex.scss. Everything else
-// that is not a vlist table is an inline span.
+// Elements with `display: inline-block` (or another atomic inline display)
+// in katex.scss. Everything else that is not a vlist table is an inline
+// span, except for children of vlist rows, which are always inline-blocks.
 const INLINE_BLOCK_CLASSES = new Set([
     "katex-base",
     "katex-strut",
@@ -97,15 +77,72 @@ const INLINE_BLOCK_CLASSES = new Set([
     "overline-line",
     "underline-line",
     "katex-hline",
+    "katex-hdashline",
     "mspace",
     "katex-rule",
     "nulldelimiter",
     "vertical-separator",
     "arraycolsep",
+    "katex-overlay",
+    "katex-stretchy",
+    "reflectbox",
+    "cd-vert-arrow",
 ]);
 
-// Rules that are drawn as a bottom border across their full width.
-const LINE_CLASSES = new Set(["frac-line", "overline-line", "underline-line", "katex-hline"]);
+// Classes with a percentage width in katex.scss.
+const CLASS_WIDTH = {
+    "frac-line": 1,
+    "overline-line": 1,
+    "underline-line": 1,
+    "katex-hline": 1,
+    "katex-hdashline": 1,
+    "katex-stretchy": 1,
+    "hide-tail": 1,
+    "mtr-glue": 0.5,
+};
+
+// Classes that clip their content (`overflow: hidden`).
+const CLIPPING_CLASSES = new Set([
+    "hide-tail",
+    "katex-stretchy",
+    "halfarrow-left",
+    "halfarrow-right",
+    "brace-left",
+    "brace-center",
+    "brace-right",
+]);
+
+// Absolutely positioned pieces of stretchy symbols: horizontal offset and
+// width as fractions of the containing block, and the side they attach to.
+const PIECES = {
+    "halfarrow-left": { side: "left", offset: 0, width: 0.502 },
+    "halfarrow-right": { side: "right", offset: 0, width: 0.502 },
+    "brace-left": { side: "left", offset: 0, width: 0.251 },
+    "brace-center": { side: "left", offset: 0.25, width: 0.5 },
+    "brace-right": { side: "right", offset: 0, width: 0.251 },
+};
+
+// Classes that make an element a containing block for absolutely
+// positioned descendants (`position: relative` or `absolute`).
+const POSITIONED_CLASSES = new Set([
+    "katex",
+    "katex-base",
+    "katex-html",
+    "hide-tail",
+    "katex-stretchy",
+    "accent-body",
+    "delimcenter",
+    "op-symbol",
+    "katex-rule",
+    "llap",
+    "rlap",
+    "clap",
+    "cd-vert-arrow",
+    ...Object.keys(PIECES),
+]);
+
+// Classes whose borders are part of their specified size.
+const BORDER_BOX_CLASSES = new Set(["fbox", "fcolorbox", "angl"]);
 
 // katex.scss also gives rules `min-height: 1px` to keep Chrome from dropping
 // them. That makes \rule one pixel taller than TeX would, so it is only
@@ -122,14 +159,23 @@ const MIN_HEIGHT_CLASSES = new Set([
 // Box drawing ops. All coordinates are relative to the box origin, which is
 // the left end of its baseline.
 //   { type: "text", x, y, text, font, color, shadow }  (shadow: {dx, dy} or null)
-//   { type: "rect", x, y, w, h, color, edge }  (a filled rule or background;
-//        `edge` names the side a border belongs to, for pixel snapping)
+//   { type: "rect", x, y, w, h, color, edge, dashed }  (a filled rule or
+//        background; `edge` names the side a border belongs to, for pixel
+//        snapping; `dashed` rules are drawn as dashes along their length)
+//   { type: "svg", x, y, w, h, viewBox, preserveAspectRatio, items, color, snap }
+//        (an SVG viewport; items: {type: "path", d} filled, or
+//        {type: "line", x1, y1, x2, y2, width} stroked, with coordinates
+//        given as [fraction of the viewport size, pixels])
+//   { type: "image", x, y, w, h, src }
+//   { type: "group", x, y, clip, transform, ops }  (ops relative to (x, y);
+//        clip: {x, y, w, h} in the group's coordinates, drawn before the
+//        transform: {a, b, c, d, e, f}, as for ctx.transform)
 
 const parsedStyles = new WeakMap();
 
 /**
  * The inline style of a node: its `style` object merged with a `style`
- * attribute, which is where \htmlStyle puts its CSS text.
+ * attribute, which is where \htmlStyle (and SVG nodes) put their CSS text.
  */
 function styleOf(node) {
     const attr = node.attributes && node.attributes.style;
@@ -140,7 +186,10 @@ function styleOf(node) {
         for (const decl of attr.split(";")) {
             const i = decl.indexOf(":");
             if (i < 0) continue;
-            const name = decl.slice(0, i).trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+            const name = decl
+                .slice(0, i)
+                .trim()
+                .replace(/-([a-z])/g, (_, c) => c.toUpperCase());
             style[name] = decl.slice(i + 1).trim();
         }
         parsedStyles.set(node, style);
@@ -150,6 +199,15 @@ function styleOf(node) {
 
 function hasClass(node, name) {
     return node.classes !== undefined && node.classes.indexOf(name) !== -1;
+}
+
+function hasAnyClass(node, set) {
+    return (node.classes || []).some((c) => set.has(c));
+}
+
+function classValue(node, table) {
+    for (const c of node.classes || []) if (table[c] !== undefined) return table[c];
+    return undefined;
 }
 
 // Classifies domTree nodes by shape rather than by constructor name, which
@@ -182,6 +240,21 @@ function percentage(value) {
     return m ? parseFloat(m[1]) / 100 : null;
 }
 
+/** Horizontal margins from the `margin` shorthand, as [left, right]. */
+function marginShorthand(value, em) {
+    const parts = String(value).trim().split(/\s+/);
+    const at = (i) => length(parts[i], em);
+    switch (parts.length) {
+        case 1:
+            return [at(0), at(0)];
+        case 2:
+        case 3:
+            return [at(1), at(1)];
+        default:
+            return [at(3), at(1)];
+    }
+}
+
 /**
  * Computes the inherited and non-inherited style properties of a node,
  * given its parent's computed style and its ancestor chain.
@@ -196,6 +269,7 @@ function computeStyle(node, parent, ancestors) {
         textAlign: parent.textAlign,
         multDelim: parent.multDelim,
         textShadow: parent.textShadow,
+        lineHeight: parent.lineHeight,
     };
     const classes = node.classes || [];
     const has = (name) => classes.indexOf(name) !== -1;
@@ -241,6 +315,9 @@ function computeStyle(node, parent, ancestors) {
         if (hasClass(parentNode, "col-align-r")) cs.textAlign = 1;
     }
     if (has("x-arrow") || has("mover") || has("munder")) cs.textAlign = 0.5;
+    if (has("katex-smash")) cs.lineHeight = 0;
+    if (has("cd-label-left")) cs.textAlign = 0;
+    if (has("cd-label-right")) cs.textAlign = 1;
 
     const style = styleOf(node);
     if (style.color) cs.color = style.color;
@@ -265,6 +342,11 @@ function computeStyle(node, parent, ancestors) {
         box.marginLeft += (5 / 18) * em;
         box.marginRight -= (10 / 18) * em;
     }
+    if (style.margin) {
+        const [left, right] = marginShorthand(style.margin, em);
+        if (left !== null) box.marginLeft = left;
+        if (right !== null) box.marginRight = right;
+    }
     for (const k of ["marginLeft", "marginRight", "paddingLeft", "paddingRight"]) {
         const v = length(style[k], em);
         if (v !== null) box[k] = v;
@@ -278,12 +360,51 @@ function fontString(cs) {
     return `${cs.style || "normal"} ${cs.weight || "normal"} ${cs.size}px ${cs.family}`;
 }
 
+// SVG path data by path name, extracted from the nodes' own markup since
+// KaTeX does not export its path table.
+const pathData = new Map();
+
+function pathOf(node) {
+    if (node.alternate) return node.alternate;
+    let d = pathData.get(node.pathName);
+    if (d === undefined) {
+        const m = /\sd="([^"]*)"/.exec(node.toMarkup());
+        d = m ? m[1] : "";
+        pathData.set(node.pathName, d);
+    }
+    return d;
+}
+
+/**
+ * Viewport-to-user transform of an SVG element with the given viewBox and
+ * preserveAspectRatio, for a viewport of size w x h.
+ */
+function viewBoxTransform(viewBox, par, w, h) {
+    const [vx, vy, vw, vh] = viewBox;
+    let sx = w / vw;
+    let sy = h / vh;
+    const [align, mode] = (par || "xMidYMid meet").trim().split(/\s+/);
+    if (align !== "none") {
+        const s = mode === "slice" ? Math.max(sx, sy) : Math.min(sx, sy);
+        sx = sy = s;
+    }
+    const fx = /^xMid/.test(align) ? 0.5 : /^xMax/.test(align) ? 1 : 0;
+    const fy = /YMid$/.test(align) ? 0.5 : /YMax$/.test(align) ? 1 : 0;
+    const tx = align === "none" ? 0 : fx * (w - vw * sx);
+    const ty = align === "none" ? 0 : fy * (h - vh * sy);
+    return { sx, sy, tx: tx - vx * sx, ty: ty - vy * sy };
+}
+
 class Layout {
-    constructor(ctx, pixelRatio) {
+    constructor(ctx, pixelRatio, images) {
         this.ctx = ctx;
         this.pixelRatio = pixelRatio;
+        this.images = images || {};
         this.fonts = new Set();
         this.unsupported = new Set();
+        this.imageSources = new Set();
+        this.equationNumbers = new Map();
+        this.struts = new Map();
     }
 
     measure(text, font) {
@@ -293,20 +414,25 @@ class Layout {
 
     /**
      * Lays out a node as part of a horizontal list. Returns a box
-     * `{width, height, depth, ops, dependsOnWidth}` whose width includes the
-     * node's horizontal margins; ops are relative to the box's left edge
-     * (outer margin edge) on the baseline.
+     * `{width, height, depth, ops, dependsOnWidth, hasLine}` whose width
+     * includes the node's horizontal margins; ops are relative to the box's
+     * left edge (outer margin edge) on the baseline.
      *
-     * `cbWidth` is the width of the containing block, used to resolve
-     * percentage widths; it is null while computing intrinsic widths.
+     * `avail.cb` is the width of the containing block, used to resolve
+     * percentage widths, and `avail.pos` that of the nearest positioned
+     * ancestor, which absolutely positioned SVGs are sized against. Either
+     * is null while computing intrinsic widths.
      */
-    node(node, parentStyle, ancestors, cbWidth, inlineBlock) {
+    node(node, parentStyle, ancestors, avail, inlineBlock) {
         switch (kind(node)) {
             case "symbol":
                 return this.symbol(node, parentStyle, ancestors);
             case "span":
-                return this.span(node, parentStyle, ancestors, cbWidth, inlineBlock);
+                return this.span(node, parentStyle, ancestors, avail, inlineBlock);
+            case "img":
+                return this.img(node, parentStyle, ancestors);
             default:
+                // SVGs are absolutely positioned and handled by their parent.
                 this.unsupported.add(kind(node));
                 return emptyBox();
         }
@@ -320,122 +446,351 @@ class Layout {
         const font = fontString(cs);
         this.fonts.add(font);
         const width = this.measure(text, font);
-        box.ops.push({ type: "text", x: 0, y: 0, text, font, color: cs.color, shadow: cs.textShadow });
-        box.width = width + Math.max(0, node.italic || 0) * cs.em;
+        const pad = cs.box;
+        box.ops.push({ type: "text", x: pad.paddingLeft, y: 0, text, font, color: cs.color, shadow: cs.textShadow });
+        box.width = pad.paddingLeft + width + Math.max(0, node.italic || 0) * cs.em + pad.paddingRight;
         // KaTeX rescales the height and depth of a node that carries sizing
         // classes to the em of its parent.
         box.height = (node.height || 0) * parentStyle.size;
         box.depth = (node.depth || 0) * parentStyle.size;
+        box.hasLine = true;
+        const strut = this.strut(cs);
+        box.lineTop = strut.top;
+        box.lineBottom = strut.bottom;
         return this.decorate(box, node, cs);
     }
 
-    span(node, parentStyle, ancestors, cbWidth, inlineBlock) {
-        for (const c of node.classes || []) {
-            if (UNSUPPORTED_CLASSES.has(c)) {
-                this.unsupported.add("." + c);
-                return emptyBox();
-            }
+    img(node, parentStyle, ancestors) {
+        const cs = computeStyle(node, parentStyle, ancestors);
+        const style = styleOf(node);
+        const image = this.images[node.src];
+        const natural = image && image.naturalWidth ? [image.naturalWidth, image.naturalHeight] : null;
+        let w = length(style.width, cs.em);
+        let h = length(style.height, cs.em);
+        if (natural) {
+            if (w === null && h !== null) w = (h * natural[0]) / natural[1];
+            if (h === null && w !== null) h = (w * natural[1]) / natural[0];
+            if (w === null && h === null) [w, h] = natural;
         }
+        this.imageSources.add(node.src);
+        const box = emptyBox();
+        box.width = w || 0;
+        box.height = h || 0;
+        box.hasLine = true;
+        if (w && h) box.ops.push({ type: "image", x: 0, y: -h, w, h, src: node.src });
+        return this.decorate(box, node, cs);
+    }
+
+    span(node, parentStyle, ancestors, avail, inlineBlock) {
         const cs = computeStyle(node, parentStyle, ancestors);
         const inner = ancestors.concat([node]);
-        const style = styleOf(node);
 
-        if (hasClass(node, "vlist-t")) return this.decorate(this.vlistTable(node, cs, inner), node, cs);
+        if (hasClass(node, "vlist-t")) return this.decorate(this.vlistTable(node, cs, inner, avail), node, cs);
         if (hasClass(node, "llap") || hasClass(node, "rlap") || hasClass(node, "clap")) {
-            return this.decorate(this.lap(node, cs, inner), node, cs);
+            return this.decorate(this.lap(node, cs, inner, avail), node, cs);
         }
         if (hasClass(node, "katex-thinbox")) {
             // An inline-flex row of zero width whose content overflows.
-            const box = this.hlist(node.children || [], cs, inner, 0, true);
+            const box = this.hlist(node.children || [], cs, inner, avail, true);
             box.width = 0;
             box.hasLine = true;
             return this.decorate(box, node, cs);
         }
-
-        const isInlineBlock =
-            inlineBlock || INLINE_BLOCK_CLASSES.has((node.classes || []).find((c) => INLINE_BLOCK_CLASSES.has(c)));
-        if (!isInlineBlock) {
-            // Inline span: its children simply continue the horizontal list.
-            const box = this.hlist(node.children || [], cs, inner, cbWidth);
-            box.width += cs.box.paddingLeft + cs.box.paddingRight;
-            shift(box, cs.box.paddingLeft, 0);
-            return this.decorate(box, node, cs);
+        if (hasClass(node, "katex-tag")) {
+            // Only meaningful at the top level, see Layout.root.
+            this.unsupported.add("nested .katex-tag");
+            return emptyBox();
         }
 
-        // Inline-block.
-        let width = null;
-        let dependsOnWidth = false;
-        const pct = percentage(style.width);
-        if (pct !== null || LINE_CLASSES.has(node.classes.find((c) => LINE_CLASSES.has(c)))) {
-            dependsOnWidth = true;
-            width = cbWidth === null ? 0 : (pct === null ? 1 : pct) * cbWidth;
-        } else {
-            width = length(style.width, cs.em);
+        if (hasClass(node, "eqn-num")) {
+            // `.eqn-num::before { content: "(" counter(katexEqnNo) ")" }`
+            const text = `(${this.equationNumbers.get(node)})`;
+            const font = fontString(cs);
+            this.fonts.add(font);
+            const number = emptyBox();
+            number.ops.push({ type: "text", x: 0, y: 0, text, font, color: cs.color, shadow: cs.textShadow });
+            number.width = this.measure(text, font);
+            number.hasLine = true;
+            append(number, this.hlist(node.children || [], cs, inner, avail));
+            return this.decorate(this.padded(number, cs), node, cs);
         }
-        if (hasClass(node, "nulldelimiter")) width = 0.12 * cs.em;
-        if (hasClass(node, "accent-body") && !hasClass(node, "accent-full") && ancestors.some(isAccent)) width = 0;
-        const minWidth = length(style.minWidth, cs.em);
+        if (inlineBlock || hasAnyClass(node, INLINE_BLOCK_CLASSES)) {
+            return this.decorate(this.inlineBlock(node, cs, inner, avail), node, cs);
+        }
+        // Inline span: its children simply continue the horizontal list.
+        const box = this.hlist(node.children || [], cs, inner, avail);
+        return this.decorate(this.padded(box, cs), node, cs);
+    }
 
-        const content = this.hlist(node.children || [], cs, inner, width);
-        dependsOnWidth = dependsOnWidth || content.dependsOnWidth;
-        const contentWidth = Math.max(width === null ? content.width : width, minWidth || 0);
+    padded(box, cs) {
+        box.width += cs.box.paddingLeft + cs.box.paddingRight;
+        shift(box, cs.box.paddingLeft, 0);
+        return box;
+    }
+
+    inlineBlock(node, cs, ancestors, avail) {
+        const style = styleOf(node);
+        const em = cs.em;
 
         const borders = {
-            top: length(style.borderTopWidth, cs.em) || 0,
-            right: length(style.borderRightWidth, cs.em) || 0,
-            bottom: length(style.borderBottomWidth, cs.em) || 0,
-            left: length(style.borderLeftWidth, cs.em) || 0,
+            top: length(style.borderTopWidth, em) || 0,
+            right: length(style.borderRightWidth, em) || 0,
+            bottom: length(style.borderBottomWidth, em) || 0,
+            left: length(style.borderLeftWidth, em) || 0,
         };
-        const bw = length(style.borderWidth, cs.em);
+        const bw = length(style.borderWidth, em);
         if (bw !== null) borders.top = borders.right = borders.bottom = borders.left = bw;
-        if (hasClass(node, "katex-sout")) borders.bottom = 0.08 * cs.em;
+        if (hasClass(node, "katex-sout")) borders.bottom = 0.08 * em;
+        if (hasClass(node, "fbox") || hasClass(node, "fcolorbox")) {
+            if (bw === null) borders.top = borders.right = borders.bottom = borders.left = 0.04 * em;
+        }
+        if (hasClass(node, "angl")) borders.top = borders.right = 0.049 * em;
         if (this.pixelRatio) {
             // Browsers use whole device pixels for border widths already
             // during layout.
             for (const side in borders) borders[side] = snapBorder(borders[side], this.pixelRatio);
         }
+        const dashed = {
+            right: style.borderRightStyle === "dashed",
+            bottom: style.borderBottomStyle === "dashed" || hasClass(node, "katex-hdashline"),
+        };
+        const pad = cs.box.paddingLeft + cs.box.paddingRight;
+        const hBorders = borders.left + borders.right;
+        const borderBox = hasAnyClass(node, BORDER_BOX_CLASSES);
 
-        let height = length(style.height, cs.em);
-        if (this.pixelRatio && node.classes.some((c) => MIN_HEIGHT_CLASSES.has(c))) height = Math.max(height || 0, 1);
+        // The specified width (of the content box).
+        let width = null;
+        let dependsOnWidth = false;
+        let pct = percentage(style.width);
+        if (pct === null && style.width === undefined) pct = classValue(node, CLASS_WIDTH) ?? null;
+        if (pct !== null) {
+            dependsOnWidth = true;
+            width = avail.cb === null ? null : pct * avail.cb;
+        } else {
+            width = length(style.width, em);
+        }
+        if (hasClass(node, "nulldelimiter")) width = 0.12 * em;
+        if (hasClass(node, "accent-body") && !hasClass(node, "accent-full") && ancestors.some(isAccent)) width = 0;
+        if (width !== null && borderBox) width = Math.max(0, width - pad - hBorders);
+        let minWidth = length(style.minWidth, em);
+        // Another Chrome workaround in katex.scss, emulated like min-height.
+        if (this.pixelRatio && hasClass(node, "vertical-separator")) minWidth = Math.max(minWidth || 0, 1);
+        if (minWidth !== null && borderBox) minWidth = Math.max(0, minWidth - pad - hBorders);
+
+        let height = length(style.height, em);
+        if (this.pixelRatio && hasAnyClass(node, MIN_HEIGHT_CLASSES)) height = Math.max(height || 0, 1);
+        if (height !== null && borderBox) height = Math.max(0, height - borders.top - borders.bottom);
+
+        const inFlow = [];
+        const outOfFlow = [];
+        for (const child of node.children || []) {
+            if (kind(child) === "svg" || hasAnyClass(child, PIECE_SET) || isAbsoluteLabel(child)) outOfFlow.push(child);
+            else inFlow.push(child);
+        }
+
+        const positioned = hasAnyClass(node, POSITIONED_CLASSES);
+        const layoutContent = (w) => {
+            const innerAvail = { cb: w, pos: positioned ? (w === null ? null : w + pad) : avail.pos };
+            return this.hlist(inFlow, cs, ancestors, innerAvail);
+        };
+        let content = layoutContent(width);
+        let contentWidth = Math.max(width === null ? content.width : width, minWidth || 0);
+        if (content.dependsOnWidth && width === null) {
+            // Percentages inside a shrink-to-fit box resolve against the
+            // width it got from its other content.
+            content = layoutContent(contentWidth);
+        }
+        dependsOnWidth = dependsOnWidth || content.dependsOnWidth;
 
         const box = emptyBox();
         box.dependsOnWidth = dependsOnWidth;
+        box.hasLine = true;
         const left = cs.box.paddingLeft + borders.left;
         const outerWidth = left + contentWidth + cs.box.paddingRight + borders.right;
         box.width = outerWidth;
-        const hasContent = content.ops.length > 0 || content.hasLine;
-        if (hasContent && height === null) {
+        const hasLine = content.hasLine;
+        if (hasLine && height === null && !hasAnyClass(node, CLIPPING_CLASSES)) {
             // The baseline is that of the contained line.
             box.ops = content.ops;
             shift(box, left, 0);
             box.height = content.height + borders.top;
             box.depth = content.depth + borders.bottom;
-            box.hasLine = true;
         } else {
-            // No line box (or a fixed height): the bottom margin edge sits
-            // on the baseline.
-            const h = (height === null ? 0 : height) + borders.top + borders.bottom;
+            // No line box, a fixed height or `overflow: hidden`: the bottom
+            // margin edge sits on the baseline.
+            const h = (height === null ? content.height + content.depth : height) + borders.top + borders.bottom;
             box.height = h;
             box.depth = 0;
-            if (hasContent) {
-                box.ops = content.ops;
-                shift(box, left, -borders.bottom);
-            }
+            box.ops = content.ops;
+            shift(box, left, -borders.bottom - (height === null ? content.depth : 0));
+            box.height = h;
+            box.depth = 0;
         }
+        const bottom = box.depth;
+        const top = -box.height;
+        // The margin box, which is what this box contributes to the CSS line
+        // box around it. With a line inside, that line's box decides.
+        if (hasLine && height === null && !hasAnyClass(node, CLIPPING_CLASSES)) {
+            const strut = this.strut(cs);
+            box.lineTop = Math.min(content.lineTop, strut.top) - borders.top;
+            box.lineBottom = Math.max(content.lineBottom, strut.bottom) + borders.bottom;
+        } else {
+            box.lineTop = top;
+            box.lineBottom = bottom;
+        }
+        const paddingBox = {
+            x: borders.left,
+            y: top + borders.top,
+            w: outerWidth - hBorders,
+            h: bottom - top - borders.top - borders.bottom,
+        };
+
+        // Absolutely positioned children, at their static position: the top
+        // left corner of the content box.
+        const cbWidth = positioned ? paddingBox.w : avail.pos;
+        for (const child of outOfFlow) {
+            const ops = this.absolute(child, cs, ancestors, {
+                x: left,
+                y: paddingBox.y,
+                cbWidth,
+                cbX: positioned ? paddingBox.x : null,
+                height: height,
+                boxWidth: paddingBox.w,
+                bottom: paddingBox.y + paddingBox.h,
+            });
+            if (ops === null) box.dependsOnWidth = true;
+            else box.ops.push(...ops);
+        }
+
+        if (hasAnyClass(node, CLIPPING_CLASSES)) {
+            box.ops = [
+                { type: "group", x: 0, y: 0, clip: paddingBox, transform: null, ops: box.ops, snap: !!this.pixelRatio },
+            ];
+        }
+        if (hasClass(node, "reflectbox")) {
+            box.ops = [
+                {
+                    type: "group",
+                    x: 0,
+                    y: 0,
+                    clip: null,
+                    transform: { a: -1, b: 0, c: 0, d: 1, e: outerWidth, f: 0 },
+                    ops: box.ops,
+                },
+            ];
+        }
+
         const color = cs.color;
-        const bottom = hasContent && height === null ? content.depth + borders.bottom : 0;
-        const top = bottom - box.height - box.depth;
-        const rect = (x, y, w, h, edge, c) => {
+        const borderColor = style.borderColor || color;
+        const decorations = [];
+        const rect = (x, y, w, h, edge, c, dash) => {
             // Borders of an empty box are not painted.
-            if (w > 0 && h > 0) box.ops.push({ type: "rect", x, y, w, h, color: c, edge });
+            if (w > 0 && h > 0) decorations.push({ type: "rect", x, y, w, h, color: c, edge, dashed: !!dash });
         };
         if (style.backgroundColor) rect(0, top, outerWidth, bottom - top, null, style.backgroundColor);
-        if (borders.bottom) rect(0, bottom - borders.bottom, outerWidth, borders.bottom, "bottom", color);
-        if (borders.top) rect(0, top, outerWidth, borders.top, "top", color);
-        if (borders.left) rect(0, top, borders.left, bottom - top, "left", color);
-        if (borders.right) rect(outerWidth - borders.right, top, borders.right, bottom - top, "right", color);
+        if (borders.bottom) {
+            rect(0, bottom - borders.bottom, outerWidth, borders.bottom, "bottom", borderColor, dashed.bottom);
+        }
+        if (borders.top) rect(0, top, outerWidth, borders.top, "top", borderColor);
+        if (borders.left) rect(0, top, borders.left, bottom - top, "left", borderColor);
+        if (borders.right) {
+            rect(outerWidth - borders.right, top, borders.right, bottom - top, "right", borderColor, dashed.right);
+        }
+        // Backgrounds and borders are painted below the content.
+        box.ops = decorations.concat(box.ops);
+        return box;
+    }
 
-        return this.decorate(box, node, cs);
+    /**
+     * Lays out an absolutely positioned child of an inline-block. `at`
+     * gives the static position (x, y of the content box's top left), the
+     * containing block's width and left edge, the parent's specified
+     * height (which SVGs inherit) and the parent's padding box width.
+     * Returns the ops, or null if the width is not known yet.
+     */
+    absolute(child, cs, ancestors, at) {
+        if (kind(child) === "svg") {
+            const style = styleOf(child);
+            let w = length(style.width, cs.em);
+            if (w === null) {
+                if (at.cbWidth === null) return null;
+                w = at.cbWidth;
+            }
+            let h = at.height;
+            if (h === null) h = length((child.attributes || {}).height, cs.em);
+            return [this.svg(child, at.x, at.y, w, h || 0, cs)];
+        }
+        const pcs = computeStyle(child, cs, ancestors);
+        const inner = ancestors.concat([child]);
+        const piece = classValue(child, PIECES);
+        if (piece) {
+            if (at.cbWidth === null) return null;
+            const w = piece.width * at.cbWidth;
+            const x0 = at.cbX === null ? at.x : at.cbX;
+            const x = piece.side === "left" ? x0 + piece.offset * at.cbWidth : x0 + at.cbWidth - w;
+            const h = length(styleOf(child).height, pcs.em);
+            const ops = [];
+            for (const svg of child.children || []) {
+                if (kind(svg) === "svg") ops.push(this.svg(svg, 0, 0, w, h || 0, pcs));
+            }
+            const clip = { x: 0, y: 0, w, h: h || 0 };
+            return [{ type: "group", x, y: at.y, clip, transform: null, ops, snap: !!this.pixelRatio }];
+        }
+        // \begin{CD} labels next to vertical arrows: offset horizontally
+        // from the middle of the arrow (`calc(50% + 0.3em)`), and vertically
+        // by `bottom` from the arrow's bottom edge, or else at their static,
+        // baseline-aligned position.
+        const label = this.inlineBlock(child, pcs, inner, { cb: null, pos: null });
+        const gap = 0.3 * pcs.em;
+        const x = hasClass(child, "cd-label-left") ? at.boxWidth / 2 - gap - label.width : at.boxWidth / 2 + gap;
+        const bottom = length(styleOf(child).bottom, pcs.em);
+        const y = bottom === null ? 0 : at.bottom - bottom - label.lineBottom;
+        return label.ops.map((op) => moved(op, x, y));
+    }
+
+    /**
+     * An SVG element with its viewport at (x, y), sized w x h. The geometry
+     * inside is resolved when drawing, since the viewport may get snapped
+     * to device pixels first.
+     */
+    svg(node, x, y, w, h, cs) {
+        const attrs = node.attributes || {};
+        const items = [];
+        for (const child of node.children || []) {
+            if (kind(child) === "path") {
+                items.push({ type: "path", d: pathOf(child) });
+            } else if (kind(child) === "line") {
+                const a = child.attributes || {};
+                // Coordinates as [fraction of the viewport size, pixels].
+                const coord = (v) => {
+                    const p = percentage(v);
+                    return p !== null ? [p, 0] : [0, length(v, cs.em) || 0];
+                };
+                items.push({
+                    type: "line",
+                    x1: coord(a.x1),
+                    y1: coord(a.y1),
+                    x2: coord(a.x2),
+                    y2: coord(a.y2),
+                    width: length(a["stroke-width"], cs.em) || 1,
+                });
+            } else {
+                this.unsupported.add("svg " + kind(child));
+            }
+        }
+        return {
+            type: "svg",
+            x,
+            y,
+            w,
+            h,
+            viewBox: attrs.viewBox ? attrs.viewBox.trim().split(/[\s,]+/).map(Number) : null,
+            preserveAspectRatio: attrs.preserveAspectRatio || null,
+            items,
+            color: cs.color,
+            // Browsers paint SVG viewports at whole device pixels.
+            snap: !!this.pixelRatio,
+        };
     }
 
     /**
@@ -454,10 +809,10 @@ class Layout {
         return box;
     }
 
-    hlist(children, cs, ancestors, cbWidth, inlineBlocks) {
+    hlist(children, cs, ancestors, avail, inlineBlocks) {
         const box = emptyBox();
         for (const child of children) {
-            const b = this.node(child, cs, ancestors, cbWidth, inlineBlocks);
+            const b = this.node(child, cs, ancestors, avail, inlineBlocks);
             append(box, b);
         }
         return box;
@@ -495,7 +850,7 @@ class Layout {
                     content.push(child);
                 }
             }
-            const line = this.hlist(content, ws, wrapperAncestors, null, true);
+            const line = this.hlist(content, ws, wrapperAncestors, { cb: null, pos: null }, true);
             const top = length(styleOf(wrapper).top, ws.em) || 0;
             items.push({ wrapper, ws, wrapperAncestors, content, line, baseline: top + pstrut });
         }
@@ -510,7 +865,12 @@ class Layout {
             const m = item.ws.box;
             const available = cellWidth - m.marginLeft - m.marginRight;
             let line = item.line;
-            if (line.dependsOnWidth) line = this.hlist(item.content, item.ws, item.wrapperAncestors, available, true);
+            if (line.dependsOnWidth) {
+                // The block is `position: relative`, so it is also the
+                // containing block of absolutely positioned SVGs.
+                const avail = { cb: available, pos: available };
+                line = this.hlist(item.content, item.ws, item.wrapperAncestors, avail, true);
+            }
             const x = m.marginLeft + item.ws.textAlign * Math.max(0, available - line.width);
             for (const op of line.ops) box.ops.push(moved(op, x, item.baseline));
             box.height = Math.max(box.height, line.height - item.baseline);
@@ -518,14 +878,20 @@ class Layout {
         }
 
         box.width = cellWidth;
+        // The cells' heights are KaTeX's height and depth of the vlist. They
+        // take precedence over the extent of the items, whose boxes may
+        // include invisible padding (e.g. above the vinculum of \sqrt).
         const cellHeight = length(styleOf(cell).height, cellStyle.em);
-        if (cellHeight !== null) box.height = Math.max(box.height, cellHeight);
+        if (cellHeight !== null) box.height = cellHeight;
+        box.depth = 0;
         if (rows.length > 1) {
             const depthCell = rows[1].children[0];
             const depthHeight = length(styleOf(depthCell).height, cellStyle.em);
-            if (depthHeight !== null) box.depth = Math.max(box.depth, depthHeight);
+            if (depthHeight !== null) box.depth = depthHeight;
         }
         box.hasLine = true;
+        box.lineTop = -box.height;
+        box.lineBottom = box.depth;
         return box;
     }
 
@@ -541,7 +907,7 @@ class Layout {
         for (const child of node.children || []) {
             if (!hasClass(child, "katex-inner")) continue;
             const is = computeStyle(child, cs, ancestors);
-            const inner = this.hlist(child.children || [], is, ancestors.concat([child]), null);
+            const inner = this.hlist(child.children || [], is, ancestors.concat([child]), { cb: null, pos: null });
             let x = 0;
             if (hasClass(node, "llap")) x = -inner.width;
             if (hasClass(node, "clap")) x = -inner.width / 2;
@@ -551,6 +917,107 @@ class Layout {
         }
         return box;
     }
+
+    /**
+     * The top level: `.katex-html` holds the `.katex-base` boxes, which
+     * `.katex-newline` blocks break into lines, and optionally a
+     * `.katex-tag`, absolutely positioned at the right end.
+     */
+    root(tree, rootStyle, displayWidth) {
+        // Equation numbers count in document order, independently of how
+        // often a node gets laid out.
+        (function number(node, map) {
+            if (hasClass(node, "eqn-num")) map.set(node, map.size + 1);
+            for (const child of node.children || []) number(child, map);
+        })(tree, this.equationNumbers);
+        let html = tree;
+        const path = [];
+        while (html && !hasClass(html, "katex-html")) {
+            path.push(html);
+            html = (html.children || []).find((c) => hasClass(c, "katex-html") || hasClass(c, "katex"));
+        }
+        if (!html) return this.hlist(tree.children || [], rootStyle, [tree], { cb: null, pos: null });
+        const hs = computeStyle(html, rootStyle, path);
+        const ancestors = path.concat([html]);
+        const avail = { cb: null, pos: null };
+
+        const lines = [[]];
+        // Extra space above each line, from \\[<length>].
+        const gaps = [0];
+        let tag = null;
+        for (const child of html.children || []) {
+            if (hasClass(child, "katex-newline")) {
+                lines.push([]);
+                gaps.push(length(styleOf(child).marginTop, computeStyle(child, hs, ancestors).em) || 0);
+            }
+            else if (hasClass(child, "katex-tag")) tag = child;
+            else lines[lines.length - 1].push(child);
+        }
+        const boxes = lines.map((children) => this.hlist(children, hs, ancestors, avail));
+
+        const box = emptyBox();
+        if (boxes.length === 1) {
+            append(box, boxes[0]);
+        } else {
+            // Stack the lines as CSS line boxes: each spans the margin boxes
+            // of its `.katex-base` boxes and the strut of `.katex-html`.
+            const strut = this.strut(hs);
+            let baseline = 0;
+            let prevBottom = 0;
+            boxes.forEach((line, i) => {
+                const top = Math.min(strut.top, line.lineTop);
+                const bottom = Math.max(strut.bottom, line.lineBottom);
+                if (i > 0) baseline += prevBottom + gaps[i] - top;
+                for (const op of line.ops) box.ops.push(moved(op, 0, baseline));
+                box.width = Math.max(box.width, line.width);
+                if (i === 0) box.height = line.height;
+                box.depth = baseline + line.depth;
+                prevBottom = bottom;
+            });
+            box.lastBaseline = baseline;
+        }
+        if (tag) {
+            const ts = computeStyle(tag, hs, ancestors);
+            const content = this.hlist(tag.children || [], ts, ancestors.concat([tag]), avail);
+            const right = Math.max(displayWidth || 0, box.width);
+            const y = box.lastBaseline || 0;
+            for (const op of content.ops) box.ops.push(moved(op, right - content.width, y));
+            box.height = Math.max(box.height, content.height - y);
+            box.depth = Math.max(box.depth, content.depth + y);
+        }
+        return box;
+    }
+
+    /**
+     * The extent of an inline box of the given style in a CSS line box: the
+     * font's ascent and descent plus half the leading on either side.
+     */
+    strut(cs) {
+        const font = fontString(cs);
+        const key = font + " " + cs.lineHeight;
+        let strut = this.struts.get(key);
+        if (!strut) {
+            this.ctx.font = font;
+            const m = this.ctx.measureText("x");
+            let ascent = m.fontBoundingBoxAscent;
+            let descent = m.fontBoundingBoxDescent;
+            if (ascent === undefined) {
+                // Without font metrics, assume those of KaTeX_Main.
+                ascent = 0.9 * cs.em;
+                descent = 0.25 * cs.em;
+            }
+            const leading = (cs.lineHeight * cs.size - ascent - descent) / 2;
+            strut = { top: -ascent - leading, bottom: descent + leading };
+            this.struts.set(key, strut);
+        }
+        return strut;
+    }
+}
+
+const PIECE_SET = new Set(Object.keys(PIECES));
+
+function isAbsoluteLabel(node) {
+    return hasClass(node, "cd-label-left") || hasClass(node, "cd-label-right");
 }
 
 function isAccent(node) {
@@ -564,7 +1031,9 @@ function snapBorder(width, pixelRatio) {
 }
 
 function emptyBox() {
-    return { width: 0, height: 0, depth: 0, ops: [], dependsOnWidth: false, hasLine: false };
+    // height and depth are those of TeX; lineTop and lineBottom delimit the
+    // box's contribution to a CSS line box (y coordinates, top negative).
+    return { width: 0, height: 0, depth: 0, lineTop: 0, lineBottom: 0, ops: [], dependsOnWidth: false, hasLine: false };
 }
 
 function moved(op, dx, dy) {
@@ -579,6 +1048,8 @@ function shift(box, dx, dy) {
     box.ops = box.ops.map((op) => moved(op, dx, dy));
     box.height -= dy;
     box.depth += dy;
+    box.lineTop += dy;
+    box.lineBottom += dy;
 }
 
 function append(box, b) {
@@ -586,8 +1057,10 @@ function append(box, b) {
     box.width += b.width;
     box.height = Math.max(box.height, b.height);
     box.depth = Math.max(box.depth, b.depth);
+    box.lineTop = Math.min(box.lineTop, b.lineTop);
+    box.lineBottom = Math.max(box.lineBottom, b.lineBottom);
     box.dependsOnWidth = box.dependsOnWidth || b.dependsOnWidth;
-    box.hasLine = box.hasLine || b.hasLine || b.ops.length > 0;
+    box.hasLine = box.hasLine || b.hasLine;
 }
 
 /**
@@ -600,11 +1073,17 @@ function append(box, b) {
  *        surrounding font size)
  * @param options.pixelRatio if given, device pixels per CSS pixel: rule and
  *        border thicknesses are then rounded to device pixels and rules get
- *        katex.css's `min-height: 1px`, as in browsers,
- *        which keeps the layout identical to KaTeX's HTML output when drawing
- *        without rotation or scaling
- * @returns a box `{width, height, depth, ops, fonts, unsupported}`; `fonts`
- *        lists the CSS font strings that need to be loaded before rendering
+ *        katex.css's `min-height: 1px`, as in browsers, which keeps the
+ *        layout identical to KaTeX's HTML output when drawing without
+ *        rotation or scaling
+ * @param options.displayWidth the width that equation tags (\tag) are
+ *        right-aligned to; defaults to the width of the formula
+ * @param options.images loaded images by URL (\includegraphics); their
+ *        natural size determines the layout of images with only one of
+ *        width and height given
+ * @returns a box `{width, height, depth, ops, fonts, images, unsupported}`;
+ *        `fonts` lists the CSS font strings that need to be loaded before
+ *        rendering, `images` the URLs of images to pass to `render`
  */
 export function layout(tree, ctx, options) {
     const root = {
@@ -616,14 +1095,15 @@ export function layout(tree, ctx, options) {
         textAlign: 0,
         multDelim: false,
         textShadow: null,
+        lineHeight: 1.2,
     };
-    const engine = new Layout(ctx, options.pixelRatio || null);
+    const engine = new Layout(ctx, options.pixelRatio || null, options.images);
     ctx.save();
     let box;
     try {
         // `.katex` sets the font size to 1.21em; we take fontSize to mean the
         // size inside, so the root's own font rules are applied without it.
-        box = engine.hlist(tree.children || [], root, [tree], null);
+        box = engine.root(tree, root, options.displayWidth);
     } finally {
         ctx.restore();
     }
@@ -633,50 +1113,186 @@ export function layout(tree, ctx, options) {
         depth: box.depth,
         ops: box.ops,
         fonts: Array.from(engine.fonts),
+        images: Array.from(engine.imageSources),
         unsupported: Array.from(engine.unsupported),
     };
 }
 
 /**
  * Draws a laid-out box with its baseline starting at (x, y). Ops without an
- * explicit color use the context's current fill style.
+ * explicit color use the context's current fill style. `images` maps the
+ * URLs in `box.images` to loaded images; missing ones are skipped.
  */
-export function render(ctx, box, x, y) {
+export function render(ctx, box, x, y, images) {
     ctx.save();
     try {
         const fill = ctx.fillStyle;
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
-        const t = ctx.getTransform();
-        // Rules are snapped to device pixels the way browsers snap borders,
-        // but only when that is meaningful, i.e. for axis-aligned transforms.
-        const snap = t.b === 0 && t.c === 0 && t.a > 0 && t.d > 0;
-        for (const op of box.ops) {
-            ctx.fillStyle = op.color === null || op.color === undefined ? fill : op.color;
-            if (op.type === "text") {
-                ctx.font = op.font;
-                if (op.shadow) ctx.fillText(op.text, x + op.x + op.shadow.dx, y + op.y + op.shadow.dy);
-                ctx.fillText(op.text, x + op.x, y + op.y);
-            } else if (op.type === "rect") {
-                if (snap) snappedRect(ctx, t, x + op.x, y + op.y, op.w, op.h, op.edge);
-                else ctx.fillRect(x + op.x, y + op.y, op.w, op.h);
-            }
-        }
+        ctx.translate(x, y);
+        drawOps(ctx, box.ops, fill, images || {});
     } finally {
         ctx.restore();
     }
 }
 
-// Browsers paint boxes with their edges rounded to device pixels, and
-// borders with whole device pixel widths (at least one pixel), so thin rules
-// stay crisp instead of being smeared over two rows.
-function snappedRect(ctx, t, x, y, w, h, edge) {
-    let [x0, x1] = snapSpan(t.a * x + t.e, t.a * w, edge === "left" ? 1 : edge === "right" ? -1 : 0);
-    let [y0, y1] = snapSpan(t.d * y + t.f, t.d * h, edge === "top" ? 1 : edge === "bottom" ? -1 : 0);
+const path2Ds = new Map();
+
+function path2D(d) {
+    let p = path2Ds.get(d);
+    if (!p) {
+        p = new Path2D(d);
+        path2Ds.set(d, p);
+    }
+    return p;
+}
+
+function drawOps(ctx, ops, fill, images) {
+    for (const op of ops) {
+        const color = op.color === null || op.color === undefined ? fill : op.color;
+        ctx.fillStyle = color;
+        switch (op.type) {
+            case "text":
+                ctx.font = op.font;
+                if (op.shadow) ctx.fillText(op.text, op.x + op.shadow.dx, op.y + op.shadow.dy);
+                ctx.fillText(op.text, op.x, op.y);
+                break;
+            case "rect":
+                drawRect(ctx, op);
+                break;
+            case "svg":
+                drawSvg(ctx, op, color);
+                break;
+            case "image":
+                if (images[op.src]) ctx.drawImage(images[op.src], op.x, op.y, op.w, op.h);
+                break;
+            case "group":
+                ctx.save();
+                ctx.translate(op.x, op.y);
+                if (op.clip) clipTo(ctx, op.clip, op.snap);
+                if (op.transform) {
+                    const t = op.transform;
+                    ctx.transform(t.a, t.b, t.c, t.d, t.e, t.f);
+                }
+                drawOps(ctx, op.ops, fill, images);
+                ctx.restore();
+                break;
+        }
+    }
+}
+
+function drawSvg(ctx, op, color) {
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.translate(op.x, op.y);
+    const { w, h } = op;
+    // Browsers paint the viewport at whole device pixels and clip to the
+    // pixel-snapped rectangle, but fit the viewBox to the exact size.
+    let clip = { x: 0, y: 0, w, h };
+    const t = ctx.getTransform();
+    if (op.snap && isAxisAligned(t)) {
+        const x0 = Math.round(t.e);
+        const y0 = Math.round(t.f);
+        ctx.setTransform(t.a, 0, 0, t.d, x0, y0);
+        clip = { x: 0, y: 0, w: (Math.round(t.e + t.a * w) - x0) / t.a, h: (Math.round(t.f + t.d * h) - y0) / t.d };
+    }
+    // Inner SVG elements clip to their viewport.
+    ctx.beginPath();
+    ctx.rect(clip.x, clip.y, clip.w, clip.h);
+    ctx.clip();
+    const v = op.viewBox ? viewBoxTransform(op.viewBox, op.preserveAspectRatio, w, h) : null;
+    for (const item of op.items) {
+        if (item.type === "path") {
+            ctx.save();
+            if (v) {
+                ctx.translate(v.tx, v.ty);
+                ctx.scale(v.sx, v.sy);
+            }
+            ctx.fill(path2D(item.d));
+            ctx.restore();
+        } else {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = item.width;
+            ctx.lineCap = "butt";
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            // Percentages refer to the (snapped) viewport.
+            ctx.moveTo(item.x1[0] * clip.w + item.x1[1], item.y1[0] * clip.h + item.y1[1]);
+            ctx.lineTo(item.x2[0] * clip.w + item.x2[1], item.y2[0] * clip.h + item.y2[1]);
+            ctx.stroke();
+        }
+    }
     ctx.restore();
+}
+
+function isAxisAligned(t) {
+    return t.b === 0 && t.c === 0 && t.a !== 0 && t.d !== 0;
+}
+
+// Clips to a rectangle; `snap` rounds its edges to device pixels, as
+// browsers do for boxes with `overflow: hidden` (and SVG viewports), where
+// the transform is axis-aligned. The origin moves along with the top left
+// corner, so the content stays put relative to the clip.
+function clipTo(ctx, clip, snap) {
+    const t = ctx.getTransform();
+    ctx.beginPath();
+    if (snap && isAxisAligned(t)) {
+        const x0 = Math.round(t.a * clip.x + t.e);
+        const y0 = Math.round(t.d * clip.y + t.f);
+        const x1 = Math.round(t.a * (clip.x + clip.w) + t.e);
+        const y1 = Math.round(t.d * (clip.y + clip.h) + t.f);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.rect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+        ctx.clip();
+        const u = new DOMMatrix([t.a, t.b, t.c, t.d, x0 - t.a * clip.x, y0 - t.d * clip.y]);
+        ctx.setTransform(u);
+    } else {
+        ctx.rect(clip.x, clip.y, clip.w, clip.h);
+        ctx.clip();
+    }
+}
+
+function drawRect(ctx, op) {
+    const t = ctx.getTransform();
+    // Rules are snapped to device pixels the way browsers snap borders, but
+    // only when that is meaningful, i.e. for axis-aligned transforms.
+    let { x, y, w, h } = op;
+    if (isAxisAligned(t)) {
+        const edge = op.edge;
+        // Under a flip, the device-space interval runs the other way round.
+        const span = (start, size, anchor, scale, offset) => {
+            const a = scale * start + offset;
+            const b = scale * (start + size) + offset;
+            return scale > 0 ? snapSpan(a, b - a, anchor) : snapSpan(b, a - b, -anchor);
+        };
+        const [x0, x1] = span(x, w, edge === "left" ? 1 : edge === "right" ? -1 : 0, t.a, t.e);
+        const [y0, y1] = span(y, h, edge === "top" ? 1 : edge === "bottom" ? -1 : 0, t.d, t.f);
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        fillMaybeDashed(ctx, x0, y0, x1 - x0, y1 - y0, op.dashed);
+        ctx.restore();
+    } else {
+        fillMaybeDashed(ctx, x, y, w, h, op.dashed);
+    }
+}
+
+// Dashed borders: dashes and gaps three times as long as the border is
+// thick, spread so that the rule starts and ends with a dash.
+function fillMaybeDashed(ctx, x, y, w, h, dashed) {
+    if (!dashed) {
+        ctx.fillRect(x, y, w, h);
+        return;
+    }
+    const horizontal = w >= h;
+    const len = horizontal ? w : h;
+    const thick = horizontal ? h : w;
+    const dash = 3 * thick;
+    const n = Math.max(1, Math.round((len + dash) / (2 * dash)));
+    const gap = n > 1 ? (len - n * dash) / (n - 1) : 0;
+    for (let i = 0; i < n; ++i) {
+        const s = i * (dash + gap);
+        if (horizontal) ctx.fillRect(x + s, y, Math.min(dash, len - s), h);
+        else ctx.fillRect(x, y + s, w, Math.min(dash, len - s));
+    }
 }
 
 // Snaps the interval [start, start + size] to whole pixels. For a border

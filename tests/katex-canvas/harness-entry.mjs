@@ -39,7 +39,9 @@ function texOf(testCase) {
 function strutExtent(tree, em) {
     let height = 0;
     let depth = 0;
+    let lines = 1;
     (function walk(node) {
+        if (node.classes && node.classes.indexOf("katex-newline") !== -1) ++lines;
         if (node.classes && node.classes.indexOf("katex-strut") !== -1) {
             const h = parseFloat(node.style.height) * em;
             const d = -(parseFloat(node.style.verticalAlign || "0") || 0) * em;
@@ -49,7 +51,8 @@ function strutExtent(tree, em) {
         }
         (node.children || []).forEach(walk);
     })(tree);
-    return { height, depth };
+    // Struts cannot express the extent of several stacked lines.
+    return lines > 1 ? null : { height, depth };
 }
 
 async function render_(testCase, hostPx, pad) {
@@ -62,6 +65,7 @@ async function render_(testCase, hostPx, pad) {
     katex.render(tex, host, options);
     host.getBoundingClientRect();
     await document.fonts.ready;
+    await Promise.all(Array.from(host.querySelectorAll("img"), (img) => img.decode().catch(() => null)));
 
     const emPx = parseFloat(getComputedStyle(host.querySelector(".katex")).fontSize);
     const firstBase = host.querySelector(".katex-base");
@@ -75,9 +79,11 @@ async function render_(testCase, hostPx, pad) {
     // Canvas: lay out once to learn the fonts, load them, lay out again.
     const tree = katex.__renderToHTMLTree(tex, options);
     const ctx = canvas.getContext("2d");
-    const layoutOptions = { fontSize: emPx, pixelRatio: window.devicePixelRatio };
+    const images = {};
+    const layoutOptions = { fontSize: emPx, pixelRatio: window.devicePixelRatio, images };
     let box = layout(tree, ctx, layoutOptions);
     await Promise.all(box.fonts.map((f) => document.fonts.load(f)));
+    await Promise.all(box.images.map(async (src) => (images[src] = await loadImage(src).catch(() => null))));
     box = layout(tree, ctx, layoutOptions);
 
     const width = Math.ceil(Math.max(hostRect.width, box.width) + 2 * pad);
@@ -98,7 +104,10 @@ async function render_(testCase, hostPx, pad) {
     c.fillStyle = "#000";
     const x0 = pad + baseLeft;
     const y0 = pad + baseline;
-    render(c, box, x0, y0);
+    render(c, box, x0, y0, images);
+
+    // Let both renderings reach the screen before the screenshot.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     const extent = strutExtent(tree, emPx);
     return {
@@ -109,8 +118,8 @@ async function render_(testCase, hostPx, pad) {
         emPx,
         htmlWidth: host.querySelector(".katex-html").getBoundingClientRect().width,
         canvasWidth: box.width,
-        heightError: box.height - extent.height,
-        depthError: box.depth - extent.depth,
+        heightError: extent ? box.height - extent.height : 0,
+        depthError: extent ? box.depth - extent.depth : 0,
         unsupported: box.unsupported,
         fonts: box.fonts,
     };
@@ -256,14 +265,31 @@ function diff(a, b) {
  * [reference | new | diff | old | diff] as a data URL.
  */
 async function compare(shot, oldShot, w, h) {
+    // The statistics are frozen into a string right away: in the chromium
+    // used here, the fractional fields of the first diff's result were seen
+    // to change to those of the second diff, apparently an optimizer bug.
+    const stats = (r) =>
+        r &&
+        JSON.stringify({
+            mismatched: r.mismatched,
+            ink: r.ink,
+            score: r.mismatched / Math.max(1, r.ink),
+            strictScore: r.strictScore,
+            centroidShift: r.centroidShift,
+            darkness: r.darkness,
+            shift: r.shift,
+        });
     const reference = await pixels(shot, 0, 0, w, h);
     const fresh = await pixels(shot, w, 0, w, h);
     const d = diff(reference, fresh);
+    const newStats = stats(d);
     let old = null;
     let dOld = null;
+    let oldStats = null;
     if (oldShot) {
         old = await pixels(oldShot, 0, 0, w, h);
         dOld = diff(reference, old);
+        oldStats = stats(dOld);
     }
     const gap = 6;
     const panels = old ? [reference, fresh, d.image, old, dOld.image] : [reference, fresh, d.image];
@@ -274,17 +300,7 @@ async function compare(shot, oldShot, w, h) {
     ctx.fillStyle = "#b0b0b0";
     ctx.fillRect(0, 0, composite.width, h);
     panels.forEach((p, i) => ctx.putImageData(p, i * (w + gap), 0));
-    const stats = (r) =>
-        r && {
-            mismatched: r.mismatched,
-            ink: r.ink,
-            score: r.score,
-            strictScore: r.strictScore,
-            centroidShift: r.centroidShift,
-            darkness: r.darkness,
-            shift: r.shift,
-        };
-    return { new: stats(d), old: stats(dOld), composite: composite.toDataURL("image/png") };
+    return { new: newStats, old: oldStats, composite: composite.toDataURL("image/png") };
 }
 
 window.harness = {

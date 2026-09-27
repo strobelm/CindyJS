@@ -127,7 +127,7 @@ Scores are mismatched pixels per inked reference pixel.</p>
 <p class="bar">Show: <button data-f="all">all</button><button data-f="fail">fail</button>
 <button data-f="unsupported">unsupported</button><button data-f="pass">pass</button><button data-f="error">error</button>
 &nbsp; Set: <button data-s="all">all</button><button data-s="core">core</button>
-<button data-s="cindyjs">cindyjs</button><button data-s="katex">katex</button></p>
+<button data-s="cindyjs">cindyjs</button><button data-s="issue829">issue829</button><button data-s="katex">katex</button></p>
 <table><thead><tr><td>case</td><td>new</td><td>old</td><td>formula</td></tr></thead><tbody>
 ${rows}
 </tbody></table>
