@@ -80,7 +80,13 @@ function triggerRepaints() {
     repaintTimeout = null;
     const instances = waitingInstances;
     waitingInstances = [];
-    for (const instance of instances) instance.evokeCS(""); // trigger repaint
+    for (const instance of instances) {
+        try {
+            instance.evokeCS(""); // trigger repaint
+        } catch (e) {
+            console.error(e);
+        }
+    }
 }
 
 // Plugin API
@@ -132,6 +138,19 @@ function pixelRatioOf(ctx, angle) {
     return t.b === 0 && t.c === 0 ? Math.abs(t.a) : null;
 }
 
+// KaTeX stores \gdef and \global\def definitions in the macro table it is
+// given, so every formula gets a copy of its own.
+function options() {
+    return Object.assign({}, katexOptions, { macros: Object.assign({}, katexOptions.macros) });
+}
+
+// drawtable passes neither a size nor a line height, only the context's font.
+function sizeOf(ctx, fontSize) {
+    if (fontSize > 0) return fontSize;
+    const match = /([\d.]+)px/.exec(ctx.font);
+    return match ? parseFloat(match[1]) : 16;
+}
+
 /**
  * Splits a text into rows of items: "$" toggles between plain text and TeX,
  * newlines in plain text start new rows. Returns null if fonts are still
@@ -158,7 +177,7 @@ function prepare(storage, ctx, text, fontSize, lineHeight, angle) {
             }
         } else {
             try {
-                const tree = katex.__renderToHTMLTree(preprocess(part), katexOptions);
+                const tree = katex.__renderToHTMLTree(preprocess(part), options());
                 const box = layout(tree, ctx, { fontSize, pixelRatio });
                 if (missingFonts(box.fonts)) fontsMissing = true;
                 row.push(formulaItem(box));
@@ -220,12 +239,16 @@ function place(ctx, rows, x, y, align, fontSize, lineHeight, angle, draw) {
 }
 
 function katexMeasure(ctx, text, x, y, align, fontSize, lineHeight, angle = 0) {
+    fontSize = sizeOf(ctx, fontSize);
+    if (!(lineHeight > 0)) lineHeight = 1.45 * fontSize;
     const rows = prepare(this, ctx, text, fontSize, lineHeight, angle);
     if (rows === null) return undefined;
     return place(ctx, rows, x, y, align, fontSize, lineHeight, angle, false);
 }
 
 function katexRenderer(ctx, text, x, y, align, fontSize, lineHeight, angle = 0) {
+    fontSize = sizeOf(ctx, fontSize);
+    if (!(lineHeight > 0)) lineHeight = 1.45 * fontSize;
     const rows = prepare(this, ctx, text, fontSize, lineHeight, angle);
     if (rows === null) return undefined;
     return place(ctx, rows, x, y, align, fontSize, lineHeight, angle, true);
@@ -247,7 +270,7 @@ function katexHtml(element, text) {
         } else {
             const span = document.createElement("span");
             try {
-                katex.render(preprocess(part), span, katexOptions);
+                katex.render(preprocess(part), span, options());
             } catch (e) {
                 console.error(e);
                 span.textContent = "$" + part + "$";

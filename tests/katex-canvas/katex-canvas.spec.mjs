@@ -97,19 +97,20 @@ async function renderOld(testCase, info) {
 for (const testCase of cases) {
     test(testCase.id, async () => {
         const result = { ...testCase };
-        let info;
-        try {
-            info = await newPage.evaluate(
-                ([c, pad]) => window.harness.render(c, c.hostPx, Math.round(pad * c.hostPx * 1.21)),
-                [testCase, PAD_EM]
-            );
-        } catch (e) {
+        // Only KaTeX rejecting the input skips a case; an exception in the
+        // canvas backend fails it.
+        const parseError = await newPage.evaluate((c) => window.harness.parseError(c), testCase);
+        if (parseError !== null) {
             result.status = "error";
-            result.error = String(e.message || e).split("\n")[0];
+            result.error = parseError.split("\n")[0];
             writeFileSync(join(OUT_DIR, "results", fileName(testCase.id) + ".json"), JSON.stringify(result));
             test.skip(true, `KaTeX cannot render this: ${result.error}`);
             return;
         }
+        const info = await newPage.evaluate(
+            ([c, pad]) => window.harness.render(c, c.hostPx, Math.round(pad * c.hostPx * 1.21)),
+            [testCase, PAD_EM]
+        );
         Object.assign(result, info);
 
         const shot = await newPage.screenshot({

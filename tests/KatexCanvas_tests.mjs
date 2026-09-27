@@ -91,8 +91,15 @@ describe("KaTeX canvas backend", function () {
 
     it("renders with the context's fill style and restores the context", function () {
         const calls = [];
+        let depth = 0;
         const ctx = Object.assign({}, measureCtx, {
             fillStyle: "#123456",
+            save() {
+                ++depth;
+            },
+            restore() {
+                --depth;
+            },
             getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
             setTransform() {},
             translate() {},
@@ -105,6 +112,7 @@ describe("KaTeX canvas backend", function () {
         });
         const box = layout(katex.__renderToHTMLTree("\\frac{a}{\\color{red}b}"), measureCtx, { fontSize: 20 });
         render(ctx, box, 100, 50);
+        assert.equal(depth, 0, "every save is restored");
         const texts = calls.filter((c) => c[0] === "text");
         assert.deepEqual(
             texts.map((c) => [c[1], c[2]]),

@@ -182,8 +182,11 @@
                     status.className = "error";
                     return;
                 }
-                await navigator.serviceWorker.register("katex_compare_sw.js");
+                const registration = await navigator.serviceWorker.register("katex_compare_sw.js");
                 await navigator.serviceWorker.ready;
+                // The worker is only needed here; it goes away once no page
+                // uses it any more, so other examples load without it.
+                window.addEventListener("pagehide", () => registration.unregister());
 
                 // The example and size are kept in the URL, so a comparison
                 // can be shared.

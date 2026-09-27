@@ -320,7 +320,7 @@ function computeStyle(node, parent, ancestors) {
     if (has("cd-label-right")) cs.textAlign = 1;
 
     const style = styleOf(node);
-    if (style.color) cs.color = style.color;
+    if (isColor(style.color)) cs.color = style.color;
 
     const em = cs.size;
     if (style.textShadow) {
@@ -358,6 +358,22 @@ function computeStyle(node, parent, ancestors) {
 
 function fontString(cs) {
     return `${cs.style || "normal"} ${cs.weight || "normal"} ${cs.size}px ${cs.family}`;
+}
+
+// KaTeX accepts any word as a colour name. CSS ignores invalid colours, and
+// so does the canvas, which would keep the previous fill style instead of
+// the inherited colour; hence they are dropped during layout.
+const colors = new Map();
+
+function isColor(color) {
+    if (!color) return false;
+    if (typeof CSS === "undefined" || !CSS.supports) return true;
+    let valid = colors.get(color);
+    if (valid === undefined) {
+        valid = CSS.supports("color", color);
+        colors.set(color, valid);
+    }
+    return valid;
 }
 
 // SVG path data by path name, extracted from the nodes' own markup since
@@ -546,9 +562,9 @@ class Layout {
         }
         if (hasClass(node, "angl")) borders.top = borders.right = 0.049 * em;
         if (this.pixelRatio) {
-            // Browsers use whole device pixels for border widths already
-            // during layout.
-            for (const side in borders) borders[side] = snapBorder(borders[side], this.pixelRatio);
+            // Browsers use whole pixels for border widths already during
+            // layout.
+            for (const side in borders) borders[side] = snapBorder(borders[side]);
         }
         const dashed = {
             right: style.borderRightStyle === "dashed",
@@ -681,13 +697,13 @@ class Layout {
         }
 
         const color = cs.color;
-        const borderColor = style.borderColor || color;
+        const borderColor = isColor(style.borderColor) ? style.borderColor : color;
         const decorations = [];
         const rect = (x, y, w, h, edge, c, dash) => {
             // Borders of an empty box are not painted.
             if (w > 0 && h > 0) decorations.push({ type: "rect", x, y, w, h, color: c, edge, dashed: !!dash });
         };
-        if (style.backgroundColor) rect(0, top, outerWidth, bottom - top, null, style.backgroundColor);
+        if (isColor(style.backgroundColor)) rect(0, top, outerWidth, bottom - top, null, style.backgroundColor);
         if (borders.bottom) {
             rect(0, bottom - borders.bottom, outerWidth, borders.bottom, "bottom", borderColor, dashed.bottom);
         }
@@ -1024,10 +1040,11 @@ function isAccent(node) {
     return hasClass(node, "katex-accent");
 }
 
-function snapBorder(width, pixelRatio) {
-    const device = width * pixelRatio;
-    if (device <= 0) return 0;
-    return (device < 1 ? 1 : Math.floor(device)) / pixelRatio;
+// Chromium snaps border widths in CSS pixels, whatever the device pixel
+// ratio: thin ones become one pixel wide, others are rounded down.
+function snapBorder(width) {
+    if (width <= 0) return 0;
+    return width < 1 ? 1 : Math.floor(width);
 }
 
 function emptyBox() {
@@ -1071,11 +1088,11 @@ function append(box, b) {
  * @param options.fontSize the font size in CSS pixels of the `.katex`
  *        element, i.e. of one TeX em (`katex.css` makes this 1.21 times the
  *        surrounding font size)
- * @param options.pixelRatio if given, device pixels per CSS pixel: rule and
- *        border thicknesses are then rounded to device pixels and rules get
- *        katex.css's `min-height: 1px`, as in browsers, which keeps the
- *        layout identical to KaTeX's HTML output when drawing without
- *        rotation or scaling
+ * @param options.pixelRatio if given, device pixels per CSS pixel: border
+ *        thicknesses are then rounded to CSS pixels, rules are drawn at
+ *        whole device pixels and get katex.css's `min-height: 1px`, as in
+ *        browsers, which keeps the layout identical to KaTeX's HTML output
+ *        when drawing without rotation or scaling
  * @param options.displayWidth the width that equation tags (\tag) are
  *        right-aligned to; defaults to the width of the formula
  * @param options.images loaded images by URL (\includegraphics); their
@@ -1149,6 +1166,9 @@ const path2Ds = new Map();
 function path2D(d) {
     let p = path2Ds.get(d);
     if (!p) {
+        // Stretched delimiters and roots have paths of their own for every
+        // height; keep the cache from growing without bound.
+        if (path2Ds.size >= 1024) path2Ds.clear();
         p = new Path2D(d);
         path2Ds.set(d, p);
     }

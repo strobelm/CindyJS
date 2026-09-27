@@ -100,6 +100,33 @@
                 await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
                 return { width: W, height: H };
             };
+
+            // Runs `code` as draw script and returns the fonts of all texts
+            // drawn, once formulas appear (or after five seconds).
+            window.drawTable = async function (code) {
+                const fonts = [];
+                const fillText = CanvasRenderingContext2D.prototype.fillText;
+                CanvasRenderingContext2D.prototype.fillText = function (...args) {
+                    fonts.push(this.font);
+                    return fillText.apply(this, args);
+                };
+                try {
+                    if (cdy) cdy.shutdown();
+                    document.getElementById("CSCanvas").innerHTML = "";
+                    cdy = CindyJS({
+                        ports: [{ id: "CSCanvas", transform: [{ visibleRect: [0, 0, W, H] }] }],
+                        scripts: { draw: code },
+                        use: ["katex"],
+                        autoplay: false,
+                    });
+                    for (let i = 0; i < 200 && !fonts.some((f) => /KaTeX_/.test(f)); ++i) {
+                        await new Promise((r) => setTimeout(r, 25));
+                    }
+                    return fonts;
+                } finally {
+                    CanvasRenderingContext2D.prototype.fillText = fillText;
+                }
+            };
         </script>
     </body>
 </html>

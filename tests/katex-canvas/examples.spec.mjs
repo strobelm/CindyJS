@@ -7,8 +7,9 @@
  * so both runs use the same build of everything else.
  *
  * A run with the new plugin must not produce page errors, console errors or
- * failed requests that the old one did not, and it must typeset formulas
- * wherever the old one did (counted as text drawn in KaTeX fonts). The
+ * failed requests that the old one did not, and on every page where the old
+ * one typeset formulas it must typeset some too (counted as text drawn in
+ * KaTeX fonts; the count differs between the versions). The
  * screenshots are diffed as well and shown side by side in
  * build/katex-canvas/examples.html; KaTeX 0.18 lays out some formulas a
  * little differently from 0.7, so the visual comparison is for review

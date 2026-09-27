@@ -56,6 +56,16 @@ function strutExtent(tree, em) {
     return lines > 1 ? null : { height, depth };
 }
 
+/** KaTeX's error message if it rejects the input, else null. */
+function parseError(testCase) {
+    try {
+        katex.__renderToHTMLTree(texOf(testCase), katexOptions(testCase));
+        return null;
+    } catch (e) {
+        return String(e.message || e);
+    }
+}
+
 async function render_(testCase, hostPx, pad) {
     const tex = texOf(testCase);
     const options = katexOptions(testCase);
@@ -332,6 +342,7 @@ async function compareTwo(a, b, w, h) {
 }
 
 window.harness = {
+    parseError,
     render: render_,
     compare,
     compareTwo,

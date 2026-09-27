@@ -160,11 +160,18 @@
                 $("cindy").checked = params.get("cindy") !== "0";
                 preset.value = Object.keys(PRESETS).find((k) => PRESETS[k] === texInput.value) || "";
 
+                // The formula may come from a shared link, so only images
+                // from this server are trusted, no links or HTML.
+                const trust = (context) =>
+                    context.command === "\\includegraphics" && !/^[a-z][a-z0-9+.-]*:/i.test(context.url);
+
                 function options(cindyMacros, display) {
                     return Object.assign({ strict: "ignore" }, cindyMacros ? cindy.katexOptions : {}, {
                         displayMode: display,
                         throwOnError: true,
-                        trust: true,
+                        trust,
+                        // A copy, as KaTeX adds \gdef definitions to it.
+                        macros: Object.assign({}, cindyMacros ? cindy.macros : {}),
                     });
                 }
 
