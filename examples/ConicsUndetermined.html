@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Conics not determined by their input</title>
+        <script type="text/javascript" src="../build/js/Cindy.js"></script>
+        <link rel="stylesheet" href="../css/cindy.css" />
+        <style>
+            .widget {
+                display: inline-block;
+                vertical-align: top;
+                width: 420px;
+                margin-right: 16px;
+            }
+        </style>
+    </head>
+
+    <body style="font-family: Arial">
+        <h1>Conics not determined by their input</h1>
+        <p>
+            Some conic constructions have no definite result for special input: a conic tangent to the same line twice,
+            or through the same point twice. Their formulas then compute rounding noise, a different arbitrary conic in
+            every step. Tracing used to follow that noise with ever smaller steps, up to its limit of 10000 refinements,
+            in every move: pages like this one took about a minute to load, and dragging took seconds per move. Now such
+            a conic is undefined (not drawn), the other one stays, and dragging is as fast as usual.
+        </p>
+
+        <div class="widget">
+            <h3>Tangent to the same line twice</h3>
+            <div id="CSCanvas1" style="border: 2px solid black"></div>
+            <p>
+                A conic with pole A and polar a (red), through B, tangent to the purple line c, and to c again. One of
+                the two conics is still determined, the other one is not and is undefined. Drag any point or line: the
+                page should respond immediately.
+            </p>
+            <p>Tracing: <span id="tracingState1"></span></p>
+        </div>
+
+        <div class="widget">
+            <h3>Two tangent lines brought together</h3>
+            <div id="CSCanvas2" style="border: 2px solid black"></div>
+            <p>
+                The same construction, tangent to the purple lines c (through C1, C2) and d (through D1, D2). Drag D1
+                onto the grid point (-4, -3), or
+                <button onclick="cdy2.evokeCS('D1.xy = (-4, -3)')">put it there</button>: c and d coincide, and one
+                conic becomes undefined. Drag D1 away again, or
+                <button onclick="cdy2.evokeCS('D1.xy = (-4, -1)')">move it back</button>: both conics are back, and they
+                keep their colors (tracing continues from before the coincidence). The move onto the coincidence is
+                reported as BAD, as any move into a singularity.
+            </p>
+            <p>Tracing: <span id="tracingState2"></span></p>
+        </div>
+
+        <div class="widget">
+            <h3>Through the same point twice</h3>
+            <div id="CSCanvas3" style="border: 2px solid black"></div>
+            <p>
+                Conics through A, B, C, D, tangent to the blue line l. Drag D onto C, or
+                <button onclick="cdy3.evokeCS('D.xy = C.xy')">put it there</button>: through three points and tangent to
+                a line leaves a whole family of conics, so neither of the two is determined, and nothing is drawn (the
+                move onto C is reported as BAD, as any move into a singularity). Drag D away again, or
+                <button onclick="cdy3.evokeCS('D.xy = (2, 4)')">move it back</button>: both conics are back.
+            </p>
+            <p>Tracing: <span id="tracingState3"></span></p>
+        </div>
+
+        <script type="text/javascript">
+            // label the input points and lines
+            function labeled(geometry) {
+                geometry.forEach(function (el) {
+                    if (el.type !== "ConicBy1Pol1P2L" && el.type !== "ConicBy4p1l" && el.type !== "SelectConic")
+                        el.labeled = true;
+                });
+                return geometry;
+            }
+
+            function conic(name, set, index, color) {
+                return { name: name, type: "SelectConic", args: [set], index: index, color: color, size: 2 };
+            }
+
+            var cdy1 = CindyJS({
+                ports: [{ id: "CSCanvas1", width: 400, height: 400, transform: [{ visibleRect: [-6, 6, 6, -6] }] }],
+                tracingStateReport: "tracingState1",
+                geometry: labeled([
+                    { name: "A", type: "Free", pos: [0, 4], color: [0, 1, 1] },
+                    { name: "a", type: "FreeLine", pos: [0, -1, 2], color: [1, 0, 0] },
+                    { name: "B", type: "Free", pos: [3, -1], color: [1, 1, 0] },
+                    { name: "c", type: "FreeLine", pos: [0.3, 1, 3], color: [0.5, 0, 0.7] },
+                    { name: "Qs", type: "ConicBy1Pol1P2L", args: ["A", "a", "B", "c", "c"] },
+                    conic("Q1", "Qs", 1, [0, 0.5, 0.5]),
+                    conic("Q2", "Qs", 2, [0, 0, 1]),
+                ]),
+            });
+
+            var cdy2 = CindyJS({
+                ports: [{ id: "CSCanvas2", width: 400, height: 400, transform: [{ visibleRect: [-6, 6, 6, -6] }] }],
+                tracingStateReport: "tracingState2",
+                grid: 1,
+                snap: true,
+                geometry: labeled([
+                    { name: "A", type: "Free", pos: [0, 4], color: [0, 1, 1] },
+                    { name: "a", type: "FreeLine", pos: [0, -1, 2], color: [1, 0, 0] },
+                    { name: "B", type: "Free", pos: [3, -1], color: [1, 1, 0] },
+                    { name: "C1", type: "Free", pos: [-2, -3] },
+                    { name: "C2", type: "Free", pos: [2, -3] },
+                    { name: "c", type: "Join", args: ["C1", "C2"], color: [0.5, 0, 0.7] },
+                    { name: "D1", type: "Free", pos: [-4, -1] },
+                    { name: "D2", type: "Free", pos: [4, -3] },
+                    { name: "d", type: "Join", args: ["D1", "D2"], color: [0.5, 0, 0.7] },
+                    { name: "Qs", type: "ConicBy1Pol1P2L", args: ["A", "a", "B", "c", "d"] },
+                    conic("Q1", "Qs", 1, [0, 0.5, 0.5]),
+                    conic("Q2", "Qs", 2, [0, 0, 1]),
+                ]),
+            });
+
+            var cdy3 = CindyJS({
+                ports: [{ id: "CSCanvas3", width: 400, height: 400, transform: [{ visibleRect: [-6, 6, 6, -6] }] }],
+                tracingStateReport: "tracingState3",
+                grid: 1,
+                snap: true,
+                geometry: labeled([
+                    { name: "A", type: "Free", pos: [-3, 1] },
+                    { name: "B", type: "Free", pos: [3, 2] },
+                    { name: "C", type: "Free", pos: [0, 4] },
+                    { name: "D", type: "Free", pos: [2, 4] },
+                    { name: "L1", type: "Free", pos: [-4, -3] },
+                    { name: "L2", type: "Free", pos: [4, -2] },
+                    { name: "l", type: "Join", args: ["L1", "L2"], color: [0, 0, 1] },
+                    { name: "Qs", type: "ConicBy4p1l", args: ["A", "B", "C", "D", "l"] },
+                    conic("Q1", "Qs", 1, [1, 0, 1]),
+                    conic("Q2", "Qs", 2, [0, 0.5, 0.5]),
+                ]),
+            });
+        </script>
+    </body>
+</html>

@@ -393,3 +393,171 @@ describe("All GeoOps", function () {
         }
     });
 });
+
+describe("Conics not determined by their input", function () {
+    // Their formulas yield rounding noise. Tracing used to follow that noise
+    // with ever smaller steps, up to its refinement limit, so without the fix
+    // these tests take seconds each (and fail on their assertions).
+    this.timeout(5000);
+
+    function P(name, x, y) {
+        return { name: name, type: "Free", pos: [x, y] };
+    }
+
+    function J(name, p, q) {
+        return { name: name, type: "Join", args: [p, q] };
+    }
+
+    // the two conics X and Y of the set S = type(args)
+    function conics(type, args) {
+        return [
+            { name: "S", type: type, args: args },
+            { name: "X", type: "SelectConic", args: ["S"], index: 1 },
+            { name: "Y", type: "SelectConic", args: ["S"], index: 2 },
+        ];
+    }
+
+    function widget(geometry) {
+        return CindyJS({ isNode: true, csconsole: false, geometry: geometry });
+    }
+
+    // undefined: NaN, or the zero matrix
+    function isUndefined(cdy, name) {
+        var m = cdy.evalcs(name + ".matrix");
+        return List._helper.isNaN(m) || List.abs(m).value.real === 0;
+    }
+
+    function undefinedCount(cdy) {
+        return (isUndefined(cdy, "X") ? 1 : 0) + (isUndefined(cdy, "Y") ? 1 : 0);
+    }
+
+    // inputs of a conic with pole A and polar a, through B, tangent to c and d
+    var poleAndTangents = [
+        P("A", 0, 2),
+        P("A1", -1, 0.5),
+        P("A2", 1, 0.3),
+        J("a", "A1", "A2"),
+        P("B", 1.5, 1),
+        P("C1", -2, -1),
+        P("C2", 2, -1),
+        J("c", "C1", "C2"),
+        P("D1", -2, -0.5),
+        P("D2", 2, -1),
+        J("d", "D1", "D2"),
+    ];
+
+    it("tangent to the same line twice: one of the two is undefined", function () {
+        var cdy = widget(poleAndTangents.concat(conics("ConicBy1Pol1P2L", ["A", "a", "B", "c", "c"])));
+        cdy.evalcs("B.xy=(1.4,1.2)");
+        undefinedCount(cdy).should.equal(1);
+    });
+
+    it("through a point on the polar: one of the two is undefined", function () {
+        var cdy = widget(poleAndTangents.concat(conics("ConicBy1Pol1P2L", ["A", "a", "A1", "c", "d"])));
+        cdy.evalcs("A1.xy=(-1.1,0.6)");
+        undefinedCount(cdy).should.equal(1);
+    });
+
+    it("tangent to two lines that come to coincide and separate again", function () {
+        var cdy = widget(poleAndTangents.concat(conics("ConicBy1Pol1P2L", ["A", "a", "B", "c", "d"])));
+        undefinedCount(cdy).should.equal(0);
+        cdy.evalcs("D1.xy=(-2,-1)");
+        undefinedCount(cdy).should.equal(1);
+        cdy.evalcs("D1.xy=(-2,-0.7)");
+        undefinedCount(cdy).should.equal(0);
+    });
+
+    it("tangent to the same line twice when loaded, then to two lines", function () {
+        var geometry = poleAndTangents.slice();
+        geometry[8] = P("D1", -2, -1); // d = c
+        var cdy = widget(geometry.concat(conics("ConicBy1Pol1P2L", ["A", "a", "B", "c", "d"])));
+        undefinedCount(cdy).should.equal(1);
+        cdy.evalcs("D1.xy=(-2,-0.9)");
+        cdy.evalcs("D1.xy=(-2,-0.8)");
+        undefinedCount(cdy).should.equal(0);
+    });
+
+    it("close to special input: both are defined", function () {
+        // B almost on the polar, and c almost d: determined, if sensitive
+        var cdy = widget(poleAndTangents.concat(conics("ConicBy1Pol1P2L", ["A", "a", "B", "c", "d"])));
+        cdy.evalcs("B.xy=(-1+1e-7,0.5)");
+        undefinedCount(cdy).should.equal(0);
+        cdy.evalcs("B.xy=(1.5,1)");
+        cdy.evalcs("D1.xy=(-2,-1+1e-7)");
+        undefinedCount(cdy).should.equal(0);
+    });
+
+    it("through the same point twice (polar pair, two points, line): one is undefined", function () {
+        var cdy = widget(poleAndTangents.concat(conics("ConicBy1Pol2P1L", ["A", "a", "B", "B", "d"])));
+        cdy.evalcs("B.xy=(1.4,1.2)");
+        undefinedCount(cdy).should.equal(1);
+    });
+
+    it("pole on the tangent (polar pair, two points, line): one is undefined", function () {
+        var cdy = widget(
+            poleAndTangents.concat(
+                [P("C", -1.5, 1.7), J("e", "A", "D2")],
+                conics("ConicBy1Pol2P1L", ["A", "a", "B", "C", "e"])
+            )
+        );
+        cdy.evalcs("A.xy=(0.1,2.1)");
+        undefinedCount(cdy).should.equal(1);
+    });
+
+    var fourPoints = [
+        P("A", -1, 0),
+        P("B", 1, 0.5),
+        P("C", 0, 2),
+        P("D", 0.5, -1),
+        P("L1", -2, -1),
+        P("L2", 2, -1.5),
+        J("l", "L1", "L2"),
+    ];
+
+    it("through the same point twice, tangent to a line: both are undefined", function () {
+        var cdy = widget(fourPoints.concat(conics("ConicBy4p1l", ["A", "B", "C", "C", "l"])));
+        cdy.evalcs("A.xy=(-1.2,0.1)");
+        undefinedCount(cdy).should.equal(2);
+    });
+
+    it("through two points of the tangent: both are undefined", function () {
+        var cdy = widget(fourPoints.concat([J("m", "A", "C")], conics("ConicBy4p1l", ["A", "B", "C", "D", "m"])));
+        cdy.evalcs("B.xy=(1.1,0.4)");
+        undefinedCount(cdy).should.equal(2);
+    });
+
+    it("circle through the same point twice: undefined", function () {
+        var cdy = widget([
+            P("A", -1.1, 0.3),
+            P("C", 0.7, 2.1),
+            { name: "K", type: "CircleBy3", args: ["A", "C", "C"] },
+        ]);
+        cdy.evalcs("A.xy=(-1.2,0.4)");
+        isUndefined(cdy, "K").should.equal(true);
+    });
+
+    it("intersections with a conic that is undefined from the start", function () {
+        // X is not determined (A on d); what is computed from it is traced as
+        // from any zero solution
+        var cdy = widget(
+            [P("A", 0, 3), P("A1", 1, 2), P("B", 1, 0), P("C", -1, 1), J("d", "A", "A1")].concat(
+                [{ name: "a", type: "HorizontalLine", pos: [0, 1, 0] }],
+                conics("ConicBy1Pol2P1L", ["A", "a", "B", "C", "d"]),
+                [{ name: "I", type: "IntersectLC", args: ["a", "X"] }]
+            )
+        );
+        cdy.evalcs("B.xy=(1.1,0.1)");
+        undefinedCount(cdy).should.equal(1);
+    });
+
+    it("tangent to the same line twice (point, four lines): both are undefined", function () {
+        var cdy = widget(
+            fourPoints.concat(
+                [J("g", "A", "B"), J("h", "B", "C"), J("k", "C", "D"), P("Q", 0.2, 0.3)],
+                conics("ConicBy1p4l", ["Q", "g", "h", "h", "k"])
+            )
+        );
+        cdy.evalcs("Q.xy=(0.3,0.2)");
+        undefinedCount(cdy).should.equal(2);
+    });
+});

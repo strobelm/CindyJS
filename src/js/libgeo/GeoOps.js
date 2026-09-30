@@ -1222,6 +1222,75 @@ geoOps.SelectConic.updatePosition = function (el) {
     el.matrix = General.withUsage(el.matrix, "Conic");
 };
 
+// Some conic constructions yield a pair of solutions of which one or both are
+// not determined for special input, e.g. a conic tangent to the same line twice,
+// or through the same point twice. Their formulas then produce rounding noise:
+// an arbitrary, different solution in every step, which tracing would follow
+// with ever smaller steps, up to its refinement limit, in every move. Such
+// solutions are exactly zero instead, as the formulas give them for input that
+// is special exactly in binary: undefined, and tracing, of these operations as
+// well as of everything computed from them, handles zero solutions already.
+// The tests for special input only accept what is zero up to rounding: input
+// that is merely close to special has determined solutions, and those stay as
+// they are.
+
+// Relative size of what is zero up to rounding, for quantities computed from
+// the input with a few operations.
+geoOps._helper.roundoff = 1e-12;
+
+// Whether x, a product of vectors (scalar product, determinant) with the given
+// norms, vanishes up to rounding.
+geoOps._helper.vanishes = function (x, ...vectors) {
+    let scale = 1;
+    for (const v of vectors) scale *= List.abs(v).value.real;
+    return CSNumber.abs(x).value.real <= geoOps._helper.roundoff * scale;
+};
+
+// Whether the points (or lines) p and q coincide up to rounding.
+geoOps._helper.coincide = function (p, q) {
+    const scale = List.abs(p).value.real * List.abs(q).value.real;
+    return List.abs(List.cross(p, q)).value.real <= geoOps._helper.roundoff * scale;
+};
+
+// Whether the point p lies on the line l up to rounding.
+geoOps._helper.incident = function (p, l) {
+    return geoOps._helper.vanishes(List.scalproduct(p, l), p, l);
+};
+
+// Like tracing2, for a pair (n1, n2) whose members may be undetermined (und1,
+// und2): an undetermined member is the zero vector, as if the formula had given
+// exactly zero instead of rounding noise. tracing2core already handles a zero
+// solution: moving into it is moving into a singularity, staying and moving out
+// of it are fine, and it keeps a determined partner in its place. With both
+// members determined, this is exactly tracing2.
+geoOps._helper.tracing2Partial = function (n1, n2, und1, und2) {
+    const zero = List.turnIntoCSList(n1.value.map(() => CSNumber.zero));
+    const o1 = getStateComplexVector(n1.value.length);
+    const o2 = getStateComplexVector(n1.value.length);
+    const res = tracing2core(und1 ? zero : n1, und2 ? zero : n2, o1, o2);
+    putStateComplexVector(res[0]);
+    putStateComplexVector(res[1]);
+    return List.turnIntoCSList(res);
+};
+
+// The pair of conics M1 + M2 and M1 - M2, traced. For special input
+// (`special`: e.g. the two tangents coincide) one of them is not determined:
+// the one where M1 and M2 cancelled, which is then zero.
+geoOps._helper.traceConicSumAndDifference = function (M1, M2, special) {
+    const h = geoOps._helper;
+    const sum = List.add(M1, M2);
+    const diff = List.sub(M1, M2);
+    const sumCancelled = special && List.abs(sum).value.real <= List.abs(diff).value.real;
+    const diffCancelled = special && !sumCancelled;
+    const res = h.tracing2Partial(
+        h.flattenConicMatrix(List.normalizeMax(sum)),
+        h.flattenConicMatrix(List.normalizeMax(diff)),
+        sumCancelled,
+        diffCancelled
+    );
+    return [h.buildConicMatrix(res.value[0].value), h.buildConicMatrix(res.value[1].value)];
+};
+
 // conic by 4 Points and 1 line
 geoOps._helper.ConicBy4p1l = function (el, a, b, c, d, l) {
     const al = List.scalproduct(a, l);
@@ -1241,7 +1310,22 @@ geoOps._helper.ConicBy4p1l = function (el, a, b, c, d, l) {
     const k2 = List.scalmult(r2, a2);
     const x = List.normalizeMax(List.add(k1, k2));
     const y = List.normalizeMax(List.sub(k1, k2));
-    const xy = tracing2(x, y);
+    // With both k1 and k2 zero, the tangent point on l is not determined: k1
+    // vanishes with r1, or with a1 (a and c on l), k2 with r2 or a2.
+    const h = geoOps._helper;
+    const k1Zero =
+        h.vanishes(bl, b, l) ||
+        h.vanishes(dl, d, l) ||
+        h.vanishes(bcd, b, c, d) ||
+        h.vanishes(abd, a, b, d) ||
+        (h.incident(a, l) && h.incident(c, l));
+    const k2Zero =
+        h.vanishes(al, a, l) ||
+        h.vanishes(cl, c, l) ||
+        h.vanishes(acd, a, c, d) ||
+        h.vanishes(abc, a, b, c) ||
+        (h.incident(b, l) && h.incident(d, l));
+    const xy = h.tracing2Partial(x, y, k1Zero && k2Zero, k1Zero && k2Zero);
     const t1 = geoOps._helper.ConicBy5(el, a, b, c, d, xy.value[0]);
     const t2 = geoOps._helper.ConicBy5(el, a, b, c, d, xy.value[1]);
     return [List.normalizeMax(t1), List.normalizeMax(t2)];
@@ -1698,9 +1782,9 @@ geoOps.ConicBy1Pol2P1L.updatePosition = function (el) {
     const v = List.add(List.sub(sm(aC, AB), sm(aB, AC)), sm(rm(0.5, aA), BC));
     M2 = List.add(M2, sm(mul(dA, dA), mm(transpose(BC), v)));
     M2 = List.add(M2, transpose(M2));
-    const res1 = List.normalizeMax(List.add(M1, M2));
-    const res2 = List.normalizeMax(List.sub(M1, M2));
-    el.results = tracing2Conics(res1, res2).value;
+    // with B = C, or A on d, one of the two conics is not determined
+    const h = geoOps._helper;
+    el.results = h.traceConicSumAndDifference(M1, M2, h.coincide(B, C) || h.incident(A, d));
 };
 geoOps.ConicBy1Pol2P1L.stateSize = tracing2Conics.stateSize;
 
@@ -1790,9 +1874,11 @@ geoOps.ConicBy1Pol1P2L.updatePosition = function (el) {
     M2 = List.add(M2, sm(mul(aA, aBB), mm(transpose(asList([c])), asList([d]))));
     M2 = sm(r, M2);
     M2 = List.add(M2, transpose(M2));
-    const res1 = List.normalizeMax(List.add(M1, M2));
-    const res2 = List.normalizeMax(List.sub(M1, M2));
-    el.results = tracing2Conics(res1, res2).value;
+    // tangent to c = d twice, with B on a, or with A on c and d, one of the two
+    // conics is not determined
+    const h = geoOps._helper;
+    const special = h.coincide(c, d) || h.incident(B, a) || (h.incident(A, c) && h.incident(A, d));
+    el.results = h.traceConicSumAndDifference(M1, M2, special);
 };
 geoOps.ConicBy1Pol1P2L.stateSize = tracing2Conics.stateSize;
 
@@ -1886,6 +1972,12 @@ geoOps.CircleBy3.updatePosition = function (el) {
     const d = List.jj;
     const p = csgeo.csnames[el.args[2]].homog;
 
+    // through a point twice: not determined (see ConicBy4p1l)
+    const h = geoOps._helper;
+    if (h.coincide(a, b) || h.coincide(a, p) || h.coincide(b, p)) {
+        el.matrix = General.withUsage(List.zeromatrix(CSNumber.real(3), CSNumber.real(3)), "Circle");
+        return;
+    }
     const erg = geoOps._helper.ConicBy5(el, a, b, c, d, p);
     el.matrix = List.normalizeMax(erg);
     el.matrix = General.withUsage(el.matrix, "Circle");
