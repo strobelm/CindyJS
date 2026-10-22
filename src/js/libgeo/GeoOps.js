@@ -1242,9 +1242,46 @@ geoOps._helper.ConicBy4p1l = function (el, a, b, c, d, l) {
     const x = List.normalizeMax(List.add(k1, k2));
     const y = List.normalizeMax(List.sub(k1, k2));
     const xy = tracing2(x, y);
+    // With one of the points on l, the point of contact is that point, for
+    // both solutions: the conic through the five points would have it twice,
+    // and be zero (or noise, if it is on l up to rounding only).
+    const pts = [a, b, c, d];
+    const onL = pts.filter((p) => geoOps._helper.isIncident(p, l));
+    if (onL.length === 1) {
+        const p = onL[0];
+        const [q, r, s] = pts.filter((x) => x !== p);
+        const t = List.normalizeMax(geoOps._helper.conicBy4pTangentAt(p, q, r, s, l));
+        return [t, t];
+    }
     const t1 = geoOps._helper.ConicBy5(el, a, b, c, d, xy.value[0]);
     const t2 = geoOps._helper.ConicBy5(el, a, b, c, d, xy.value[1]);
     return [List.normalizeMax(t1), List.normalizeMax(t2)];
+};
+
+// Whether the point p lies on the line l up to rounding.
+geoOps._helper.isIncident = function (p, l) {
+    const pl = CSNumber.abs(List.scalproduct(p, l)).value.real;
+    return pl <= 1e-12 * List.abs(p).value.real * List.abs(l).value.real;
+};
+
+// The conic through a, b, c, d that touches the line l at a (a on l): of the
+// pencil spanned by the line pairs (ab)(cd) and (ac)(bd), the one whose
+// tangent at a, the polar of a, is l. The polars p1, p2 of a with respect to
+// the line pairs pass through a, as l does, so l = alpha p1 + beta p2, with
+// l x p2 = alpha (p1 x p2) and p1 x l = beta (p1 x p2).
+geoOps._helper.conicBy4pTangentAt = function (a, b, c, d, l) {
+    const linePair = function (u, v) {
+        const m = General.mult(List.transpose(List.turnIntoCSList([u])), List.turnIntoCSList([v]));
+        return List.add(m, List.transpose(m));
+    };
+    const m1 = linePair(List.cross(a, b), List.cross(c, d));
+    const m2 = linePair(List.cross(a, c), List.cross(b, d));
+    const p1 = General.mult(m1, a);
+    const p2 = General.mult(m2, a);
+    const n = List.cross(p1, p2);
+    const alpha = List.sesquilinearproduct(n, List.cross(l, p2));
+    const beta = List.sesquilinearproduct(n, List.cross(p1, l));
+    return List.add(List.scalmult(alpha, m1), List.scalmult(beta, m2));
 };
 
 geoOps.ConicBy4p1l = {};

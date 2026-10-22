@@ -216,6 +216,114 @@ describe("IntersectLC helper", function () {
     });
 });
 
+describe("Conics through four points tangent to a line through one of them", function () {
+    // |p^T M p| relative to |M| |p|^2: 0 if p lies on the conic M
+    function offConic(M, p) {
+        var v = p.value.map(function (z) {
+            return z.value.real;
+        });
+        var m = M.value.map(function (r) {
+            return r.value.map(function (z) {
+                return z.value.real;
+            });
+        });
+        var s = 0;
+        var n = 0;
+        for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 3; j++) {
+                s += v[i] * m[i][j] * v[j];
+                n += m[i][j] * m[i][j];
+            }
+        return Math.abs(s) / Math.sqrt(n) / (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    }
+    // l touches M if it lies on the dual conic, the adjugate of M
+    function offTangent(M, l) {
+        return offConic(List.adjoint3(M), l);
+    }
+    function P(name, x, y) {
+        return { name: name, type: "Free", pos: [x, y] };
+    }
+    function solutions(cdy, name) {
+        var res = cdy.evalcs(name).value.results;
+        res.should.have.length(2);
+        res.forEach(function (M) {
+            List._helper.isNaN(M).should.equal(false, niceprint(M));
+            List._helper.isAlmostZero(M).should.equal(false, niceprint(M));
+        });
+        return res;
+    }
+
+    it("ConicBy4p1l: touches the line at that point", function () {
+        // l through A exactly (integer coordinates): the conic through A, ..., D
+        // and A again was zero, undefined
+        var cdy = CindyJS({
+            isNode: true,
+            csconsole: false,
+            geometry: [
+                P("A", 0, 2),
+                P("B", 3, 1),
+                P("C", -1, -2),
+                P("D", 1, -1),
+                P("E", 2, 0),
+                P("F", -2, 4),
+                { name: "l", type: "Join", args: ["E", "F"] },
+                { name: "S", type: "ConicBy4p1l", args: ["A", "B", "C", "D", "l"] },
+            ],
+        });
+        solutions(cdy, "S").forEach(function (M) {
+            ["A", "B", "C", "D"].forEach(function (p) {
+                offConic(M, cdy.evalcs(p + ".homog")).should.be.below(1e-12, p);
+            });
+            offTangent(M, cdy.evalcs("l.homog")).should.be.below(1e-12);
+        });
+        // moved off l: two different conics again
+        cdy.evalcs("A.xy=(0, 2.5)");
+        var res = solutions(cdy, "S");
+        var flat = function (M) {
+            return List.turnIntoCSList(
+                [].concat.apply(
+                    [],
+                    M.value.map(function (r) {
+                        return r.value;
+                    })
+                )
+            );
+        };
+        List.projectiveDistMinScal(flat(res[0]), flat(res[1])).should.be.above(1e-3);
+    });
+
+    it("ConicBy1p4l: passes through the point on one of the lines", function () {
+        // A on l1 up to rounding: the conics touching the four lines missed A
+        var cdy = CindyJS({
+            isNode: true,
+            csconsole: false,
+            geometry: [
+                P("A", 0.3, 0.2),
+                P("E1", -2, -1),
+                P("F1", 2, 1.5),
+                P("E2", -2, 2),
+                P("F2", 2, 2.5),
+                P("E3", 3, -2),
+                P("F3", 2.5, 2),
+                P("E4", -3, -2),
+                P("F4", -2.6, 2.2),
+                { name: "l1", type: "Join", args: ["E1", "F1"] },
+                { name: "l2", type: "Join", args: ["E2", "F2"] },
+                { name: "l3", type: "Join", args: ["E3", "F3"] },
+                { name: "l4", type: "Join", args: ["E4", "F4"] },
+                { name: "S", type: "ConicBy1p4l", args: ["A", "l1", "l2", "l3", "l4"] },
+            ],
+        });
+        cdy.evalcs("A.xy = E1.xy + 0.25 * (F1.xy - E1.xy)");
+        solutions(cdy, "S").forEach(function (M) {
+            offConic(M, cdy.evalcs("A.homog")).should.be.below(1e-12);
+            ["l1", "l2", "l3", "l4"].forEach(function (l) {
+                offTangent(M, cdy.evalcs(l + ".homog")).should.be.below(1e-12, l);
+            });
+        });
+    });
+});
+
 describe("Möbius Transformations", function () {
     it("TrMoebius", function (done) {
         testEqualPoints(
